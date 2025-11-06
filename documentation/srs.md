@@ -1,88 +1,129 @@
-Έγγραφο προδιαγραφών απαιτήσεων λογισμικού (SRS) 2025
-ΠΡΟΣΑΡΜΟΓΗ ΤΟΥ ΑΝΤΙΣΤΟΙΧΟΥ ΕΓΓΡΑΦΟΥ ΤΟΥ ΠΡΟΤΥΠΟΥ ISO/IEC/IEEE 29148:2011
+### Software Requirements Specification (SRS) template 2025
 
-ΣΗΜΕΙΩΣΗ: Το στυλ κειμένου (style) "Description" χρησιμοποιείται για να σας δώσει σύντομες οδηγίες για κάθε ενότητα. Το κείμενο που θα συμπληρώσετε εσείς πρέπει να γραφεί με το στυλ "Normal"
+# [your app name goes here]
+# Software Requirements Specification Document
+_NOTE: text [in brakets] must not appear in the final SRS document_ 
+## 1. Introduction 
 
-# [ΤΙΤΛΟΣ ΕΦΑΡΜΟΓΗΣ ΛΟΓΙΣΜΙΚΟΥ]
-## 1.	Εισαγωγή
-### 1.1	Εισαγωγή: σκοπός του λογισμικού
-<!--Οριοθέτηση του σκοπού του συστήματος. 
-Αναφορά των εμπλεκόμενων μερών (stakeholders).
-Γενικό διάγραμμα (block diagram) αναφοράς για το σύστημα (όχι UML αρχιτεκτονική)-->
-Σκοπός του συστήματος είναι η παροχή μιας ολοκληρωμένης διαδικτυακής πλατφόρμας για την εύρεση, κράτηση και παρακολούθηση σταθμών φόρτισης ηλεκτρικών οχημάτων. 
-Το σύστημα επιτρέπει σε χρήστες να εντοπίζουν διαθέσιμους φορτιστές μέσω διαδραστικού χάρτη, να κάνουν κράτηση, να ξεκινούν/τερματίζουν φόρτιση και να βλέπουν ιστορικό χρήσης. 
-Οι πάροχοι φορτιστών μπορούν να διαχειρίζονται τις θέσεις τους, να παρακολουθούν στατιστικά και να ενημερώνουν τη διαθεσιμότητα.
+### 1.1 Purpose
+[  
+    - Purpose statement  
+    - Stakeholders  
+    - System block diagram as plantuml code (no architecture!)  
+]  
 
-**Εμπλεκόμενα μέρη (Stakeholders):**
-- Τελικοί χρήστες (οδηγοί ηλεκτρικών οχημάτων)
-- Πάροχοι υποδομών φόρτισης
-- Διαχειριστές συστήματος (system admins)
-- Εξωτερικές υπηρεσίες χαρτών (OpenStreetMap, Google Maps) και APIs τρίτων παρόχων 
+### 1.2 Interfaces
 
-**Διάγραμμα γενικής αναφοράς (block diagram):**
+#### 1.2.1 Interfaces to external systems
+[  
+    - Identification of external systems that interface with our software  
+    - Applicable standards and protocols (if any) 
+    - UML component diagram as plantuml code showing interfaces   
+]     
+#### 1.2.2 User Interfaces
+[  
+    - Use wireframes or any image-based description of UI elements  
+    - Use plantuml/salt, mermaid.js/"user journey", or D2  
+    - Flow between screens, etc.  
+    - No aesthetic details needed  
+]   
 
-### 1.2	Διεπαφές (interfaces)
-#### 1.2.1	Διεπαφές με εξωτερικά συστήματα 
-Καταγραφή διεπαφών με εξωτερικά συστήματα και λογισμικό. 
-Αναφορά σε πρότυπα ανταλλαγής δεδομένων και κλήσης υπηρεσιών. 
-Ενσωμάτωση διαγραμμάτων UML component μόνο για το τμήμα που αφορά τα εξωτερικά συστήματα.
+## 2. References
+[  
+    - Links to information sources.  
+    - Glossary of terms  
+]
+## 3. Software requirements
+[  
+    - The top-level use-case diagram  
+    - Short mention to the use case model structure    
+]
+### 3.1 Use cases
 
-#### 1.2.2	Διεπαφές με το χρήστη
-Προδιαγραφή διεπαφών με το χρήστη. 
-Χρήση εργαλείων τύπου wireframes ή άλλων (figma κλπ). 
-Γενική ροή UI/UX, όχι λεπτομερείς οθόνες με εικαστική λεπτομέρεια.
-## 2.	Αναφορές - πηγές πληροφοριών
-Αναφορά σε πηγές πληροφοριών στο μέτρο της αναγκαιότητας για την κατανόηση του συστήματος
-## 3.	Προδιαγραφές απαιτήσεων λογισμικού
-### 3.1	Περιπτώσεις χρήσης
- Λεπτομερής προδιαγραφή των λειτουργιών του λογισμικού σε επίπεδο περιπτώσεων χρήσης. Ο αριθμός των περιπτώσεων χρήσης ανάλογα με τον αριθμό των μελών της ομάδας σύμφωνα με την εκφώνηση. 
-Στην ενότητα αυτή δίνεται το γενικό μοντέλο περιπτώσεων χρήσης.
-#### 3.1.1	ΠΕΡΙΠΤΩΣΗ ΧΡΗΣΗΣ 1: (τίτλος)
-##### 3.1.1.1	Χρήστες (ρόλοι) που εμπλέκονται
-Αναφορά στους ρόλους που αφορά η περίπτωση χρήσης
+#### 3.1.1 Use case 1: [title]
+[  
+    - short description of the use case    
+]
+##### 3.1.1.1 Roles involved
+[  
+    - roles     
+]
+##### 3.1.1.2 Preconditions
+[  
+    - prerequisites of any kind, out of the use case scope       
+]
+##### 3.1.1.3 Execution enviroment
+[  
+    - Web frontend, smartphone ui, api execution context
+    - For user interfaces: add wireframes as plantuml/salt, mermaid.js/"user journey", or D2        
+]
+##### 3.1.1.4 Input data
+[  
+    - user input, or input for other sources, if applicable         
+]
+##### 3.1.1.5 Expected behaviour
 
-##### 3.1.1.2	Προϋποθέσεις εκτέλεσης
-Καταγραφή των συνθηκών που πρέπει να ισχύουν ώστε να μπορεί να εκτελεστεί η περίπτωση χρήσης
+###### Main flow
+[  
+    - UML activity diagram        
+]
+###### Alternate flows
+[  
+    - UML activity diagrams        
+]
 
-##### 3.1.1.3	Περιβάλλον εκτέλεσης
-Αναφορά στο περιβάλλον στο οποίο εκτελείται η περίπτωση χρήσης. Πχ "διαδικτυακή διεπαφή χρήστη", "DBMS" κλπ. Σε περίπτωση διάδρασης με χρήστη, μπορεί να περιλαμβάνεται διάγραμμα wireframe των οθονών.
+##### 3.1.1.6 Output data and postconditions
+[  
+    - data elements produced by the use case         
+]
 
-##### 3.1.1.4	Δεδομένα εισόδου 
-Καταγραφή δεδομένων εισόδου και εξόδου και συνθηκών εγκυρότητας αυτών. 
+##### 3.1.1.7 Notes
+[  
+    - everything else, if needed           
+]
 
-##### 3.1.1.5	Αλληλουχία ενεργειών - επιθυμητή συμπεριφορά
-Περιγραφή με κείμενο (Βήμα 1, Βήμα 2 κλπ) και διαγράμματα UML δραστηριοτήτων (Activity) και αλληλουχίας (Sequence). Περιλαμβάνεται η συμπεριφορά σε απρόβλεπτες καταστάσεις και σφάλματα (εναλλακτικές ροές).
+#### 3.1.2 Use case 2: [title]
+[  
+    - use the same structure as in 3.1.1.1 - 3.1.1.7  
+    - repeat for all use cases    
+]
 
-##### 3.1.1.7	Δεδομένα εξόδου
-Διαγράμματα UML αλληλουχίας για την παραγωγή δεδομένων εξόδου. Ως δεδομένα εξόδου νοούνται όλα τα δεδομένα του συστήματος τα οποία δημιουργούνται ή μεταβάλλονται κατά την εκτέλεση (αν υπάρχουν τέτοια)
+## 3.2 Functional Requirements
+[  
+    - UML functional requirements diagram  
+    - short description of each requirement    
+]
 
-##### 3.1.1.8	Παρατηρήσεις 
-Ο,τι δεν εντάσσεται στα προηγούμενα, εφόσον υπάρχει
+## 3.3 Performance requirements
+[  
+    - performance requirements and justification     
+]
 
-#### 3.1.2	ΠΕΡΙΠΤΩΣΗ ΧΡΗΣΗΣ 2: (τίτλος)
-. . .
-(η δομή της ενότητας 3.1.1 επαναλαμβάνεται για όλες τις περιπτώσεις χρήσης που περιλαμβάνονται στο έγγραφο, όπως απαιτούνται από τις ομάδες ανάλογα με τον αριθμό των ατόμων)
+## 3.4 Data requirements
 
-### 3.2	Λειτουργικές απαιτήσεις
-Διάγραμμα λειτουργικών απαιτήσεων (UML requirement diagram) με σύντομη τεκμηρίωση κάθε απαίτησης
+### 3.4.1 Data access requirements
+[  
+    - sources, technologies protocols, authentication, whatever applies       
+]
 
+### 3.4.2 Semantic data model
+[  
+    - ER or class diagram, semantics only (no typing, constraints, etc.).        
+]
 
-### 3.3	Απαιτήσεις επιδόσεων
-Ποσοτική τεκμηρίωση μέτρων και κριτηρίων επιθυμητών επιδόσεων με αναφορά στα ποσοτικά χαρακτηριστικά εισόδων και φορτίου του λογισμικού.
+## 3.5 Other requirements
+[  
+    - other non-functional requirements       
+]
 
-### 3.4	Απαιτήσεις οργάνωσης δεδομένων
-#### 3.4.1	Απαιτήσεις και περιορισμοί πρόσβασης σε δεδομένα
-Απαιτήσεις πρόσβασης και περιορισμοί. 
+### 3.5.1 Availability
+[  
+    - availability requirements and justification       
+]
 
-#### 3.4.2	Εννοιολογικό μοντέλο δεδομένων
-Αναφορά σε εννοιολογικό διάγραμμα οντοτήτων-συσχετίσεων (δηλ όχι λεπτομερής σχεδίαση ΒΔ) 
-ή σε διάγραμμα κλάσεων.
-
-### 3.5	Λοιπές απαιτήσεις
-#### 3.5.1	Απαιτήσεις διαθεσιμότητας λογισμικού
-Τεκμηρίωση απαιτήσεων διαθεσιμότητας
-
-#### 3.5.2	Απαιτήσεις ασφάλειας
-Τεκμηρίωση απαιτήσεων ασφαλείας
+### 3.5.2 Security
+[  
+    - security requirements and justification       
+]
 
 
