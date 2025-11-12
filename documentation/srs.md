@@ -55,7 +55,7 @@ The electric vehicle user logs in and initiates a charging session for their veh
 -The user has installed and can access the provider’s web or mobile application.
 -A valid connection to the payment service exists.
 -At least one physical charger is online and functional.
--The user already has an account and a registered payment method
+
 
 ##### 3.1.1.3 Execution enviroment
 <!--[ 
@@ -70,20 +70,26 @@ The electric vehicle user logs in and initiates a charging session for their veh
 ##### 3.1.1.4 Input data
 - user_id: UUID — Unique identifier of the logged-in user 
 - charger_id: UUID — Identifier of the selected charger 
-- reservation_id: UUID — Existing reservation ID, if applicable 
+<!-- - reservation_id: UUID — Existing reservation ID, if applicable --> 
 - reservation_duration: INTEGER  — Duration of reservation in minutes
 - reservation_start_time: DATETIME 
 - reservation_expiration_time: DATETIME — Reservation end time, max 60 minutes later 
 - timestamp: DATETIME — Charging session start time 
 - pre_auth_amount: DECIMAL — Amount pre-authorized for charging 
 - energy_rate: DECIMAL — Price per kWh 
-- payment_method_id: UUID — Linked payment method
+- payment_method_type: ENUM-{"card","google_pay","apple_pay","paypal"}
+-payment_token:STRING - Authorization token from payment provider
 
 ##### 3.1.1.5 Expected behaviour
 
 ###### Main flow
 
-![Charging diagram](http://cdn-0.plantuml.com/plantuml/png/bLIxRXin4EplAnQkfC90gXHIOJjAkXWnR3YfLxoLH8YFovAKS86gTFcFbFcgV4cMlAEjWu80QQHxpCuETsRlDaJacAnfJi-1-DIK-sRngIC7s7NW6Owq3ZhIibbyrdG4FA0sk3O4QeUy9Gw0heMEjT9k2pFdmVYjTi3qDMccTYwL7_qMv57qW4hvvA8yUo93AbQMPTFe3SpkSK_095eE6BLtDtE8Ez4owodC6u351nU9pn7G9XukPhz__8ItRy1g9pq5-zI7I1OEQ7IBaKBLhesEVL5TQmjynIIe2JUJyjmERmUTO97tr086k7eiI6glCY2hNw5JPFwbNuZoe44LPAZGgk5LT4k68aq0HR7SHoy_TMwJCmqK0kZaWbohDuqqeMnA6Tu3UqKY_gZZpgSuxJxWcyKTipuGu9arYvLtBfjre9rM9cVXKTmLATdIafa1B0aG8q_36KwIc77qbIfZOneIaq9MdqG9wsz5mnbjXxqb9_zCrnCCp7BTTKiRxR8DDgT9xCxZVxW0IuJPYqCNCNgQQ8P08OmM77VQa5XPNsa7mh5bGToC3jvxfyK484UyxRDLCZ0MDRFzbzsy74xv42MGtt-L90xfoCONSy9Buyju56s-UvLcqIKqPlGMOCs4Uxck1fV_8deCuJkCaRY7JJBcad_AdkVlBKQjSWkOhSzgY_8Id_FPZXC79bGxQl-tWT5MlnIN3lKKYnKQbKmEI_GHJHdXigIMUEFPWZYEfYPZN0P3A0AJIu5QKUtQK4gUkx-bBdgukgkVhxoqHInJjRzmLduXm052nK-tqMpFzr2HxdB-Iv2NqqLxhqDdi7yX8sRFOAKDRgckMltcbk_gPOSgAYHhaSN_ijUtKfki-GC0)
+![Charging diagram](http://cdn-0.plantuml.com/plantuml/png/bPM_Rjim4CPtFSKXapq4wDJ17fhKwTQWGOoayrdwR1EcIFL8sL3XgLlVesEVgazIaHGDkGuITB8iV_VT7_wEld6UnRUrBevF3d8iulTYzgM18MuQia87h9poc1UpPuK3yPwLvfK6bLkM3SGHcueQKQKoctcXrZJvR3Ua37bBN9QsDVx3bFmMXYOTtBGWcbqevk7j4XgbpyRXLN2xvnr8u21xzigQVytwm4_6GyOQgbf93vC_Ft_H-tTKApETH_LnsJcF-fX2drchYZroOqehtyMMiiKy2HU281id4PHMgk7tUvPTBftOqTLZLAAwIe9XmaIfgmMR4lhLle9h2A8oQjrO73p7pMJz7JJEguoz29otSjvajXWL1bEfTVy4xK0JOuVnFeWjWOeEoczjwy_ho56ZcCkJVCiaMHIpMn6r1_4eTBQmnWIpFRQgr074HtnhuNp09mARn16_qpnE1vkTWjItYTOsJ9NRlX1HtsC98zU6kngc_nHSdsbe4kAkAwoLGKLS1t2d2Vc7GHosHkmUrGNooxDAoS6vONw21km7YgnHtWh1G3OTLT1g3q55aztNxJGMNrhdUwn__EvJPveY9ixRnfqol8ZJifUS55IpQLdh4mah0Uz686JtZ-mzfADrg_NRjc6mjcQlok1DazKeUlfMgZp7OReau7ABwl-pQbMhK_WhQTFmwR1L6lrMPZTbg16x4RXqUWlMPQi3Jjvwrl4G4jQGjPMQUYPOPtQ6dTDW1sfDwr3rxPlAnP2dvYKklQMhstovnZiZD2Z8f4JFxDyRS98W4c7MIkhnkfTGZG-U0Tdv-NBUATTexavc4B52DPpZ3O9hlX7YqjQDZoR1JE2b8vjlfBotIP_-82wBoVMxjgvPUjW2fyLD7zhM-Yy0)
+<!--
+![c](test.jpg)
+--->
+
+
 ###### Alternate flows
 *Payment pre-authorization fails* 
 ![Charging diagram](http://cdn-0.plantuml.com/plantuml/png/NKz1JiD03Bpx5LPFwO4FD0SgmOrB1E819faqAsrs5zif2ihZILD4HKyZptZ6uwEvg4zZfENTe0jjCnrUyJd1d3tpnd0xY9v2EjL4ozjiZd6vRHMPHwGL5Gyo-P0rV8k7d6eAFLVDFSrIYkOpkiSz-u34LSfxOZuy1ojHPePgLjurlxd_pRs4Y6vNNmnFabh4ltQirqQRzWAKgm9bEQyk-OYuIEQv4AA1gncsNMuqjq37Ny67Mvp1R7i3gGiz7LUOnlW3)
@@ -112,7 +118,8 @@ The electric vehicle user logs in and initiates a charging session for their veh
     • transaction_id: STRING — Payment provider reference  
     • session_id: UUID — Related charging session  
     • amount_charged: DECIMAL — Final billed amount (€)  
-    • amount_released: DECIMAL — Unused pre-authorized amount  
+    • amount_released: DECIMAL — Unused pre-authorized amount
+    • payment_method_type: ENUM — {"card", "apple_pay" "google_pay", "paypal"}  
     • status: ENUM — {"Authorized", "Completed", "Failed"}  
     • timestamp: DATETIME — Time of final payment completion
 
