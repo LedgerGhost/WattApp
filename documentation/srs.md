@@ -1,6 +1,6 @@
 ### Software Requirements Specification (SRS) template 2025
 
-# [your app name goes here]
+# WattApp
 # Software Requirements Specification Document
 _NOTE: text [in brakets] must not appear in the final SRS document_ 
 ## 1. Introduction 
