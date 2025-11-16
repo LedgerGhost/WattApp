@@ -69,17 +69,15 @@ The electric vehicle user logs in and initiates a charging session for their veh
 
 ##### 3.1.1.4 Input data
 - user_id: UUID — Unique identifier of the logged-in user 
-- charger_id: UUID — Identifier of the selected charger 
-<!-- - reservation_id: UUID — Existing reservation ID, if applicable --> 
-- reservation_duration: INTEGER  — Duration of reservation in minutes
+- charger_id: UUID — Identifier of the selected charger
+- outlet_id: UUID — Specific connector selected by the user
+- reservation_duration: INTEGER  — Duration of reservation in minutes 
 - reservation_start_time: DATETIME 
-- reservation_expiration_time: DATETIME — Reservation end time, max 60 minutes later 
-- timestamp: DATETIME — Charging session start time 
 - pre_auth_amount: DECIMAL — Amount pre-authorized for charging 
-- energy_rate: DECIMAL — Price per kWh 
 - payment_method_type: ENUM-{"card","google_pay","apple_pay","paypal"}
 -payment_token:STRING - Authorization token from payment provider
-
+ <!---- timestamp: DATETIME — Charging session start time - reservation_expiration_time: DATETIME — Reservation end time, max 60 minutes later, calculatated by backend --> 
+ <!--- - energy_rate: DECIMAL — Price per kWh , internal system value not here--> <!-- - reservation_id: UUID — Existing reservation ID, if applicable --> 
 ##### 3.1.1.5 Expected behaviour
 
 ###### Main flow
@@ -87,20 +85,16 @@ The electric vehicle user logs in and initiates a charging session for their veh
 
 
 
-
-![Charging diagram](http://cdn-0.plantuml.com/plantuml/png/bPM_Rjim4CPtFSKXapq4wDJ17fhKwTQWGOoayrdwR1EcIFL8sL3XgLlVesEVgazIaHGDkGuITB8iV_VT7_wEld6UnRUrBevF3d8iulTYzgM18MuQia87h9poc1UpPuK3yPwLvfK6bLkM3SGHcueQKQKoctcXrZJvR3Ua37bBN9QsDVx3bFmMXYOTtBGWcbqevk7j4XgbpyRXLN2xvnr8u21xzigQVytwm4_6GyOQgbf93vC_Ft_H-tTKApETH_LnsJcF-fX2drchYZroOqehtyMMiiKy2HU281id4PHMgk7tUvPTBftOqTLZLAAwIe9XmaIfgmMR4lhLle9h2A8oQjrO73p7pMJz7JJEguoz29otSjvajXWL1bEfTVy4xK0JOuVnFeWjWOeEoczjwy_ho56ZcCkJVCiaMHIpMn6r1_4eTBQmnWIpFRQgr074HtnhuNp09mARn16_qpnE1vkTWjItYTOsJ9NRlX1HtsC98zU6kngc_nHSdsbe4kAkAwoLGKLS1t2d2Vc7GHosHkmUrGNooxDAoS6vONw21km7YgnHtWh1G3OTLT1g3q55aztNxJGMNrhdUwn__EvJPveY9ixRnfqol8ZJifUS55IpQLdh4mah0Uz686JtZ-mzfADrg_NRjc6mjcQlok1DazKeUlfMgZp7OReau7ABwl-pQbMhK_WhQTFmwR1L6lrMPZTbg16x4RXqUWlMPQi3Jjvwrl4G4jQGjPMQUYPOPtQ6dTDW1sfDwr3rxPlAnP2dvYKklQMhstovnZiZD2Z8f4JFxDyRS98W4c7MIkhnkfTGZG-U0Tdv-NBUATTexavc4B52DPpZ3O9hlX7YqjQDZoR1JE2b8vjlfBotIP_-82wBoVMxjgvPUjW2fyLD7zhM-Yy0)
-<!--
-<img width="2143" height="4465" alt="mainflow27final" src="https://github.com/user-attachments/assets/20f3f61a-7c47-42ea-9034-d2d88b07191c" />
-![c](test.jpg)
---->
-
-
 ###### Alternate flows
 *Payment pre-authorization fails* 
-![Charging diagram](http://cdn-0.plantuml.com/plantuml/png/NKz1JiD03Bpx5LPFwO4FD0SgmOrB1E819faqAsrs5zif2ihZILD4HKyZptZ6uwEvg4zZfENTe0jjCnrUyJd1d3tpnd0xY9v2EjL4ozjiZd6vRHMPHwGL5Gyo-P0rV8k7d6eAFLVDFSrIYkOpkiSz-u34LSfxOZuy1ojHPePgLjurlxd_pRs4Y6vNNmnFabh4ltQirqQRzWAKgm9bEQyk-OYuIEQv4AA1gncsNMuqjq37Ny67Mvp1R7i3gGiz7LUOnlW3)
+
+<img width="703" height="422" alt="payment_fail" src="https://github.com/user-attachments/assets/cb5f44c3-711e-4c7d-ba90-a7f4a6deb675" />
+
 
 *Reservation expired*
-![Charging diagram](http://cdn-0.plantuml.com/plantuml/png/NP2nRiCm34HtVWMHAVa5UsW2xnrIz0COcOw9qb8WqMuD-EFBoXsQBj89zt0utRaOPPidXUszSDwWlg6vv2mB8nc6aVATCz9WVcPsQY6J596_7fAhR06sjxKOJniqtSZXumbSIAKNMrkG0O_NFqunKTtzbnFQo16FCPq0iUae1jQd79ejJIu3gNgOGw_9P5XnTWOFr__Tk3zKgllzmer3chWWBIHADsMqXCb6pkM7AvOUm5eOZokNMkAYcZxtU4VhDliW4kyjSEnbWBDVFk0t)
+
+<img width="761" height="446" alt="reservation_fail puml" src="https://github.com/user-attachments/assets/956e5b43-d284-47dd-8af9-ed7d6a735913" />
+
 
 ##### 3.1.1.6 Output data and postconditions
 *Output data*
@@ -109,7 +103,8 @@ The electric vehicle user logs in and initiates a charging session for their veh
   Attributes:
     • session_id: UUID — Unique identifier of the charging session 
     • user_id: UUID — User who performed the charging  
-    • charger_id: UUID — Charger used  
+    • charger_id: UUID — Charger used
+    • outlet_id: UUID — Identifier of the specific connector used by the user
     • energy_consumed: DECIMAL — Energy delivered in kWh   
     • start_time: DATETIME — Charging start time  
     • end_time: DATETIME — Charging end time  
@@ -124,16 +119,15 @@ The electric vehicle user logs in and initiates a charging session for their veh
     • session_id: UUID — Related charging session  
     • amount_charged: DECIMAL — Final billed amount (€)  
     • amount_released: DECIMAL — Unused pre-authorized amount
-    • payment_method_type: ENUM — {"card", "apple_pay" "google_pay", "paypal"}  
+    • payment_method_type: ENUM — {"card", "apple_pay", "google_pay", "paypal"}  
     • status: ENUM — {"Authorized", "Completed", "Failed"}  
     • timestamp: DATETIME — Time of final payment completion
 
-- Charger_state: Object (updated)  
-  Description: The charger’s operational status is updated after the session.  
-  Attributes:
-    • charger_id: UUID — Charger identifier  
-    • status: ENUM — {"Available", "Reserved", "Charging", "Error"}  
-    • last_update: DATETIME — Time of last status change
+-Outlet_state:
+  • outlet_id: UUID
+  • status: ENUM {"Available", "Reserved", "Charging", "Error"}
+  • last_update: DATETIME
+
 
 - User_notification: Object (produced)  
   Description: Message or notification sent to the user after successful session completion.  
@@ -147,7 +141,7 @@ The electric vehicle user logs in and initiates a charging session for their veh
 *Postconditions*
 -Session, payment, and charger data are stored in the database.
 -Payment is completed or unused funds are released.
--The charger returns to Available state.
+-The outlet used for the session returns to Available state.
 -The user can review the session and receipt.
 
 ##### 3.1.1.7 Notes
@@ -171,6 +165,23 @@ The electric vehicle user logs in and initiates a charging session for their veh
 [  
     - performance requirements and justification     
 ]
+
+The performance requirements PR-01 to PR-09 are based on empirical data from EV charger locations in the target region. The dataset contains approximately 545 locations, 1 021 stations, and 1 454 charging outlets. Assuming a typical update frequency of 5–10 seconds per outlet, the backend must handle approximately 150–300 real-time status updates per second. With around 8 700 charging sessions per day (≈10k sessions), reporting queries of this size should be returned within 3 seconds on a properly indexed database. Concurrent user sessions of at least 1 000 are justified by the maximum number of outlets and potential monitoring users.
+
+| **ID** | **Requirement Description** | **Category** | **Priority** |
+|:------:|-----------------------------|---------------|---------------|
+| **PR‑01** | The web interface shall display charger availability or dashboard pages within **2 seconds** under normal network conditions. | Response Time | High |
+| **PR‑02** | The backend API shall respond to charger status or booking requests within **500 milliseconds** for at least 95% of total requests. | API Response | High |
+| **PR‑03** | The system shall support at least **1,000 concurrent user sessions** without significant degradation of performance. | Throughput | High |
+| **PR‑04** | The system shall be capable of processing and storing up to **200 charging session updates per second** from connected chargers. | Real‑Time Processing | High |
+| **PR‑05** | The web application shall maintain a minimum **99.9% uptime** (excluding scheduled maintenance). | Availability | High |
+| **PR‑06** | System recovery after an unexpected failure shall occur automatically within **60 seconds**. | Reliability / Recovery | High |
+| **PR‑07** | The architecture shall allow **horizontal scaling** (e.g., adding servers or containers) to handle at least **double the normal load** without redesign. | Scalability | Medium |
+| **PR‑08** | Updates from physical chargers (status changes, session data) shall be reflected on the user dashboard within **5 seconds** of being received. | Data Freshness / Synchronization | High |
+| **PR‑09** | The system shall retrieve reports or usage summaries of up to 10,000 charging sessions within **3 seconds**. | Database Query Performance | Medium |
+
+---
+
 
 ## 3.4 Data requirements
 
