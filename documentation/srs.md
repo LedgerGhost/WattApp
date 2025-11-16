@@ -52,8 +52,11 @@ The electric vehicle user logs in and initiates a charging session for their veh
 
 ##### 3.1.1.2 Preconditions
 -The provider’s charging network and backend services are operational.
+
 -The user has installed and can access the provider’s web or mobile application.
+
 -A valid connection to the payment service exists.
+
 -At least one physical charger is online and functional.
 
 
@@ -63,8 +66,11 @@ The electric vehicle user logs in and initiates a charging session for their veh
     - For user interfaces: add wireframes as plantuml/salt, mermaid.js/"user journey", or D2        
 ]-->
 -User interfaces: Web frontend and mobile app (guest browsing and logged-in actions).
+
 -Backend REST API: Handles authentication, charger management, reservations, and sessions.
+
 -Payment API: Handles pre-authorization and settlement.
+
 -Database system: Stores user profiles, charger data, sessions, and payments
 
 ##### 3.1.1.4 Input data
@@ -101,37 +107,43 @@ The electric vehicle user logs in and initiates a charging session for their veh
 - Charging_session: Object  
   Description: New record representing the charging event.  
   Attributes:
-    • session_id: UUID — Unique identifier of the charging session 
+
+    • session_id: UUID — Unique identifier of the charging session  
     • user_id: UUID — User who performed the charging  
-    • charger_id: UUID — Charger used
-    • outlet_id: UUID — Identifier of the specific connector used by the user
-    • energy_consumed: DECIMAL — Energy delivered in kWh   
+    • charger_id: UUID — Charger used  
+    • outlet_id: UUID — Identifier of the specific connector used by the user  
+    • energy_consumed: DECIMAL — Energy delivered in kWh  
     • start_time: DATETIME — Charging start time  
     • end_time: DATETIME — Charging end time  
     • total_cost: DECIMAL — Final billed amount (€)  
     • payment_transaction_id: STRING — Reference to payment record  
     • status: ENUM — {"Completed", "Interrupted", "Error"}
 
+
 - Payment_transaction: Object  
   Description: Created by the system when processing pre-authorization and final billing.  
   Attributes:
+  
     • transaction_id: STRING — Payment provider reference  
     • session_id: UUID — Related charging session  
     • amount_charged: DECIMAL — Final billed amount (€)  
-    • amount_released: DECIMAL — Unused pre-authorized amount
+    • amount_released: DECIMAL — Unused pre-authorized amount  
     • payment_method_type: ENUM — {"card", "apple_pay", "google_pay", "paypal"}  
     • status: ENUM — {"Authorized", "Completed", "Failed"}  
     • timestamp: DATETIME — Time of final payment completion
 
--Outlet_state:
-  • outlet_id: UUID
-  • status: ENUM {"Available", "Reserved", "Charging", "Error"}
+
+- Outlet_state:
+- 
+  • outlet_id: UUID  
+  • status: ENUM {"Available", "Reserved", "Charging", "Error"}  
   • last_update: DATETIME
 
 
 - User_notification: Object (produced)  
   Description: Message or notification sent to the user after successful session completion.  
   Attributes:
+  
     • message_id: UUID — Notification identifier  
     • user_id: UUID — Recipient user  
     • type: ENUM — {"Confirmation", "Receipt"}  
@@ -139,9 +151,13 @@ The electric vehicle user logs in and initiates a charging session for their veh
     • delivery_status: ENUM — {"Delivered", "Pending"}  
 
 *Postconditions*
+
 -Session, payment, and charger data are stored in the database.
+
 -Payment is completed or unused funds are released.
+
 -The outlet used for the session returns to Available state.
+
 -The user can review the session and receipt.
 
 ##### 3.1.1.7 Notes
