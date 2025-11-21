@@ -40,25 +40,24 @@ _NOTE: text [in brakets] must not appear in the final SRS document_
 ]
 ### 3.1 Use cases
 
-#### 3.1.1 Use case 1: Charge Electric Vehicle
-The electric vehicle user logs in and initiates a charging session for their vehicle. The user may optionally reserve a charger beforehand. When charging begins, the system pre-authorizes a payment amount, monitors the session, and automatically finalizes payment when charging ends.
+#### 3.1.1 Use case 1: Reserve and Navigate to Charger
+The user logs into the web app, selects an available charger, and optionally reserves it for a specific duration.
+After reserving, the user can choose to open navigation to that charger via an external service (e.g., Google Maps).
+The system validates reservation rules, records the booking, and provides navigation options.
 ##### 3.1.1.1 Roles involved
 
--User : can reserve chargers, start and stop charging, and perform payments
+-User : selects and optionally reserves a charger, initiates navigation
 
--Charging Provider System : manages charger status, reservations, and charging sessions
+-Charging Provider System : manages charger availability, reservations, and navigation linking
 
--Payment Service Provider : handles pre-authorizations and transactions
+-Navigation Service : external service used for route guidance
 
 ##### 3.1.1.2 Preconditions
 -The provider’s charging network and backend services are operational.
 
 -The user has installed and can access the provider’s web or mobile application.
 
--A valid connection to the payment service exists.
-
 -At least one physical charger is online and functional.
-
 
 ##### 3.1.1.3 Execution enviroment
 <!--[ 
@@ -67,11 +66,11 @@ The electric vehicle user logs in and initiates a charging session for their veh
 ]-->
 -User interfaces: Web frontend and mobile app (guest browsing and logged-in actions).
 
--Backend REST API: Handles authentication, charger management, reservations, and sessions.
+-Backend REST API: Manages authentication, reservations, and integration with Google Maps deep links
 
--Payment API: Handles pre-authorization and settlement.
+-Database system: Stores charger data and reservation records
 
--Database system: Stores user profiles, charger data, sessions, and payments
+-External service: Google Maps for routing
 
 ##### 3.1.1.4 Input data
 - user_id: UUID — Unique identifier of the logged-in user 
@@ -79,86 +78,42 @@ The electric vehicle user logs in and initiates a charging session for their veh
 - outlet_id: UUID — Specific connector selected by the user
 - reservation_duration: INTEGER  — Duration of reservation in minutes 
 - reservation_start_time: DATETIME 
-- pre_auth_amount: DECIMAL — Amount pre-authorized for charging 
-- payment_method_type: ENUM-{"card","google_pay","apple_pay","paypal"}
--payment_token:STRING - Authorization token from payment provider
- <!---- timestamp: DATETIME — Charging session start time - reservation_expiration_time: DATETIME — Reservation end time, max 60 minutes later, calculatated by backend --> 
- <!--- - energy_rate: DECIMAL — Price per kWh , internal system value not here--> <!-- - reservation_id: UUID — Existing reservation ID, if applicable --> 
+- navigation_choice: BOOLEAN — Whether the user wants to open navigation
+
 ##### 3.1.1.5 Expected behaviour
 
 ###### Main flow
-<img width="2143" height="4465" alt="mainflow27final" src="https://github.com/user-attachments/assets/4940f9ec-af2a-4f3a-85e2-c20f3cc9ab56" />
-
+<img width="851" height="1065" alt="reserve-navigate puml" src="https://github.com/user-attachments/assets/3098653f-66dc-46c4-82cc-621b8f6b21d6" />
 
 
 ###### Alternate flows
-*Payment pre-authorization fails* 
-
-<img width="703" height="422" alt="payment_fail" src="https://github.com/user-attachments/assets/cb5f44c3-711e-4c7d-ba90-a7f4a6deb675" />
-
-
-*Reservation expired*
-
-<img width="761" height="446" alt="reservation_fail puml" src="https://github.com/user-attachments/assets/956e5b43-d284-47dd-8af9-ed7d6a735913" />
+*Skip reservation* 
+In this alternate flow, the user chooses not to reserve the charger and proceeds directly to navigation. After selecting an available charger from the map, the user skips the reservation step and is immediately presented with the option to open external navigation guidance. The system then generates a Google Maps deep link using the charger’s coordinates and redirects the user to the navigation application without creating a reservation record.
+<img width="582" height="608" alt="skipreservation puml" src="https://github.com/user-attachments/assets/e3f542fe-b5c0-40b3-b97b-7364bd9f9db0" />
 
 
 ##### 3.1.1.6 Output data and postconditions
 *Output data*
-- Charging_session: Object  
-  Description: New record representing the charging event.  
-  Attributes:
+-reservation_record: Object
+• reservation_id: UUID — Unique identifier of reservation
+• user_id: UUID — User who reserved
+• charger_id: UUID — Reserved charger
+• start_time: DATETIME — Reservation start time
+• end_time: DATETIME — Expiration time
+• status: ENUM {"Active", "Expired", "Cancelled"}
 
-    • session_id: UUID — Unique identifier of the charging session  
-    • user_id: UUID — User who performed the charging  
-    • charger_id: UUID — Charger used  
-    • outlet_id: UUID — Identifier of the specific connector used by the user  
-    • energy_consumed: DECIMAL — Energy delivered in kWh  
-    • start_time: DATETIME — Charging start time  
-    • end_time: DATETIME — Charging end time  
-    • total_cost: DECIMAL — Final billed amount (€)  
-    • payment_transaction_id: STRING — Reference to payment record  
-    • status: ENUM — {"Completed", "Interrupted", "Error"}
-
-
-- Payment_transaction: Object  
-  Description: Created by the system when processing pre-authorization and final billing.  
-  Attributes:
-  
-    • transaction_id: STRING — Payment provider reference  
-    • session_id: UUID — Related charging session  
-    • amount_charged: DECIMAL — Final billed amount (€)  
-    • amount_released: DECIMAL — Unused pre-authorized amount  
-    • payment_method_type: ENUM — {"card", "apple_pay", "google_pay", "paypal"}  
-    • status: ENUM — {"Authorized", "Completed", "Failed"}  
-    • timestamp: DATETIME — Time of final payment completion
-
-
-- Outlet_state:
-- 
-  • outlet_id: UUID  
-  • status: ENUM {"Available", "Reserved", "Charging", "Error"}  
-  • last_update: DATETIME
-
-
-- User_notification: Object (produced)  
-  Description: Message or notification sent to the user after successful session completion.  
-  Attributes:
-  
-    • message_id: UUID — Notification identifier  
-    • user_id: UUID — Recipient user  
-    • type: ENUM — {"Confirmation", "Receipt"}  
-    • content: STRING — Text content of the message  
-    • delivery_status: ENUM — {"Delivered", "Pending"}  
+-navigation_action: Object
+• user_id: UUID — User initiating navigation
+• charger_id: UUID — Destination charger
+• maps_link: STRING — Generated Google Maps deep link
+• timestamp: DATETIME — Time navigation link was opened
 
 *Postconditions*
 
--Session, payment, and charger data are stored in the database.
-
--Payment is completed or unused funds are released.
-
--The outlet used for the session returns to Available state.
-
--The user can review the session and receipt.
+-Reservation is recorded in the database if selected.
+-The user is redirected to Google Maps for navigation (if chosen).
+-Charger status updates to Reserved for the reservation duration.
+-The user can view the reservation details in their account.
 
 ##### 3.1.1.7 Notes
 [  
