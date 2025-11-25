@@ -135,6 +135,7 @@ In this alternate flow, the user chooses not to reserve the charger and proceeds
 - short description of each requiremenτ    
 Functional Requirement Descriptions
 
+Reservation & Navigation
 FR-01: The system shall display available charging stations on a map or list.
 FR-02: The system shall allow users to select a charger and view its details.
 FR-03: The system shall allow users to reserve a charger for a chosen duration.
@@ -145,17 +146,20 @@ FR-07: The system shall allow navigation without creating a reservation.
 FR-08: The system shall generate a navigation link for a charger without reservation.
 FR-09: The system shall allow users to view their active reservation details.
 
+Statistics 
 FR-10: The system shall provide a dashboard with statistics for service providers.
 FR-11: The system shall display key metrics such as sessions and utilization.
 FR-12: The system shall allow filtering of statistics by date range or station.
 FR-13: The system shall restrict access to provider-level data to authorized aggregators.
 
+Filters
 FR-14: The system shall allow filtering chargers by location or proximity.
 FR-15: The system shall allow filtering by connector type.
 FR-16: The system shall allow filtering by price.
 FR-17: The system shall allow filtering by real-time availability.
 FR-18: The system shall allow users to combine multiple filters.
 
+Access Management
 FR-19: The system shall provide a login mechanism for users and aggregators.
 FR-20: The system shall validate login credentials.
 FR-21: The system shall present role-appropriate features after authentication.
