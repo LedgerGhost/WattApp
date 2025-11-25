@@ -1,0 +1,132 @@
+#αρχείο για αποθήκευση των plantumls σε περίπτωση που αλλάξουμε αργότερα
+
+3.1.1 reservation and navigation -activity diagram uml
+@startuml
+|User|
+start
+:Open app or website;
+:Log in to account;
+:View available chargers on map;
+:Select an available charger;
+
+|System|
+:Validate charger availability;
+:Display charger details and reservation option;
+
+|User|
+if (Reserve charger?) then (yes)
+  :Enter reservation duration (≤ 60 min);
+  :Confirm reservation request;
+
+  |System|
+  :Record reservation in database;
+  :Update charger status to "Reserved";
+  :Generate reservation ID;
+  :Display reservation confirmation;
+else (no)
+  :Skip reservation;
+endif
+
+if (Open navigation?) then (yes)
+  |System|
+  :Generate Google Maps deep link;
+  :Redirect user to Google Maps for navigation;
+else (no)
+  :Stay within provider app;
+endif
+
+|User|
+:View confirmation and reservation details;
+stop
+@enduml
+
+    3.1.1 alternate flow 
+    @startuml
+|User|
+start
+:Open app or website;
+:Log in to account;
+:View chargers on map;
+:Select available charger;
+:Skip reservation;
+|System|
+:Display "Navigate to charger" option;
+if (User opens navigation?) then (yes)
+  :Generate Google Maps link;
+  :Redirect to navigation app;
+else (no)
+  :Stay on charger info screen;
+endif
+stop
+@enduml
+
+
+
+
+3.2 FR UML 
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+usecase "Reserve & Navigate" as UC1
+usecase "View Statistics" as UC2
+usecase "Filter Chargers" as UC3
+usecase "Access Management" as UC4
+
+package "Functional Requirements" {
+
+  rectangle FR01 as "FR-01: Display chargers" 
+  rectangle FR02 as "FR-02: Select charger"
+  rectangle FR03 as "FR-03: Reserve charger"
+  rectangle FR04 as "FR-04: Validate reservation"
+  rectangle FR05 as "FR-05: Create reservation"
+  rectangle FR06 as "FR-06: Navigation link (reserved)"
+  rectangle FR07 as "FR-07: Skip reservation"
+  rectangle FR08 as "FR-08: Navigation link (no reservation)"
+  rectangle FR09 as "FR-09: View reservation details"
+
+  rectangle FR10 as "FR-10: Provider dashboard"
+  rectangle FR11 as "FR-11: Display metrics"
+  rectangle FR12 as "FR-12: Filter statistics"
+  rectangle FR13 as "FR-13: Provider-only access"
+
+  rectangle FR14 as "FR-14: Filter by location"
+  rectangle FR15 as "FR-15: Filter by connector"
+  rectangle FR16 as "FR-16: Filter by price"
+  rectangle FR17 as "FR-17: Filter by availability"
+  rectangle FR18 as "FR-18: Combine filters"
+
+  rectangle FR19 as "FR-19: Login mechanism"
+  rectangle FR20 as "FR-20: Validate credentials"
+  rectangle FR21 as "FR-21: Role-based features"
+  rectangle FR22 as "FR-22: Require authentication"
+  rectangle FR23 as "FR-23: Logout"
+}
+
+UC1 --> FR01
+UC1 --> FR02
+UC1 --> FR03
+UC1 --> FR04
+UC1 --> FR05
+UC1 --> FR06
+UC1 --> FR07
+UC1 --> FR08
+UC1 --> FR09
+UC1 --> FR22
+
+UC2 --> FR10
+UC2 --> FR11
+UC2 --> FR12
+UC2 --> FR13
+
+UC3 --> FR14
+UC3 --> FR15
+UC3 --> FR16
+UC3 --> FR17
+UC3 --> FR18
+
+UC4 --> FR19
+UC4 --> FR20
+UC4 --> FR21
+UC4 --> FR23
+@enduml
