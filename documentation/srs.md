@@ -128,8 +128,41 @@ In this alternate flow, the user chooses not to reserve the charger and proceeds
 
 ## 3.2 Functional Requirements
 [  
-    - UML functional requirements diagram  
-    - short description of each requirement    
+- UML functional requirements diagram 
+    <img width="864" height="2176" alt="ZLRBRjiu5DthAowww0D8CfRyIemYQD11PZDz846xPwHhcGX5QaZA6QUOVvzBMfHenmteZN6egtFVX_faBDEsQqGcS6t1Aj2ytbYekCRISYKpyyXbopHhe6Nb8wlntku4WdlCP2qmopg39JC8R-xGeDuYC5d1LxRbDRFeA3zlcAvHlm5cuCVdV7pX9ySdkBVCScDvQNg3OZIuvSAY3WJ1O3eQt9Gb6WDVcAJ86fGMtl-jQYu_zAQpBEl37i" src="https://github.com/user-attachments/assets/a2b544c4-d01c-42c7-ae7b-bcc0f918a73e" />
+
+    
+- short description of each requiremenτ    
+Functional Requirement Descriptions
+
+FR-01: The system shall display available charging stations on a map or list.
+FR-02: The system shall allow users to select a charger and view its details.
+FR-03: The system shall allow users to reserve a charger for a chosen duration.
+FR-04: The system shall validate reservation requests for conflicts and availability.
+FR-05: The system shall create a reservation and mark the charger as “Reserved.”
+FR-06: The system shall generate a navigation link to the reserved charger.
+FR-07: The system shall allow navigation without creating a reservation.
+FR-08: The system shall generate a navigation link for a charger without reservation.
+FR-09: The system shall allow users to view their active reservation details.
+
+FR-10: The system shall provide a dashboard with statistics for service providers.
+FR-11: The system shall display key metrics such as sessions and utilization.
+FR-12: The system shall allow filtering of statistics by date range or station.
+FR-13: The system shall restrict access to provider-level data to authorized aggregators.
+
+FR-14: The system shall allow filtering chargers by location or proximity.
+FR-15: The system shall allow filtering by connector type.
+FR-16: The system shall allow filtering by price.
+FR-17: The system shall allow filtering by real-time availability.
+FR-18: The system shall allow users to combine multiple filters.
+
+FR-19: The system shall provide a login mechanism for users and aggregators.
+FR-20: The system shall validate login credentials.
+FR-21: The system shall present role-appropriate features after authentication.
+FR-22: The system shall require authentication for reservation functionality.
+FR-23: The system shall allow logout for all authenticated users.
+
+
 ]
 
 ## 3.3 Performance requirements
