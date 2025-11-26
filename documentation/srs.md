@@ -40,11 +40,24 @@ _NOTE: text [in brakets] must not appear in the final SRS document_
 ]
 ### 3.1 Use cases
 
-#### 3.1.1 Use case 1: Reserve and Navigate to Charger
+#### 3.1.1 Use case 1: [title] Stergiou
+[  
+    - use the same structure as in 3.1.1.1 - 3.1.1.7  
+    - repeat for all use cases    
+]
+
+#### 3.1.2 Use case 2: [title] Bour
+[  
+    - use the same structure as in 3.1.1.1 - 3.1.1.7  
+    - repeat for all use cases    
+]
+
+
+#### 3.1.3 Use case 3: Reserve and Navigate to Charger
 The user logs into the web app, selects an available charger, and optionally reserves it for a specific duration.
 After reserving, the user can choose to open navigation to that charger via an external service (e.g., Google Maps).
 The system validates reservation rules, records the booking, and provides navigation options.
-##### 3.1.1.1 Roles involved
+##### 3.1.3.1 Roles involved
 
 -User : selects and optionally reserves a charger, initiates navigation
 
@@ -52,14 +65,14 @@ The system validates reservation rules, records the booking, and provides naviga
 
 -Navigation Service : external service used for route guidance
 
-##### 3.1.1.2 Preconditions
+##### 3.1.3.2 Preconditions
 -The provider’s charging network and backend services are operational.
 
 -The user has installed and can access the provider’s web or mobile application.
 
 -At least one physical charger is online and functional.
 
-##### 3.1.1.3 Execution enviroment
+##### 3.1.3.3 Execution enviroment
 <!--[ 
     - Web frontend, smartphone ui, api execution context
     - For user interfaces: add wireframes as plantuml/salt, mermaid.js/"user journey", or D2        
@@ -72,7 +85,7 @@ The system validates reservation rules, records the booking, and provides naviga
 
 -External service: Google Maps for routing
 
-##### 3.1.1.4 Input data
+##### 3.1.3.4 Input data
 - user_id: UUID — Unique identifier of the logged-in user 
 - charger_id: UUID — Identifier of the selected charger
 - outlet_id: UUID — Specific connector selected by the user
@@ -80,7 +93,7 @@ The system validates reservation rules, records the booking, and provides naviga
 - reservation_start_time: DATETIME 
 - navigation_choice: BOOLEAN — Whether the user wants to open navigation
 
-##### 3.1.1.5 Expected behaviour
+##### 3.1.3.5 Expected behaviour
 
 ###### Main flow
 <img width="851" height="1065" alt="reserve-navigate puml" src="https://github.com/user-attachments/assets/3098653f-66dc-46c4-82cc-621b8f6b21d6" />
@@ -88,39 +101,43 @@ The system validates reservation rules, records the booking, and provides naviga
 
 ###### Alternate flows
 *Skip reservation* 
+
 In this alternate flow, the user chooses not to reserve the charger and proceeds directly to navigation. After selecting an available charger from the map, the user skips the reservation step and is immediately presented with the option to open external navigation guidance. The system then generates a Google Maps deep link using the charger’s coordinates and redirects the user to the navigation application without creating a reservation record.
 <img width="582" height="608" alt="skipreservation puml" src="https://github.com/user-attachments/assets/e3f542fe-b5c0-40b3-b97b-7364bd9f9db0" />
 
 
-##### 3.1.1.6 Output data and postconditions
+##### 3.1.3.6 Output data and postconditions
 *Output data*
+
 -reservation_record: Object
-• reservation_id: UUID — Unique identifier of reservation
-• user_id: UUID — User who reserved
-• charger_id: UUID — Reserved charger
-• start_time: DATETIME — Reservation start time
-• end_time: DATETIME — Expiration time
-• status: ENUM {"Active", "Expired", "Cancelled"}
+
+- reservation_id: UUID — Unique identifier of reservation
+- user_id: UUID — User who reserved
+- charger_id: UUID — Reserved charger
+- start_time: DATETIME — Reservation start time
+- end_time: DATETIME — Expiration time
+- status: ENUM {"Active", "Expired", "Cancelled"}
 
 -navigation_action: Object
-• user_id: UUID — User initiating navigation
-• charger_id: UUID — Destination charger
-• maps_link: STRING — Generated Google Maps deep link
-• timestamp: DATETIME — Time navigation link was opened
+
+- user_id: UUID — User initiating navigation
+- charger_id: UUID — Destination charger
+- maps_link: STRING — Generated Google Maps deep link
+- timestamp: DATETIME — Time navigation link was opened
 
 *Postconditions*
 
--Reservation is recorded in the database if selected.
--The user is redirected to Google Maps for navigation (if chosen).
--Charger status updates to Reserved for the reservation duration.
--The user can view the reservation details in their account.
+- Reservation is recorded in the database if selected.
+- The user is redirected to Google Maps for navigation (if chosen).
+- Charger status updates to Reserved for the reservation duration.
+- The user can view the reservation details in their account.
 
-##### 3.1.1.7 Notes
+##### 3.1.3.7 Notes
 [  
     - everything else, if needed           
 ]
 
-#### 3.1.2 Use case 2: [title]
+#### 3.1.4 Use case 4: [title] Dim
 [  
     - use the same structure as in 3.1.1.1 - 3.1.1.7  
     - repeat for all use cases    
