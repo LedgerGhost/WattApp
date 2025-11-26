@@ -9,7 +9,7 @@ _NOTE: text [in brakets] must not appear in the final SRS document_
 [  
     - Purpose statement  
  The purpose of this software system is to provide a unified platform that helps electric-vehicle (EV) drivers locate available charging stations, compare prices and charger characteristics, reserve charging spots when needed, and navigate to them through external map services. The system also offers personalized statistics to each user, such as charging history, energy consumption, cost breakdowns, and trip-related metrics, helping drivers better understand and optimize their charging habits.The overall goal is to improve the convenience, transparency, and usability of public and private EV charging by combining station discovery, reservation management, and personalized user statistics into a single cohesive application.   
--Stakeholders 
+    -Stakeholders 
 EV Drivers (End Users)
 Primary users of the system. They search for chargers, compare options, reserve charging spots, receive navigation links, and view their personal charging statistics and history.
 
@@ -46,8 +46,14 @@ Third-party systems integrated with the application—for example map/navigation
 
 ## 2. References
 [  
-    - Links to information sources.  
-    - Glossary of terms  
+- Links to information sources.  
+[1] https://www.ijraset.com/best-journal/ev-charging-station-slot-booking-system
+[2] Smart Electric Vehicle Charging System João CFerreira, Vítor Mon teiro, João L. Alonso, Alberto Silva 
+Member, IEEE. 
+[3] https://www.researchgate.net/publication/380067103_CHARGEEV_AN_EV_CHARGING_STATION_FINDER_BRIDGING_THE_GAP_IN_EV_CHARGING_INFRASTRUCTURE
+
+- Glossary of terms  
+    
 ]
 ## 3. Software requirements
 [  
