@@ -8,8 +8,24 @@ _NOTE: text [in brakets] must not appear in the final SRS document_
 ### 1.1 Purpose
 [  
     - Purpose statement  
-    - Stakeholders  
-    - System block diagram as plantuml code (no architecture!)  
+ The purpose of this software system is to provide a unified platform that helps electric-vehicle (EV) drivers locate available charging stations, compare prices and charger characteristics, reserve charging spots when needed, and navigate to them through external map services. The system also offers personalized statistics to each user, such as charging history, energy consumption, cost breakdowns, and trip-related metrics, helping drivers better understand and optimize their charging habits.The overall goal is to improve the convenience, transparency, and usability of public and private EV charging by combining station discovery, reservation management, and personalized user statistics into a single cohesive application.   
+-Stakeholders 
+EV Drivers (End Users)
+Primary users of the system. They search for chargers, compare options, reserve charging spots, receive navigation links, and view their personal charging statistics and history.
+
+Charging-Station Operators
+Provide real-time availability, pricing, and operational status of their chargers to the system. They do not receive statistical analytics from the platform.
+
+System Administrators
+Maintain the platform, manage user authentication/authorization, ensure uptime, and safeguard data integrity and privacy.
+
+External Service Providers
+Third-party systems integrated with the application—for example map/navigation services, payment gateways, and authentication providers.
+
+
+
+- System block diagram as plantuml code (no architecture!)
+
 ]  
 
 ### 1.2 Interfaces
