@@ -131,23 +131,106 @@ In this alternate flow, the user chooses not to reserve the charger and proceeds
 
 
 ##### 3.1.3.6 Output data and postconditions
+    *Output data*
+    
+    -reservation_record: Object
+    
+    - reservation_id: UUID — Unique identifier of reservation
+    - user_id: UUID — User who reserved
+    - charger_id: UUID — Reserved charger
+    - start_time: DATETIME — Reservation start time
+    - end_time: DATETIME — Expiration time
+    - status: ENUM {"Active", "Expired", "Cancelled"}
+    
+    -navigation_action: Object
+    
+    - user_id: UUID — User initiating navigation
+    - charger_id: UUID — Destination charger
+    - maps_link: STRING — Generated Google Maps deep link
+    - timestamp: DATETIME — Time navigation link was opened
+    
+    *Postconditions*
+    
+    - Reservation is recorded in the database if selected.
+    - The user is redirected to Google Maps for navigation (if chosen).
+    - Charger status updates to Reserved for the reservation duration.
+    - The user can view the reservation details in their account.
+
+##### 3.1.3.7 Notes
+[  
+    - everything else, if needed           
+]
+
+#### 3.1.4 Use case 4: [title] Dim
+The user logs into the web app and navigates to view their charging statistics and payment history. The user can filter data by time period, view different types of statistics (energy consumption, costs, payment records), and analyze their charging patterns over time. The system retrieves historical data and presents it in an organized, filterable format.
+[  
+##### 3.1.4.1 Roles involved
+-User : Views personal charging statistics and payment history
+
+-System: Retrieves and aggregates historical data, validates time periods, generates statistics
+
+##### 3.1.4.2 Preconditions
+-The user has a registered account in the system
+
+-The user has completed at least one charging session (for meaningful statistics)
+
+-The backend services are operational
+
+#### 3.1.4.3 Execution enviroment
+
+-User interfaces: Web frontend and mobile app (guest browsing and logged-in actions).
+
+-Backend REST API: Handles authentication, data retrieval, aggregation, and time period validation
+
+-Database system: Stores charging sessions and payment records
+
+##### 3.1.4.4 Input data
+- user_id: UUID — Unique identifier of the logged-in user 
+- time_period_start: DATETIME — Start date/time for statistics query
+- time_period_end: DATETIME — End date/time for statistics query
+- view_type: ENUM — Type of view requested:
+    1. "payment_history" — View payment records
+    2. "statistics_energy_cost" — View money/month and kW/month
+    3. "statistics_avg_cost" — View average cost per kWh/month
+
+##### 3.1.4.5 Expected behaviour
+
+
+##### 3.1.4.6 Output data and postconditions
 *Output data*
 
--reservation_record: Object
+For Payment History view:
+- payment_history_list: Array of payment records (all sessions in selected period)
 
-- reservation_id: UUID — Unique identifier of reservation
-- user_id: UUID — User who reserved
-- charger_id: UUID — Reserved charger
-- start_time: DATETIME — Reservation start time
-- end_time: DATETIME — Expiration time
-- status: ENUM {"Active", "Expired", "Cancelled"}
+- payment_id: UUID — Unique identifier of payment
+- session_id: UUID — Associated charging session
+- station_name: STRING — Name of charging station
+- date: DATETIME — Payment date
+- energy_kwh: DECIMAL — Energy consumed
+- cost: DECIMAL — Total cost
+- payment_method: STRING — Payment method used
+- status: ENUM {"completed", "pending", "failed"}
 
--navigation_action: Object
+- summary_totals: Object
 
-- user_id: UUID — User initiating navigation
-- charger_id: UUID — Destination charger
-- maps_link: STRING — Generated Google Maps deep link
-- timestamp: DATETIME — Time navigation link was opened
+- total_cost: DECIMAL — Sum of all payments in period
+- total_sessions: INTEGER — Number of sessions
+
+For Statistics (Money/Month & kW/Month) view:
+- summary_per_month: Array of monthly aggregations (one entry per month in selected period)
+
+- month: STRING — Month identifier (e.g., "2025-09", "2025-10", "2025-11")
+- total_energy_kwh: DECIMAL — Total energy consumed in that month
+- total_cost: DECIMAL — Total cost for that month
+- session_count: INTEGER — Number of sessions in that month
+
+For Statistics (Average cost of kWh/Month) view:
+
+- monthly_averages: Array of monthly calculations (one entry per month in selected period)
+
+- month: STRING — Month identifier (e.g., "2025-09", "2025-10", "2025-11")
+- avg_cost_per_kwh: DECIMAL — Average cost per kWh for that month
+- sample_size: INTEGER — Number of sessions used in calculation for that month
 
 *Postconditions*
 
@@ -156,15 +239,31 @@ In this alternate flow, the user chooses not to reserve the charger and proceeds
 - Charger status updates to Reserved for the reservation duration.
 - The user can view the reservation details in their account.
 
-##### 3.1.3.7 Notes
-[  
-    - everything else, if needed           
-]
+- User successfully views their requested statistics or payment history
+- No data modifications occur (read-only operation)
+- User session remains active
+- User can continue to adjust filters and view updated results
 
-#### 3.1.4 Use case 4: [title] Dim
-[  
-    - use the same structure as in 3.1.1.1 - 3.1.1.7  
-    - repeat for all use cases    
+##### 3.1.4.7 Notes 
+Performance Considerations:
+
+- For users with extensive history (1000+ sessions), implement pagination to avoid loading all records simultaneously
+- Consider pre-computing common aggregations (monthly totals) to improve response times
+
+User Experience:
+
+- Default time period should be the last 30 days or current month
+- Display loading indicators during data retrieval and aggregation
+- Show empty state with helpful message when no data exists
+
+Future Enhancements:
+
+- Export statistics to CSV/PDF format
+- Add graphical visualizations (charts, graphs) for trend analysis
+- Implement comparison views (e.g., "vs. previous period")
+- Provide preset options for common periods ("Last 7 days", "This month", "Last 3 months", "This year")
+- Add filtering by specific station, charger type, or location
+  
 ]
 
 ## 3.2 Functional Requirements
