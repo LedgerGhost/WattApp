@@ -358,12 +358,103 @@ Ext --> UC_Map
     - repeat for all use cases    
 ]
 
-#### 3.1.2 Use case 2: [title] Bour
-[  
-    - use the same structure as in 3.1.1.1 - 3.1.1.7  
-    - repeat for all use cases    
-]
+#### 3.1.2 Use case 2: Filter Charging Stations'
 
+The user accesses the web app to search for charging stations and applies filters to narrow results based on specific criteria. The system allows filtering by availability status, charger type (connector type), location/proximity, and price. Users can combine multiple filters to find chargers matching their vehicle specifications and preferences. The system dynamically updates the displayed results as filters are applied. 
+##### 3.1.2.1 Roles involved
+-User : Searches for chargers and applies filters
+-System: Retrieves charger data, applies filters, and returns matching results
+-Charging Provider System: Provides real-time charger status and metadata
+##### 3.1.2.2 Preconditions
+- The user has access to the web or mobile interface.  
+- The system is successfully connected to station provider APIs (OCPI sources).  
+- Charger data (availability, type, and location) is cached or retrievable from the backend.  
+##### 3.1.2.3 Execution enviroment
+- **User interfaces:** Web frontend and mobile application — map and list-based station discovery screens.  
+- **Backend REST API:** Handles filter queries, interacts with the provider APIs, and returns filtered lists.  
+- **Database system:** Maintains cached metadata for charger types and current availability snapshots.  
+##### 3.1.2.4 Input data
+| Parameter | Type | Description |
+|------------|------|-------------|
+| `user_id` | UUID | Unique identifier of the logged-in user |
+| `location_area` | GEOJSON / LAT-LON | Geographic bounds or map viewport |
+| `availability_filter` | ENUM | {"Available", "InUse", "Offline", "All"} |
+| `charger_type_filter` | ENUM or LIST | {"AC_Type2", "DC_Fast", "CHAdeMO", "CCS"} |
+| `sort_order` | ENUM | {"distance", "price", "power"} (optional) |
+##### 3.1.2.5 Expected behaviour
+###### Main flow
+```plantuml
+@startuml
+|User|
+start
+:Open app or website;
+:View charger search page;
+
+|System|
+:Load available charging stations;
+:Display initial map/list view;
+
+|User|
+:Select filter criteria
+(availability, connector type,
+location, price);
+:Confirm filter selection;
+
+|System|
+:Validate and apply filters;
+:Query database;
+:Return filtered results;
+
+if (Results found?) then (yes)
+  |User|
+  :View filtered chargers;
+  
+  if (Modify filters?) then (yes)
+    :Adjust filter criteria;
+    |System|
+    :Re-query with updated filters;
+    |User|
+    :View updated results;
+  else (no)
+  endif
+  
+  :Select a charger or continue browsing;
+  
+else (no)
+  :Display "No chargers found";
+  :Show suggestions to relax filters;
+  |User|
+  if (Show alternatives?) then (yes)
+    |System|
+    :Return nearest stations;
+    |User|
+    :View alternatives;
+  else (no)
+  endif
+endif
+
+stop
+@enduml
+```
+
+###### Alternate flows
+- **No Results Found**  
+  If the selected combination of filters yields no results, the system displays an informational message (“No chargers match the selected criteria”) and offers an option to reset filters.  
+- **Offline Data Mode**  
+  If live API data is unavailable, the system may use cached availability data and indicate it is outdated.
+##### 3.1.2.6 Output data and postconditions
+**Output data**
+- `filtered_chargers[]`: Array of charger objects, each containing  
+  - charger_id, location, price_per_kWh, power_kW, availability_status, charger_type.  
+- `filter_summary`: Object containing applied filters and result count.
+**Postconditions**
+- The filtered list/map view reflects the user’s last selected filters.  
+- Filter state is stored (temporarily in session) so that navigation between pages retains results.  
+- The system logs user filter actions for analytics.
+##### 3.1.2.7 Notes
+- Filters may be combined with other discovery criteria (e.g., pricing range, operator, network).  
+- Future extensions may include “charger power ≥ X kW” or “preferred network only.”  
+- This use case supports both anonymous (guest) and authenticated users.
 
 #### 3.1.3 Use case 3: Reserve and Navigate to Charger
 The user logs into the web app, selects an available charger, and optionally reserves it for a specific duration.
