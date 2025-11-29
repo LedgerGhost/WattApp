@@ -96,11 +96,21 @@ Member, IEEE.
     - repeat for all use cases    
 ]
 
-#### 3.1.2 Use case 2: [title] Bour
-[  
-    - use the same structure as in 3.1.1.1 - 3.1.1.7  
-    - repeat for all use cases    
-]
+#### 3.1.2 Use case 2: Filter Charging Stations
+  
+The user accesses the web app to search for charging stations and applies filters to narrow results based on specific criteria. The system allows filtering by availability status, charger type (connector type), location/proximity, and price. Users can combine multiple filters to find chargers matching their vehicle specifications and preferences. The system dynamically updates the displayed results as filters are applied. 
+##### 3.1.2.1 Roles involved
+-User : Searches for chargers and applies filters
+-System: Retrieves charger data, applies filters, and returns matching results
+-Charging Provider System: Provides real-time charger status and metadata
+##### 3.1.2.2 Preconditions
+##### 3.1.2.3 Execution enviroment
+##### 3.1.2.4 Input data
+##### 3.1.2.5 Expected behaviour
+##### 3.1.2.6 Output data and postconditions
+##### 3.1.2.7 Notes
+
+
 
 
 #### 3.1.3 Use case 3: Reserve and Navigate to Charger
