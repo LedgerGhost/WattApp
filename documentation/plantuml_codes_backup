@@ -196,7 +196,49 @@ endif
 stop
 @enduml
 
+3.1.4 Historry & Statistics Use Case Activity Diagram
+@startuml
+start
+:Enter login credentials;
+:Click on login;
 
+if (Login success?) then (YES)
+  :Click View Statistics/History;
+  :History & Statistics Page;
+  
+  if (Payment History or Statistics?) then 
+    :Click Payment History;
+    :View by Order/Property;
+  else 
+    :Click Statistics;
+    if (Statistics Type?) then 
+      :Money/Month & kW/Month;
+    else 
+      :Average cost of kWh/Month (for user's transactions onlly);
+    endif
+  endif
+
+repeat
+    
+    :Select Time Period;
+    
+    if (Valid Period?) then (YES)
+        :Click Show Results;
+    else (NO)
+        :Show Invalid Period Error;
+        ' No 'stop' here, so it falls through to the loop check
+    endif
+
+repeat while (Update Time Period?) is (YES)
+-> NO;
+	:Finished & Exit;
+stop
+
+else (NO)
+  :Show Login Error;
+  stop
+endif
+@enduml
 
 
 3.2 FR UML 
