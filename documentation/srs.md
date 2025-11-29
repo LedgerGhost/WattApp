@@ -438,10 +438,125 @@ stop
 ```
 
 ###### Alternate flows
-- **No Results Found**  
-  If the selected combination of filters yields no results, the system displays an informational message (“No chargers match the selected criteria”) and offers an option to reset filters.  
+### Invalid filter parameters
+
+```plantuml
+@startuml
+|User|
+start
+:Open app or website;
+:View charger search page;
+
+|System|
+:Load available charging stations;
+:Display initial map/list view;
+
+|User|
+:Select filter criteria
+(availability, connector type,
+location, price);
+:Enter invalid parameters
+(e.g., min price > max price,
+radius > 100km);
+:Confirm filter selection;
+
+|System|
+:Validate filter parameters;
+
+if (Valid parameters?) then (no)
+  :Display error message
+  with specific validation issue;
+  |User|
+  :Read error message;
+  
+  if (Correct filters?) then (yes)
+    :Adjust invalid parameters;
+    |System|
+    :Re-validate parameters;
+    :Query database with valid filters;
+    :Return filtered results;
+    |User|
+    :View filtered chargers;
+  else (no)
+    :Clear all filters;
+    |System|
+    :Display all available stations;
+    |User|
+    :View unfiltered results;
+  endif
+else (yes)
+  :Query database;
+  :Return filtered results;
+  |User|
+  :View filtered chargers;
+endif
+
+stop
+@enduml
+```
+
 - **Offline Data Mode**  
-  If live API data is unavailable, the system may use cached availability data and indicate it is outdated.
+
+```plantuml
+@startuml
+|User|
+start
+:Open app or website;
+:View charger search page;
+
+|System|
+:Load available charging stations;
+:Display initial map/list view;
+
+|User|
+:Select availability filter
+(only "available" chargers);
+:Confirm filter selection;
+
+|System|
+:Query database;
+:Return 15 available chargers;
+
+|User|
+:View filtered results;
+:Review charger details;
+
+|System|
+:Monitor real-time status updates;
+
+note right
+  Time passes while
+  user browses results
+end note
+
+:Receive status update
+Charger #42 now "occupied";
+:Update database status;
+:Push notification to user interface;
+
+|User|
+:Receive real-time update notification;
+:See Charger #42 removed from list
+(now shows 14 available chargers);
+
+if (Refresh results?) then (yes)
+  |System|
+  :Re-query with same filters;
+  :Return updated available chargers;
+  |User|
+  :View refreshed list
+  with current availability;
+else (no)
+  :Continue browsing
+  remaining chargers;
+endif
+
+:Select a charger from updated list;
+
+stop
+@enduml
+```
+  
 ##### 3.1.2.6 Output data and postconditions
 **Output data**
 - `filtered_chargers[]`: Array of charger objects, each containing  
