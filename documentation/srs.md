@@ -748,9 +748,68 @@ The user logs into the web app and navigates to view their charging statistics a
     3. "statistics_avg_cost" — View average cost per kWh/month
 
 ##### 3.1.4.5 Expected behaviour
-[
+```plantuml
+@startuml
 
-]
+skinparam swimlaneWidth 230
+|USER|
+start
+:Enter login credentials;
+:Select on login;
+
+|System|
+if (Login success?) then (YES)
+  |USER|
+  :Select View Statistics/History;
+  |System|
+  :Load History & Statistics Page;
+  
+  |USER|
+  if (Payment History or Statistics?) then 
+    :Select Payment History;
+    :View by Order/Property;
+  else 
+    :Select Statistics;
+    |System|
+    :Load Statistics Options;
+    |USER|
+    if (Statistics Type?) then 
+      :Money/Month & kW/Month;
+    else 
+      :Average cost of kWh/Month (for user's transactions onlly);
+    endif
+  endif
+
+
+repeat
+    
+    :Select Time Period;
+    |System|
+    if (Valid Period?) then (NO)
+        |USER|
+        :Show Invalid Period Error;
+        ' No 'stop' here, so it falls through to the loop check
+    
+    else (YES)
+        |USER|
+        :Select Show Results;
+        |System|
+        :Retrieve data;
+        :Display Payment History/ Statistics Diagrams; 
+    endif
+
+|USER|
+repeat while (Update Time Period?) is (YES)
+-> NO;
+	:Finished & Exit;
+stop
+
+else (NO)
+  :Show Login Error;
+  stop
+endif
+@enduml
+```
 
 ##### 3.1.4.6 Output data and postconditions
 *Output data*
