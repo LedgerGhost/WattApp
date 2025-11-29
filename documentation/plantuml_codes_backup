@@ -1,5 +1,141 @@
 #αρχείο για αποθήκευση των plantumls σε περίπτωση που αλλάξουμε αργότερα
 
+1.2.1 Component Diagram uml
+@startuml
+skinparam componentStyle uml2
+top to bottom direction
+
+' --- LAYER 1: SERVER ---
+package "WattApp Server" {
+    component "Database" as db
+    component "Backend API" as backend
+    component "Auth Module" as auth_mod
+    component "Notification Service" as notif
+    
+    db -- backend
+    backend -- auth_mod
+    backend -- notif
+}
+
+' --- LAYER 2: CLIENTS ---
+component "Web Frontend" as frontend
+component "CLI Tool" as cli
+
+frontend -[hidden]right- cli
+
+' --- LAYER 3: EXTERNAL SYSTEMS ---
+package "External Systems" {
+    ' Payment & Navigation
+    component "Payment Gateway" as payment
+    component "Google Maps API" as maps
+    
+    ' Charging Infrastructure
+    component "Station Provider APIs\n(OCPI)" as ocpi
+    component "Physical Chargers\n(OCPP)" as chargers
+    
+    ' Identity & Messaging
+    component "Auth Service" as auth_service
+    component "SMS/Email Service" as sms_service
+    
+    ' Layout: force left-to-right alignment
+    payment -[hidden]right- maps
+    maps -[hidden]right- ocpi
+    ocpi -[hidden]right- chargers
+    chargers -[hidden]right- sms_service
+    sms_service -[hidden]right- auth_service
+}
+
+' --- VERTICAL ALIGNMENT HELPERS ---
+' Center server package above clients
+backend -[hidden]down- frontend
+backend -[hidden]down- cli
+
+' Align clients with external systems
+frontend -[hidden]down- payment
+frontend -[hidden]down- maps
+
+' Additional vertical spacing
+db -[hidden]down- frontend
+notif -[hidden]down- cli
+
+' --- INTERFACES & CONNECTIONS ---
+
+' 1. REST API (V-Shape: Server provides, Clients consume)
+interface "REST API" as rest_api
+backend -down- rest_api
+rest_api )-down-- frontend
+rest_api )-- cli
+
+' 2. Frontend to External APIs
+interface "Payment API" as pay_api
+interface "Navigation API" as nav_api
+
+frontend -down- pay_api
+pay_api )-- payment
+
+frontend -down- nav_api
+nav_api )-- maps
+
+' 3. Backend to Charging Infrastructure
+interface "OCPI\n(Station Data)" as ocpi_api
+interface "OCPP WebSocket\n(Charger Control)" as ocpp
+
+backend -- ocpi_api
+ocpi_api )-- ocpi
+
+backend -- ocpp
+ocpp )-- chargers
+
+' 4. Authentication
+interface "OAuth 2.0 / OIDC" as oauth
+auth_mod -- oauth
+oauth )-- auth_service
+
+' 5. Notifications
+interface "Messaging API" as sms_api
+notif -- sms_api
+sms_api )-- sms_service
+
+' 6. Payment Webhook (Async callback)
+payment .right.> backend : webhook
+
+' --- ADDITIONAL ALIGNMENT LINES ---
+' Horizontal alignment between server components
+backend -[hidden]right- auth_mod
+auth_mod -[hidden]right- notif
+backend -[hidden]down- rest_api
+
+' Vertical alignment for interfaces
+ocpi_api -[hidden]left- cli
+ocpp -[hidden]down- cli
+' Balance external systems layout
+
+
+' --- NOTES ---
+note left of frontend
+  Responsive web design:
+  Desktop, Tablet, Mobile
+  (Auto-adapts to screen size)
+end note
+
+note bottom of ocpi
+  Station metadata,
+  pricing, availability
+end note
+
+note bottom of chargers
+  Real-time control:
+  start/stop sessions,
+  meter values
+end note
+
+note bottom of payment
+  Async webhooks for
+  payment confirmations
+end note
+
+@enduml
+
 3.1.1 reservation and navigation -activity diagram uml
 @startuml
 |User|
