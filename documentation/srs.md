@@ -29,7 +29,69 @@ _NOTE: text [in brakets] must not appear in the final SRS document_
 
 
 
- System block diagram as plantuml code (no architecture!)
+ **System block diagram**
+```plantuml
+@startuml
+left to right direction
+skinparam actorStyle stickman
+
+' ---- COLORS ----
+skinparam rectangle {
+  BackgroundColor #fdf6e3
+  BorderColor #b58900
+}
+skinparam actor {
+  BackgroundColor #eee8d5
+  BorderColor #6c71c4
+}
+skinparam usecase {
+  BackgroundColor #e0f7fa
+  BorderColor #00838f
+}
+
+actor "EV Driver" as Driver
+actor "Charging Station Operator" as Operator
+actor "System Administrator" as Admin
+actor "External Services" as Ext
+
+rectangle "WattApp" {
+  usecase "Search Charging Stations" as UC_Search
+  usecase "Filter / Compare Chargers" as UC_Compare
+  usecase "View Station Details" as UC_Details
+  usecase "Reserve Charger" as UC_Reserve
+  usecase "Navigate to Charger" as UC_Navigate
+  usecase "View History & Statistics" as UC_Stats
+  usecase "Manage Account" as UC_Account
+
+  usecase "Provide Station Data" as UC_StationData
+  usecase "Update Charger Status" as UC_Update
+
+  usecase "Manage Users" as UC_AdminUsers
+  usecase "Monitor System" as UC_AdminMonitor
+
+  usecase "Process Payment" as UC_Payment
+  usecase "Provide Navigation Route" as UC_Map
+}
+
+Driver --> UC_Search
+Driver --> UC_Compare
+Driver --> UC_Details
+Driver --> UC_Reserve
+Driver --> UC_Navigate
+Driver --> UC_Stats
+Driver --> UC_Account
+
+Operator --> UC_StationData
+Operator --> UC_Update
+
+Admin --> UC_AdminUsers
+Admin --> UC_AdminMonitor
+
+Ext --> UC_Payment
+Ext --> UC_Map
+
+@enduml
+ ```
 
  
 
@@ -148,14 +210,77 @@ The system validates reservation rules, records the booking, and provides naviga
 ##### 3.1.3.5 Expected behaviour
 
 ###### Main flow
-<img width="851" height="1065" alt="reserve-navigate puml" src="https://github.com/user-attachments/assets/3098653f-66dc-46c4-82cc-621b8f6b21d6" />
+```plantuml
+@startuml
+|User|
+start
+:Open app or website;
+:Log in to account;
+:View available chargers on map;
+:Select an available charger;
+
+|System|
+:Validate charger availability;
+:Display charger details and reservation option;
+
+|User|
+if (Reserve charger?) then (yes)
+  :Enter reservation duration (≤ 60 min);
+  :Confirm reservation request;
+
+  |System|
+  :Record reservation in database;
+  :Update charger status to "Reserved";
+  :Generate reservation ID;
+  :Display reservation confirmation;
+else (no)
+  :Skip reservation;
+endif
+
+if (Open navigation?) then (yes)
+  |System|
+  :Generate Google Maps deep link;
+  :Redirect user to Google Maps for navigation;
+else (no)
+  :Stay within provider app;
+endif
+
+|User|
+:View confirmation and reservation details;
+stop
+@enduml
+```
 
 
 ###### Alternate flows
 *Skip reservation* 
 
 In this alternate flow, the user chooses not to reserve the charger and proceeds directly to navigation. After selecting an available charger from the map, the user skips the reservation step and is immediately presented with the option to open external navigation guidance. The system then generates a Google Maps deep link using the charger’s coordinates and redirects the user to the navigation application without creating a reservation record.
-<img width="582" height="608" alt="skipreservation puml" src="https://github.com/user-attachments/assets/e3f542fe-b5c0-40b3-b97b-7364bd9f9db0" />
+
+```plantuml
+@startuml
+|User|
+start
+:Open app or website;
+:Log in to account;
+:View chargers on map;
+:Select available charger;
+:Skip reservation;
+
+|System|
+:Display "Navigate to charger" option;
+
+if (User opens navigation?) then (yes)
+  :Generate Google Maps link;
+  :Redirect to navigation app;
+else (no)
+  :Stay on charger info screen;
+endif
+
+stop
+@enduml
+```
+
 
 
 ##### 3.1.3.6 Output data and postconditions
