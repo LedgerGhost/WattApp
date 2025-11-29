@@ -30,12 +30,33 @@ Third-party systems integrated with the application—for example map/navigation
 
 ### 1.2 Interfaces
 
-#### 1.2.1 Interfaces to external systems
-[  
-    - Identification of external systems that interface with our software  
-    - Applicable standards and protocols (if any) 
-    - UML component diagram as plantuml code showing interfaces   
-]     
+#### 1.2.1 Interfaces to external systems   
+WattApp integrates with external services for navigation, payments, charging infrastructure, authentication, and notifications.
+
+**External Systems:**
+
+| System | Purpose | Protocol/Standard |
+|--------|---------|-------------------|
+| **Google Maps API** | Navigation and routing to charging stations | HTTPS/REST |
+| **Payment Gateway** | Process charging session payments | HTTPS/REST, PCI DSS |
+| **Station Provider APIs (OCPI)** | Retrieve station metadata and availability | HTTPS/REST, OCPI |
+| **Physical Chargers (OCPP)** | Direct control and monitoring of chargers | WebSocket, OCPP 2.1 |
+| **Authentication Service** | User authentication and authorization | HTTPS, OAuth 2.0 |
+| **SMS/Email Service** | Send notifications and alerts | HTTPS/REST, SMTP |
+
+---
+
+**UML Component Diagram:**
+
+---
+
+**Key Integration Points:**
+
+- **REST API**: Unified HTTPS/REST interface between backend and clients (web, CLI)
+- **OCPI (Open Charge Point Interface)**: Protocol for retrieving station metadata, pricing, and availability from charging network operators
+- **OCPP (Open Charge Point Protocol)**: WebSocket-based protocol for real-time control and monitoring of physical charging hardware
+- **OAuth 2.0**: Standard authentication and authorization protocol for user identity management
+- **Async Webhooks**: Payment gateway sends callbacks for transaction confirmations
 #### 1.2.2 User Interfaces
 [  
     - Use wireframes or any image-based description of UI elements  
