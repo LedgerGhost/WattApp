@@ -121,12 +121,60 @@ The user accesses the web app to search for charging stations and applies filter
 | `sort_order` | ENUM | {"distance", "price", "power"} (optional) |
 ##### 3.1.2.5 Expected behaviour
 ###### Main flow
-1. The user opens the map or search page.  
-2. The system loads all chargers in the visible map area.  
-3. The user applies one or more filters (Availability / Charger Type).  
-4. The system queries provider APIs or local cache to retrieve matching chargers.  
-5. The results list and map view update dynamically to show only chargers that match.  
-6. The user can clear filters to revert to the full list.
+```plantuml
+@startuml
+|User|
+start
+:Open app or website;
+:View charger search page;
+
+|System|
+:Load available charging stations;
+:Display initial map/list view;
+
+|User|
+:Select filter criteria
+(availability, connector type,
+location, price);
+:Confirm filter selection;
+
+|System|
+:Validate and apply filters;
+:Query database;
+:Return filtered results;
+
+if (Results found?) then (yes)
+  |User|
+  :View filtered chargers;
+  
+  if (Modify filters?) then (yes)
+    :Adjust filter criteria;
+    |System|
+    :Re-query with updated filters;
+    |User|
+    :View updated results;
+  else (no)
+  endif
+  
+  :Select a charger or continue browsing;
+  
+else (no)
+  :Display "No chargers found";
+  :Show suggestions to relax filters;
+  |User|
+  if (Show alternatives?) then (yes)
+    |System|
+    :Return nearest stations;
+    |User|
+    :View alternatives;
+  else (no)
+  endif
+endif
+
+stop
+@enduml
+```
+
 ###### Alternate flows
 - **No Results Found**  
   If the selected combination of filters yields no results, the system displays an informational message (“No chargers match the selected criteria”) and offers an option to reset filters.  
