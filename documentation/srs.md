@@ -280,7 +280,7 @@ end note
     
 ]
 ## 3. Software requirements
-[  
+ 
 ### 3.1 Τop-level use-case diagram  
 The top level use-case model for WattApp is structured around four main actors and their interactions with the system, treating WattApp as a single black-box service. The primary actor, the EV Driver, performs all end-user operations such as searching for charging stations, filtering and comparing options, viewing charger details, reserving chargers, navigating to a station, and accessing personal history and statistics. The Charging Station Operator provides and updates station availability, pricing, and operational status. The System Administrator manages user accounts and system maintenance tasks. External Services, such as payment providers and map/navigation APIs, interact with WattApp through standardized interfaces to support reservations, payments, and routing. The top-level use-case diagram groups driver-focused use cases together and separates operator, administrator, and external-service interactions to show all externally visible system behavior without exposing internal architecture.
 
@@ -347,7 +347,7 @@ Ext --> UC_Map
 @enduml
  ```
     
-]
+
 ### 3.1 Use cases
 
 #### 3.1.1 Use case 1: [title] Stergiou
@@ -356,13 +356,15 @@ Ext --> UC_Map
     - repeat for all use cases    
 ]
 
-#### 3.1.2 Use case 2: Filter Charging Stations'
+#### 3.1.2 Use case 2: Filter Charging Stations
 
 The user accesses the web app to search for charging stations and applies filters to narrow results based on specific criteria. The system allows filtering by availability status, charger type (connector type), location/proximity, and price. Users can combine multiple filters to find chargers matching their vehicle specifications and preferences. The system dynamically updates the displayed results as filters are applied. 
 ##### 3.1.2.1 Roles involved
--User : Searches for chargers and applies filters
--System: Retrieves charger data, applies filters, and returns matching results
--Charging Provider System: Provides real-time charger status and metadata
+ -  User : Searches for chargers and applies filters
+
+ -  System: Retrieves charger data, applies filters, and returns matching results
+
+ -  Charging Provider System: Provides real-time charger status and metadata
 ##### 3.1.2.2 Preconditions
 - The user has access to the web or mobile interface.  
 - The system is successfully connected to station provider APIs (OCPI sources).  
@@ -712,10 +714,6 @@ stop
  - Charger status updates to Reserved for the reservation duration.
  - The user can view the reservation details in their account.
 
-##### 3.1.3.7 Notes
-[  
-    - everything else, if needed           
-]
 
 #### 3.1.4 Use case 4: History & Statistics
 The user logs into the web app and navigates to view their charging statistics and payment history. The user can filter data by time period, view different types of statistics (energy consumption, costs, payment records), and analyze their charging patterns over time. The system retrieves historical data and presents it in an organized format.
@@ -890,7 +888,7 @@ UC4 --> FR23
 @enduml
 ```
 
-### Functional Requirements Summary
+**Functional Requirements Table**
 
 | Category | ID | Description |
 |----------|----|-------------|
