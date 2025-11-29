@@ -1,8 +1,7 @@
-### Software Requirements Specification (SRS) template 2025
+
 
 # WattApp
 # Software Requirements Specification Document
-_NOTE: text [in brakets] must not appear in the final SRS document_ 
 ## 1. Introduction 
 
 ### 1.1 Purpose
@@ -244,15 +243,14 @@ end note
 ]   
 
 ## 2. References
-[  
+
 - Links to information sources.
     -  https://www.ijraset.com/best-journal/ev-charging-station-slot-booking-system
-    -  Smart Electric Vehicle Charging System João CFerreira, Vítor Mon teiro, João L. Alonso, Alberto Silva 
-Member, IEEE.
+    -  https://driivz.com/blog/ev-charging-standards-and-protocols/
     -  https://www.researchgate.net/publication/380067103_CHARGEEV_AN_EV_CHARGING_STATION_FINDER_BRIDGING_THE_GAP_IN_EV_CHARGING_INFRASTRUCTURE
     -   https://www.plugshare.com
     -   https://www.geeksforgeeks.org/system-design/unified-modeling-language-uml-activity-diagrams/
-
+    -   https://1202performance.wordpress.com/atricles/how-to-write-performance-requirements-with-example/
 
 ### Glossary of Terms
 
