@@ -81,7 +81,32 @@ Member, IEEE.
     -   https://www.plugshare.com
     -   https://www.geeksforgeeks.org/system-design/unified-modeling-language-uml-activity-diagrams/
 
-- Glossary of terms  
+
+### Glossary of Terms
+
+| Term | Definition |
+|------|------------|
+| **EV (Electric Vehicle)** | A vehicle powered fully or partially by electricity and rechargeable batteries. |
+| **Charging Station / Charger** | A physical device that supplies electrical energy to charge an EV. |
+| **Outlet / Connector** | The specific plug or charging interface on a charger that a user connects their vehicle to. |
+| **Charging Session** | A complete charging event that includes start time, end time, consumed energy, and cost. |
+| **Reservation** | A temporary booking of a charger or outlet by a user for a specific time window. |
+| **Navigation Link / Deep Link** | A generated URL that opens a routing view in an external navigation service (e.g., Google Maps). |
+| **Google Maps API** | External service used to generate routes and navigation information. |
+| **Payment Gateway** | Third-party service that processes secure online payments for charging sessions. |
+| **OCPI (Open Charge Point Interface)** | Standard protocol for exchanging data between charging service providers (pricing, availability, location). |
+| **OCPP (Open Charge Point Protocol)** | Standard protocol for communication between physical chargers and backend systems (status, meter values). |
+| **Authentication Service** | External identity provider used to authenticate users (e.g., OAuth 2.0). |
+| **REST API** | Web service interface using HTTP methods (GET/POST/PUT/DELETE) for communication between frontend and backend. |
+| **User Account** | A registered profile allowing access to reservations, statistics, and personalized features. |
+| **Statistics Dashboard** | Interface where users view aggregated data about energy usage, cost, and charging history. |
+| **Charging Provider System** | Backend system managed by charging-station operators that supplies live data on charger availability and pricing. |
+| **System Administrator** | Authorized user responsible for system maintenance, user management, and monitoring. |
+| **External Services** | Third-party systems (maps, payments, authentication, notifications) integrated with WattApp. |
+| **Session History** | List of past charging sessions stored for analytics and user reference. |
+| **Reservation Expiry** | Automatic cancellation of a reservation when the user does not arrive within the reserved time window. |
+| **UUID (Universally Unique Identifier)** | 128-bit unique identifier used to distinguish users, chargers, sessions, and reservations in the system. |
+
     
 ]
 ## 3. Software requirements
