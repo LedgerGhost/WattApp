@@ -7,7 +7,6 @@ _NOTE: text [in brakets] must not appear in the final SRS document_
 
 ### 1.1 Purpose
  
-  
  The purpose of this software system is to provide a unified platform that helps electric-vehicle (EV) drivers locate available charging stations, compare prices and charger characteristics, reserve charging spots when needed, and navigate to them through external map services. The system also offers personalized statistics to each user, such as charging history, energy consumption, cost breakdowns, and trip-related metrics, helping drivers better understand and optimize their charging habits.The overall goal is to improve the convenience, transparency, and usability of public and private EV charging by combining station discovery, reservation management, and personalized user statistics into a single cohesive application.   
       
 **Stakeholders**
@@ -442,13 +441,77 @@ Future Enhancements:
 - Add filtering by specific station, charger type, or location
 
 ## 3.2 Functional Requirements
-[  
-- UML functional requirements diagram 
-    <img width="864" height="2176" alt="ZLRBRjiu5DthAowww0D8CfRyIemYQD11PZDz846xPwHhcGX5QaZA6QUOVvzBMfHenmteZN6egtFVX_faBDEsQqGcS6t1Aj2ytbYekCRISYKpyyXbopHhe6Nb8wlntku4WdlCP2qmopg39JC8R-xGeDuYC5d1LxRbDRFeA3zlcAvHlm5cuCVdV7pX9ySdkBVCScDvQNg3OZIuvSAY3WJ1O3eQt9Gb6WDVcAJ86fGMtl-jQYu_zAQpBEl37i" src="https://github.com/user-attachments/assets/a2b544c4-d01c-42c7-ae7b-bcc0f918a73e" />
+ 
+**UML functional requirements diagram**
 
-    
-- short description of each requiremenτ    
-Functional Requirement Descriptions
+```plantuml
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+usecase "Reserve & Navigate" as UC1
+usecase "View Statistics" as UC2
+usecase "Filter Chargers" as UC3
+usecase "Access Management" as UC4
+
+package "Functional Requirements" {
+
+  rectangle FR01 as "FR-01: Display chargers" 
+  rectangle FR02 as "FR-02: Select charger"
+  rectangle FR03 as "FR-03: Reserve charger"
+  rectangle FR04 as "FR-04: Validate reservation"
+  rectangle FR05 as "FR-05: Create reservation"
+  rectangle FR06 as "FR-06: Navigation link (reserved)"
+  rectangle FR07 as "FR-07: Skip reservation"
+  rectangle FR08 as "FR-08: Navigation link (no reservation)"
+  rectangle FR09 as "FR-09: View reservation details"
+
+  rectangle FR10 as "FR-10: Provider dashboard"
+  rectangle FR11 as "FR-11: Display metrics"
+  rectangle FR12 as "FR-12: Filter statistics"
+  rectangle FR13 as "FR-13: Provider-only access"
+
+  rectangle FR14 as "FR-14: Filter by location"
+  rectangle FR15 as "FR-15: Filter by connector"
+  rectangle FR16 as "FR-16: Filter by price"
+  rectangle FR17 as "FR-17: Filter by availability"
+  rectangle FR18 as "FR-18: Combine filters"
+
+  rectangle FR19 as "FR-19: Login mechanism"
+  rectangle FR20 as "FR-20: Validate credentials"
+  rectangle FR21 as "FR-21: Role-based features"
+  rectangle FR22 as "FR-22: Require authentication"
+  rectangle FR23 as "FR-23: Logout"
+}
+
+UC1 --> FR01
+UC1 --> FR02
+UC1 --> FR03
+UC1 --> FR04
+UC1 --> FR05
+UC1 --> FR06
+UC1 --> FR07
+UC1 --> FR08
+UC1 --> FR09
+UC1 --> FR22
+
+UC2 --> FR10
+UC2 --> FR11
+UC2 --> FR12
+UC2 --> FR13
+
+UC3 --> FR14
+UC3 --> FR15
+UC3 --> FR16
+UC3 --> FR17
+UC3 --> FR18
+
+UC4 --> FR19
+UC4 --> FR20
+UC4 --> FR21
+UC4 --> FR23
+@enduml
+```
 
 ### Functional Requirements Summary
 
@@ -478,12 +541,10 @@ Functional Requirement Descriptions
 |  | FR-22 | Require authentication for reservation actions. |
 |  | FR-23 | Allow authenticated users to log out. |
 
-]
+
 
 ## 3.3 Performance requirements
-[  
-    - performance requirements and justification     
-]
+
 
 The performance requirements PR-01 to PR-09 are based on empirical data from EV charger locations in the target region. The dataset contains approximately 545 locations, 1 021 stations, and 1 454 charging outlets. Assuming a typical update frequency of 5–10 seconds per outlet, the backend must handle approximately 150–300 real-time status updates per second. With around 8 700 charging sessions per day (≈10k sessions), reporting queries of this size should be returned within 3 seconds on a properly indexed database. Concurrent user sessions of at least 1 000 are justified by the maximum number of outlets and potential monitoring users.
 
