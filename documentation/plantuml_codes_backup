@@ -8,13 +8,13 @@ top to bottom direction
 ' --- LAYER 1: SERVER ---
 package "WattApp Server" {
     component "Database" as db
+    component "Service Layer" as svc
     component "Backend API" as backend
-    component "Auth Module" as auth_mod
-    component "Notification Service" as notif
+    component "Reverse Proxy" as rv_proxy
     
-    db -- backend
-    backend -- auth_mod
-    backend -- notif
+    rv_proxy -left- backend
+    backend -- svc
+    svc -right- db
 }
 
 ' --- LAYER 2: CLIENTS ---
@@ -56,13 +56,12 @@ frontend -[hidden]down- maps
 
 ' Additional vertical spacing
 db -[hidden]down- frontend
-notif -[hidden]down- cli
 
 ' --- INTERFACES & CONNECTIONS ---
 
 ' 1. REST API (V-Shape: Server provides, Clients consume)
 interface "REST API" as rest_api
-backend -down- rest_api
+rv_proxy -down- rest_api
 rest_api )-down-- frontend
 rest_api )-- cli
 
@@ -77,36 +76,27 @@ frontend -down- nav_api
 nav_api )-- maps
 
 ' 3. Backend to Charging Infrastructure
-interface "OCPI\n(Station Data)" as ocpi_api
 interface "OCPP WebSocket\n(Charger Control)" as ocpp
 
-backend -- ocpi_api
-ocpi_api )-- ocpi
+rest_api )-- ocpi
 
-backend -- ocpp
+rv_proxy -- ocpp
 ocpp )-- chargers
 
 ' 4. Authentication
-interface "OAuth 2.0 / OIDC" as oauth
-auth_mod -- oauth
-oauth )-- auth_service
+rest_api )-- auth_service
 
 ' 5. Notifications
-interface "Messaging API" as sms_api
-notif -- sms_api
-sms_api )-- sms_service
+rest_api )-- sms_service
 
 ' 6. Payment Webhook (Async callback)
-payment .right.> backend : webhook
+payment .right.> rv_proxy : webhook
 
 ' --- ADDITIONAL ALIGNMENT LINES ---
 ' Horizontal alignment between server components
-backend -[hidden]right- auth_mod
-auth_mod -[hidden]right- notif
 backend -[hidden]down- rest_api
 
 ' Vertical alignment for interfaces
-ocpi_api -[hidden]left- cli
 ocpp -[hidden]down- cli
 ' Balance external systems layout
 
