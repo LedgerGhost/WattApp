@@ -224,69 +224,8 @@ note bottom of payment
 end note
 
 @enduml
-
-3. top level use case diagram 
-@startuml
-left to right direction
-skinparam actorStyle stickman
-
-' ---- COLORS ----
-skinparam rectangle {
-  BackgroundColor #fdf6e3
-  BorderColor #b58900
-}
-skinparam actor {
-  BackgroundColor #eee8d5
-  BorderColor #6c71c4
-}
-skinparam usecase {
-  BackgroundColor #e0f7fa
-  BorderColor #00838f
-}
-
-actor "EV Driver" as Driver
-actor "Charging Station Operator" as Operator
-actor "System Administrator" as Admin
-actor "External Services" as Ext
-
-rectangle "WattApp" {
-  usecase "Search Charging Stations" as UC_Search
-  usecase "Filter / Compare Chargers" as UC_Compare
-  usecase "View Station Details" as UC_Details
-  usecase "Reserve Charger" as UC_Reserve
-  usecase "Navigate to Charger" as UC_Navigate
-  usecase "View History & Statistics" as UC_Stats
-  usecase "Manage Account" as UC_Account
-
-  usecase "Provide Station Data" as UC_StationData
-  usecase "Update Charger Status" as UC_Update
-
-  usecase "Manage Users" as UC_AdminUsers
-  usecase "Monitor System" as UC_AdminMonitor
-
-  usecase "Process Payment" as UC_Payment
-  usecase "Provide Navigation Route" as UC_Map
-}
-
-Driver --> UC_Search
-Driver --> UC_Compare
-Driver --> UC_Details
-Driver --> UC_Reserve
-Driver --> UC_Navigate
-Driver --> UC_Stats
-Driver --> UC_Account
-
-Operator --> UC_StationData
-Operator --> UC_Update
-
-Admin --> UC_AdminUsers
-Admin --> UC_AdminMonitor
-
-Ext --> UC_Payment
-Ext --> UC_Map
-
-@enduml
 ```
+
 ---
 
 **Key Integration Points:**
