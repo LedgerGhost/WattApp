@@ -85,8 +85,10 @@ Member, IEEE.
 ]
 ## 3. Software requirements
 [  
-    - The top-level use-case diagram  
-    - Short mention to the use case model structure    
+### 3.1 Τop-level use-case diagram  
+The top level use-case model for WattApp is structured around four main actors and their interactions with the system, treating WattApp as a single black-box service. The primary actor, the EV Driver, performs all end-user operations such as searching for charging stations, filtering and comparing options, viewing charger details, reserving chargers, navigating to a station, and accessing personal history and statistics. The Charging Station Operator provides and updates station availability, pricing, and operational status. The System Administrator manages user accounts and system maintenance tasks. External Services, such as payment providers and map/navigation APIs, interact with WattApp through standardized interfaces to support reservations, payments, and routing. The top-level use-case diagram groups driver-focused use cases together and separates operator, administrator, and external-service interactions to show all externally visible system behavior without exposing internal architecture.
+
+    
 ]
 ### 3.1 Use cases
 
