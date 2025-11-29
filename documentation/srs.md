@@ -49,7 +49,7 @@ skinparam title {
 !define BACKEND_COLOR #fce1e4
 
 
-' Εξωτερικά Blocks
+Εξωτερικά Blocks
 
 rectangle "EV Driver\n(Mobile/Web Interface)" as Driver EXTERNAL_COLOR
 rectangle "Payment Gateway" as Payment EXTERNAL_COLOR
@@ -57,7 +57,7 @@ rectangle "Map / Location Service" as Maps EXTERNAL_COLOR
 rectangle "Energy Market Service" as Market EXTERNAL_COLOR
 rectangle "Charging Station Operator" as Operator EXTERNAL_COLOR
 
-' Εσωτερικό Σύστημα
+Εσωτερικό Σύστημα
 
 rectangle "EV Charging Provider System" as System INTERNAL_COLOR {
   
@@ -67,7 +67,7 @@ rectangle "EV Charging Provider System" as System INTERNAL_COLOR {
 }
 
 
-' Συνδέσεις
+Συνδέσεις
 
 Driver --> FE : user requests / data
 FE --> BE : REST / API calls
