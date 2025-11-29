@@ -30,6 +30,65 @@ _NOTE: text [in brakets] must not appear in the final SRS document_
 
 
  **System block diagram**
+
+
+ 
+
+### 1.2 Interfaces
+
+#### 1.2.1 Interfaces to external systems   
+WattApp integrates with external services for navigation, payments, charging infrastructure, authentication, and notifications.
+
+**External Systems:**
+
+| System | Purpose | Protocol/Standard |
+|--------|---------|-------------------|
+| **Google Maps API** | Navigation and routing to charging stations | HTTPS/REST |
+| **Payment Gateway** | Process charging session payments | HTTPS/REST, PCI DSS |
+| **Station Provider APIs (OCPI)** | Retrieve station metadata and availability | HTTPS/REST, OCPI |
+| **Physical Chargers (OCPP)** | Direct control and monitoring of chargers | WebSocket, OCPP 2.1 |
+| **Authentication Service** | User authentication and authorization | HTTPS, OAuth 2.0 |
+| **SMS/Email Service** | Send notifications and alerts | HTTPS/REST, SMTP |
+
+---
+
+**UML Component Diagram:**
+
+---
+
+**Key Integration Points:**
+
+- **REST API**: Unified HTTPS/REST interface between backend and clients (web, CLI)
+- **OCPI (Open Charge Point Interface)**: Protocol for retrieving station metadata, pricing, and availability from charging network operators
+- **OCPP (Open Charge Point Protocol)**: WebSocket-based protocol for real-time control and monitoring of physical charging hardware
+- **OAuth 2.0**: Standard authentication and authorization protocol for user identity management
+- **Async Webhooks**: Payment gateway sends callbacks for transaction confirmations
+#### 1.2.2 User Interfaces
+[  
+    - Use wireframes or any image-based description of UI elements  
+    - Use plantuml/salt, mermaid.js/"user journey", or D2  
+    - Flow between screens, etc.  
+    - No aesthetic details needed  
+]   
+
+## 2. References
+[  
+- Links to information sources.
+    -  https://www.ijraset.com/best-journal/ev-charging-station-slot-booking-system
+    -  Smart Electric Vehicle Charging System João CFerreira, Vítor Mon teiro, João L. Alonso, Alberto Silva 
+Member, IEEE.
+    -  https://www.researchgate.net/publication/380067103_CHARGEEV_AN_EV_CHARGING_STATION_FINDER_BRIDGING_THE_GAP_IN_EV_CHARGING_INFRASTRUCTURE
+    -   https://www.plugshare.com
+    -   https://www.geeksforgeeks.org/system-design/unified-modeling-language-uml-activity-diagrams/
+
+- Glossary of terms  
+    
+]
+## 3. Software requirements
+[  
+### 3.1 Τop-level use-case diagram  
+The top level use-case model for WattApp is structured around four main actors and their interactions with the system, treating WattApp as a single black-box service. The primary actor, the EV Driver, performs all end-user operations such as searching for charging stations, filtering and comparing options, viewing charger details, reserving chargers, navigating to a station, and accessing personal history and statistics. The Charging Station Operator provides and updates station availability, pricing, and operational status. The System Administrator manages user accounts and system maintenance tasks. External Services, such as payment providers and map/navigation APIs, interact with WattApp through standardized interfaces to support reservations, payments, and routing. The top-level use-case diagram groups driver-focused use cases together and separates operator, administrator, and external-service interactions to show all externally visible system behavior without exposing internal architecture.
+
 ```plantuml
 @startuml
 left to right direction
@@ -92,64 +151,6 @@ Ext --> UC_Map
 
 @enduml
  ```
-
- 
-
-### 1.2 Interfaces
-
-#### 1.2.1 Interfaces to external systems   
-WattApp integrates with external services for navigation, payments, charging infrastructure, authentication, and notifications.
-
-**External Systems:**
-
-| System | Purpose | Protocol/Standard |
-|--------|---------|-------------------|
-| **Google Maps API** | Navigation and routing to charging stations | HTTPS/REST |
-| **Payment Gateway** | Process charging session payments | HTTPS/REST, PCI DSS |
-| **Station Provider APIs (OCPI)** | Retrieve station metadata and availability | HTTPS/REST, OCPI |
-| **Physical Chargers (OCPP)** | Direct control and monitoring of chargers | WebSocket, OCPP 2.1 |
-| **Authentication Service** | User authentication and authorization | HTTPS, OAuth 2.0 |
-| **SMS/Email Service** | Send notifications and alerts | HTTPS/REST, SMTP |
-
----
-
-**UML Component Diagram:**
-
----
-
-**Key Integration Points:**
-
-- **REST API**: Unified HTTPS/REST interface between backend and clients (web, CLI)
-- **OCPI (Open Charge Point Interface)**: Protocol for retrieving station metadata, pricing, and availability from charging network operators
-- **OCPP (Open Charge Point Protocol)**: WebSocket-based protocol for real-time control and monitoring of physical charging hardware
-- **OAuth 2.0**: Standard authentication and authorization protocol for user identity management
-- **Async Webhooks**: Payment gateway sends callbacks for transaction confirmations
-#### 1.2.2 User Interfaces
-[  
-    - Use wireframes or any image-based description of UI elements  
-    - Use plantuml/salt, mermaid.js/"user journey", or D2  
-    - Flow between screens, etc.  
-    - No aesthetic details needed  
-]   
-
-## 2. References
-[  
-- Links to information sources.
-    -  https://www.ijraset.com/best-journal/ev-charging-station-slot-booking-system
-    -  Smart Electric Vehicle Charging System João CFerreira, Vítor Mon teiro, João L. Alonso, Alberto Silva 
-Member, IEEE.
-    -  https://www.researchgate.net/publication/380067103_CHARGEEV_AN_EV_CHARGING_STATION_FINDER_BRIDGING_THE_GAP_IN_EV_CHARGING_INFRASTRUCTURE
-    -   https://www.plugshare.com
-    -   https://www.geeksforgeeks.org/system-design/unified-modeling-language-uml-activity-diagrams/
-
-- Glossary of terms  
-    
-]
-## 3. Software requirements
-[  
-### 3.1 Τop-level use-case diagram  
-The top level use-case model for WattApp is structured around four main actors and their interactions with the system, treating WattApp as a single black-box service. The primary actor, the EV Driver, performs all end-user operations such as searching for charging stations, filtering and comparing options, viewing charger details, reserving chargers, navigating to a station, and accessing personal history and statistics. The Charging Station Operator provides and updates station availability, pricing, and operational status. The System Administrator manages user accounts and system maintenance tasks. External Services, such as payment providers and map/navigation APIs, interact with WattApp through standardized interfaces to support reservations, payments, and routing. The top-level use-case diagram groups driver-focused use cases together and separates operator, administrator, and external-service interactions to show all externally visible system behavior without exposing internal architecture.
-
     
 ]
 ### 3.1 Use cases
