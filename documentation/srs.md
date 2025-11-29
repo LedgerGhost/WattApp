@@ -29,7 +29,55 @@ _NOTE: text [in brakets] must not appear in the final SRS document_
 
 
  **System block diagram**
+```plantuml
+@startuml
+title System Block Diagram - EV Charging Provider
 
+skinparam rectangleStyle rounded
+skinparam shadowing false
+skinparam title {
+  BackgroundColor #fdf6e3
+  BorderColor #b58900
+}
+
+
+' Χρωματικοί κανόνες
+
+!define INTERNAL_COLOR #fef9e7
+!define EXTERNAL_COLOR #ddeaf1
+!define FRONTEND_COLOR #d6efc7
+!define BACKEND_COLOR #fce1e4
+
+
+' Εξωτερικά Blocks
+
+rectangle "EV Driver\n(Mobile/Web Interface)" as Driver EXTERNAL_COLOR
+rectangle "Payment Gateway" as Payment EXTERNAL_COLOR
+rectangle "Map / Location Service" as Maps EXTERNAL_COLOR
+rectangle "Energy Market Service" as Market EXTERNAL_COLOR
+rectangle "Charging Station Operator" as Operator EXTERNAL_COLOR
+
+' Εσωτερικό Σύστημα
+
+rectangle "EV Charging Provider System" as System INTERNAL_COLOR {
+  
+  rectangle "Front-End\n(Web/Mobile)" as FE FRONTEND_COLOR
+  rectangle "REST API & Backend" as BE BACKEND_COLOR
+  
+}
+
+
+' Συνδέσεις
+
+Driver --> FE : user requests / data
+FE --> BE : REST / API calls
+BE --> Payment : transactions
+BE --> Maps : map data
+BE --> Market : energy prices
+BE --> Operator : station data exchange
+
+@enduml
+```
 
  
 
