@@ -6,27 +6,32 @@ _NOTE: text [in brakets] must not appear in the final SRS document_
 ## 1. Introduction 
 
 ### 1.1 Purpose
-[  
-    - Purpose statement  
+ 
+  
  The purpose of this software system is to provide a unified platform that helps electric-vehicle (EV) drivers locate available charging stations, compare prices and charger characteristics, reserve charging spots when needed, and navigate to them through external map services. The system also offers personalized statistics to each user, such as charging history, energy consumption, cost breakdowns, and trip-related metrics, helping drivers better understand and optimize their charging habits.The overall goal is to improve the convenience, transparency, and usability of public and private EV charging by combining station discovery, reservation management, and personalized user statistics into a single cohesive application.   
-    -Stakeholders 
-    -EV Drivers (End Users)
+      
+**Stakeholders**
+- EV Drivers (End Users)
+  
     Primary users of the system. They search for chargers, compare options, reserve charging spots, receive navigation links, and view their personal charging statistics and history.
 
-Charging-Station Operators
-Provide real-time availability, pricing, and operational status of their chargers to the system. They do not receive statistical analytics from the platform.
+- Charging-Station Operators
+  
+    Provide real-time availability, pricing, and operational status of their chargers to the system. They do not receive statistical analytics from the platform.
 
-System Administrators
-Maintain the platform, manage user authentication/authorization, ensure uptime, and safeguard data integrity and privacy.
+- System Administrators
+  
+    Maintain the platform, manage user authentication/authorization, ensure uptime, and safeguard data integrity and privacy.
 
-External Service Providers
-Third-party systems integrated with the application—for example map/navigation services, payment gateways, and authentication providers.
+- External Service Providers
+  
+    Third-party systems integrated with the application—for example map/navigation services, payment gateways, and authentication providers.
 
 
 
-- System block diagram as plantuml code (no architecture!)
+ System block diagram as plantuml code (no architecture!)
 
-]  
+ 
 
 ### 1.2 Interfaces
 
@@ -152,30 +157,31 @@ In this alternate flow, the user chooses not to reserve the charger and proceeds
 
 
 ##### 3.1.3.6 Output data and postconditions
-    *Output data*
+
+*Output data*
     
-    -reservation_record: Object
+-reservation_record: Object
     
-    - reservation_id: UUID — Unique identifier of reservation
-    - user_id: UUID — User who reserved
-    - charger_id: UUID — Reserved charger
-    - start_time: DATETIME — Reservation start time
-    - end_time: DATETIME — Expiration time
-    - status: ENUM {"Active", "Expired", "Cancelled"}
+ - reservation_id: UUID — Unique identifier of reservation
+ - user_id: UUID — User who reserved
+ - charger_id: UUID — Reserved charger
+ - start_time: DATETIME — Reservation start time
+ - end_time: DATETIME — Expiration time
+ - status: ENUM {"Active", "Expired", "Cancelled"}
     
-    -navigation_action: Object
+-navigation_action: Object
     
-    - user_id: UUID — User initiating navigation
-    - charger_id: UUID — Destination charger
-    - maps_link: STRING — Generated Google Maps deep link
-    - timestamp: DATETIME — Time navigation link was opened
+ - user_id: UUID — User initiating navigation
+ - charger_id: UUID — Destination charger
+ - maps_link: STRING — Generated Google Maps deep link
+ - timestamp: DATETIME — Time navigation link was opened
     
-    *Postconditions*
+*Postconditions*
     
-    - Reservation is recorded in the database if selected.
-    - The user is redirected to Google Maps for navigation (if chosen).
-    - Charger status updates to Reserved for the reservation duration.
-    - The user can view the reservation details in their account.
+ - Reservation is recorded in the database if selected.
+ - The user is redirected to Google Maps for navigation (if chosen).
+ - Charger status updates to Reserved for the reservation duration.
+ - The user can view the reservation details in their account.
 
 ##### 3.1.3.7 Notes
 [  
