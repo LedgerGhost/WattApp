@@ -99,6 +99,194 @@ WattApp integrates with external services for navigation, payments, charging inf
 
 **UML Component Diagram:**
 
+```plantuml
+@startuml
+skinparam componentStyle uml2
+top to bottom direction
+
+' --- LAYER 1: SERVER ---
+package "WattApp Server" {
+    component "Database" as db
+    component "Service Layer" as svc
+    component "Backend API" as backend
+    component "Reverse Proxy" as rv_proxy
+    
+    rv_proxy -left- backend
+    backend -- svc
+    svc -right- db
+}
+
+' --- LAYER 2: CLIENTS ---
+component "Web Frontend" as frontend
+component "CLI Tool" as cli
+
+frontend -[hidden]right- cli
+
+' --- LAYER 3: EXTERNAL SYSTEMS ---
+package "External Systems" {
+    ' Payment & Navigation
+    component "Payment Gateway" as payment
+    component "Google Maps API" as maps
+    
+    ' Charging Infrastructure
+    component "Station Provider APIs\n(OCPI)" as ocpi
+    component "Physical Chargers\n(OCPP)" as chargers
+    
+    ' Identity & Messaging
+    component "Auth Service" as auth_service
+    component "SMS/Email Service" as sms_service
+    
+    ' Layout: force left-to-right alignment
+    payment -[hidden]right- maps
+    maps -[hidden]right- ocpi
+    ocpi -[hidden]right- chargers
+    chargers -[hidden]right- sms_service
+    sms_service -[hidden]right- auth_service
+}
+
+' --- VERTICAL ALIGNMENT HELPERS ---
+' Center server package above clients
+backend -[hidden]down- frontend
+backend -[hidden]down- cli
+
+' Align clients with external systems
+frontend -[hidden]down- payment
+frontend -[hidden]down- maps
+
+' Additional vertical spacing
+db -[hidden]down- frontend
+
+' --- INTERFACES & CONNECTIONS ---
+
+' 1. REST API (V-Shape: Server provides, Clients consume)
+interface "REST API" as rest_api
+rv_proxy -down- rest_api
+rest_api )-down-- frontend
+rest_api )-- cli
+
+' 2. Frontend to External APIs
+interface "Payment API" as pay_api
+interface "Navigation API" as nav_api
+
+frontend -down- pay_api
+pay_api )-- payment
+
+frontend -down- nav_api
+nav_api )-- maps
+
+' 3. Backend to Charging Infrastructure
+interface "OCPP WebSocket\n(Charger Control)" as ocpp
+
+rest_api )-- ocpi
+
+rv_proxy -- ocpp
+ocpp )-- chargers
+
+' 4. Authentication
+rest_api )-- auth_service
+
+' 5. Notifications
+rest_api )-- sms_service
+
+' 6. Payment Webhook (Async callback)
+payment .right.> rv_proxy : webhook
+
+' --- ADDITIONAL ALIGNMENT LINES ---
+' Horizontal alignment between server components
+backend -[hidden]down- rest_api
+
+' Vertical alignment for interfaces
+ocpp -[hidden]down- cli
+' Balance external systems layout
+
+
+' --- NOTES ---
+note left of frontend
+  Responsive web design:
+  Desktop, Tablet, Mobile
+  (Auto-adapts to screen size)
+end note
+
+note bottom of ocpi
+  Station metadata,
+  pricing, availability
+end note
+
+note bottom of chargers
+  Real-time control:
+  start/stop sessions,
+  meter values
+end note
+
+note bottom of payment
+  Async webhooks for
+  payment confirmations
+end note
+
+@enduml
+
+3. top level use case diagram 
+@startuml
+left to right direction
+skinparam actorStyle stickman
+
+' ---- COLORS ----
+skinparam rectangle {
+  BackgroundColor #fdf6e3
+  BorderColor #b58900
+}
+skinparam actor {
+  BackgroundColor #eee8d5
+  BorderColor #6c71c4
+}
+skinparam usecase {
+  BackgroundColor #e0f7fa
+  BorderColor #00838f
+}
+
+actor "EV Driver" as Driver
+actor "Charging Station Operator" as Operator
+actor "System Administrator" as Admin
+actor "External Services" as Ext
+
+rectangle "WattApp" {
+  usecase "Search Charging Stations" as UC_Search
+  usecase "Filter / Compare Chargers" as UC_Compare
+  usecase "View Station Details" as UC_Details
+  usecase "Reserve Charger" as UC_Reserve
+  usecase "Navigate to Charger" as UC_Navigate
+  usecase "View History & Statistics" as UC_Stats
+  usecase "Manage Account" as UC_Account
+
+  usecase "Provide Station Data" as UC_StationData
+  usecase "Update Charger Status" as UC_Update
+
+  usecase "Manage Users" as UC_AdminUsers
+  usecase "Monitor System" as UC_AdminMonitor
+
+  usecase "Process Payment" as UC_Payment
+  usecase "Provide Navigation Route" as UC_Map
+}
+
+Driver --> UC_Search
+Driver --> UC_Compare
+Driver --> UC_Details
+Driver --> UC_Reserve
+Driver --> UC_Navigate
+Driver --> UC_Stats
+Driver --> UC_Account
+
+Operator --> UC_StationData
+Operator --> UC_Update
+
+Admin --> UC_AdminUsers
+Admin --> UC_AdminMonitor
+
+Ext --> UC_Payment
+Ext --> UC_Map
+
+@enduml
+```
 ---
 
 **Key Integration Points:**
