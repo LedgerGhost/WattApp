@@ -421,7 +421,7 @@ For Registration:
 - System denies unauthorized actions and logs all attempts
 
 ###### UML Activity Diagram
-```
+```plantuml
 @startuml
 title User Registration and Login - Activity Diagram
 
@@ -1266,7 +1266,7 @@ To avoid duplicate entries, the system employs:
 Exactly below follows the ER-diagram of our database. It is a simplified form of what we have designed and provides the semantics of the data as well as the types for some clarification. The two comments are for a brief explanation, since we do not mention where or how those data are gained from.
 The table regarding the **energy prices** is added for scalability reasons as well as for future development (it is not certain, at this point of the development, if it will be utilised or implemented in the end product)
 
-```
+```plantuml
 @startuml WattApp_ER_Simple__final
 !define PRIMARY_KEY(x) <b><u>x</u></b>
 !define FOREIGN_KEY(x) <i>x</i>
