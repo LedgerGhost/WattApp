@@ -1084,10 +1084,10 @@ package "Functional Requirements" {
   rectangle FR08 as "FR-08: Navigation link (no reservation)"
   rectangle FR09 as "FR-09: View reservation details"
 
-  rectangle FR10 as "FR-10: Provider dashboard"
-  rectangle FR11 as "FR-11: Display metrics"
-  rectangle FR12 as "FR-12: Filter statistics"
-  rectangle FR13 as "FR-13: Provider-only access"
+  rectangle FR10 as "FR-10: View charging history"
+  rectangle FR11 as "FR-11: View energy & cost stats"
+  rectangle FR12 as "FR-12: Filter stats by date range"
+  rectangle FR13 as "FR-13: View payment records"
 
   rectangle FR14 as "FR-14: Filter by location"
   rectangle FR15 as "FR-15: Filter by connector"
@@ -1144,10 +1144,10 @@ UC4 --> FR23
 |  | FR-07 | Allow navigation without creating a reservation. |
 |  | FR-08 | Generate a navigation link for non-reserved chargers. |
 |  | FR-09 | Allow users to view their active reservation details. |
-| **Statistics** | FR-10 | Provide a dashboard with statistics for service providers. |
-|  | FR-11 | Display key metrics such as sessions and utilization. |
-|  | FR-12 | Allow filtering of statistics by date range or station. |
-|  | FR-13 | Restrict access to statistics to authorized providers. |
+| **Statistics** | FR-10 | The system shall present users with personal charging statistics. |
+|  | FR-11 | The system shall allow filtering by date range. |
+|  | FR-12 |The system shall compute and display metrics such as total energy consumption, total cost, and average cost. |
+|  | FR-13 |The system shall show payment history records. |
 | **Filters** | FR-14 | Filter chargers by location or proximity. |
 |  | FR-15 | Filter chargers by connector type. |
 |  | FR-16 | Filter chargers by price. |
