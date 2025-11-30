@@ -350,11 +350,195 @@ Ext --> UC_Map
 
 ### 3.1 Use cases
 
-#### 3.1.1 Use case 1: [title] Stergiou
-[  
-    - use the same structure as in 3.1.1.1 - 3.1.1.7  
-    - repeat for all use cases    
-]
+#### 3.1.1 Use case 1: Access Management and User Differentiation
+##### 3.1.1.1 Roles involved
+- Customer (EV Driver): Account creation, login, access to charging services.
+
+- Provider Administrator: System management, network monitoring, configuration.
+
+- System: Credential validation and role-based access enforcement.
+##### 3.1.1.2 Preconditions
+For System:
+- System database operational with encrypted user credentials.
+- Role definitions and permissions configured.
+- Database/server up and functional as well as Internet connection established.
+
+For Customers:
+- Valid credentials.
+
+For Administrators:
+- Pre-authorized admin account exists (dependable on implementation, meaning the actual system that will handle the admin access, e.g., 2FA, company credentials, or admin-added accounts).
+##### 3.1.1.3 Execution enviroment
+This use case is executed on the backend of the system, but for the users of the software, the interfaces are:
+- Frontend/Web Interface (for both desktop and mobile)
+- Command Line Interface (for administrator's functions only)
+- Backend REST API to handle the authentication and data retrieval and validation
+##### 3.1.1.4 Input data
+For Login:
+- Email
+- Password (min 8 chars, special characters, uppercase letters)
+
+For Registration:
+- Email
+- Password (2 times) (min 8 chars, special characters, uppercase letters)
+- Phone (country number to be valid and registered)
+- First name
+- Last name
+##### 3.1.1.5 Expected behaviour
+###### Main Flow - Customer Registration:
+1)Customer accesses registration page
+2)System displays form
+3)Customer enters data (email, password, personal info, payment details)
+4)System validates format and uniqueness
+5)System sends verification email
+6)Customer clicks verification link
+7)System activates account with "Customer" role
+8)System confirms and redirects to login
+
+###### Main Flow - User Login:
+1)User accesses login page
+2)System displays login form
+3)User enters credentials
+4)System validates against database
+5)System identifies role (Customer/Administrator)
+6)System generates session token
+7)System redirects to role-specific dashboard
+
+###### Alternative Flow - Failed Login:
+1)Invalid credentials: System increments counter, shows error
+2)Failed attempts ≥ 3: Lock account 15 minutes, send email notification
+3)Alternative Flow - Password Reset:
+4)User clicks "Forgot Password"
+5)User enters email
+6)System sends reset link
+7)User enters new password
+8)System validates and updates password
+
+###### Access Control (Per Request):
+- System validates session token and checks role
+- Customer: View/reserve chargers, manage sessions, view billing, manage account
+- Administrator: All customer functions plus system configuration, network management, reports, CLI access, pricing configuration, EV-charger manipulation
+- System denies unauthorized actions and logs all attempts
+
+###### UML Activity Diagram
+```
+@startuml
+title User Registration and Login - Activity Diagram
+
+|User|
+start
+:Access system;
+
+if (Has account?) then (no)
+  
+  if (Register as?) then (Customer)
+    |Customer|
+    :Click "Register";
+    :Fill registration form:
+    - Email, Password
+    - Name, Phone
+    - Payment method;
+    
+    |System|
+    :Validate input;
+    :Create account\n(role = CUSTOMER);
+    :Send verification email;
+    
+    |Customer|
+    :Click verification link;
+    
+    |System|
+    :Activate account;
+    
+  else (Administrator)
+    |First Admin|
+    :Execute CLI command:
+    $ ./cli admin create
+      --email new@provider.com;
+    
+    |System|
+    :Create account\n(role = ADMINISTRATOR);
+    :Send welcome email\nwith temp password;
+    
+    |New Administrator|
+    :Receive email;
+  endif
+  
+else (yes)
+endif
+
+|User|
+:Navigate to login;
+:Enter email & password;
+
+|System|
+:Validate credentials;
+:Retrieve user role;
+
+if (Role?) then (CUSTOMER)
+  
+  if (2FA enabled?) then (yes)
+    |Customer|
+    :Enter 2FA code;
+    |System|
+    :Verify 2FA;
+  else (no)
+  endif
+  
+  |System|
+  :Generate session token\n(24h expiry);
+  :Redirect to Customer\nMain Page;
+  
+  |Customer|
+  :View Customer\nDashboard;
+  
+else (ADMINISTRATOR)
+  
+  if (First login?) then (yes)
+    |Administrator|
+    :Change password;
+    :Setup 2FA\n(scan QR code);
+    |System|
+    :Enable 2FA;
+  else (no)
+  endif
+  
+  |Administrator|
+  :Enter 2FA code\n(mandatory);
+  
+  |System|
+  :Verify 2FA;
+  :Generate session token\n(8h expiry);
+  :Redirect to Admin\nMain Page;
+  
+  |Administrator|
+  :View Admin\nDashboard;
+  
+endif
+
+|System|
+stop
+
+@enduml
+```
+
+##### 3.1.1.6 Output data and postconditions
+**The data that will be viewable to the user:**
+Successful login/register message and redirection to role-appropriate main page
+Unsuccessful login/register message 
+
+All of the output data are for logging purposes. The access management and user differentiation happens in the backend and no visible data are provided to the user, just redirection to the correct pages for the type of user who uses the software.
+
+**The data that are created as output (as mentioned for logging purposes) but remain hidden to the user, are:**
+- Session token/JWT with expiration (lets say -> 24h customers, 8h admins)
+- User profile: user_id, role, permissions, account status, last_login
+- Audit logs: authentication events, failed attempts, administrative actions
+
+##### 3.1.1.7 Notes
+- Passwords hashed using bcrypt or SCRAM-SHA-256
+- HTTPS required for all communications
+- GDPR compliance for personal data ()
+- CLI may use API keys/OAuth tokens
 
 #### 3.1.2 Use case 2: Filter Charging Stations
 
@@ -1077,8 +1261,204 @@ To avoid duplicate entries, the system employs:
 
 
 ### 3.4.2 Semantic data model
-[  
-    - ER or class diagram, semantics only (no typing, constraints, etc.).        
+###### Database ER-Diagram
+
+Exactly below follows the ER-diagram of our database. It is a simplified form of what we have designed and provides the semantics of the data as well as the types for some clarification. The two comments are for a brief explanation, since we do not mention where or how those data are gained from.
+The table regarding the **energy prices** is added for scalability reasons as well as for future development (it is not certain, at this point of the development, if it will be utilised or implemented in the end product)
+
+```
+@startuml WattApp_ER_Simple__final
+!define PRIMARY_KEY(x) <b><u>x</u></b>
+!define FOREIGN_KEY(x) <i>x</i>
+
+title WattApp - Entity Relationship Diagram (Simplified)
+
+skinparam linetype ortho
+skinparam roundcorner 10
+skinparam shadowing false
+
+skinparam entity {
+    BackgroundColor #E8F4FD
+    BorderColor #2196F3
+    ArrowColor #1565C0
+}
+
+entity "**users**" as users {
+    PRIMARY_KEY(_id) : ObjectId
+    --
+    email : String
+    password_hash : String
+    role : Enum
+    first_name : String
+    last_name : String
+    phone : String
+    status : Enum
+    email_verified : Boolean
+    two_factor_enabled : Boolean
+    --
+    //embedded: payment_methods[]//
+    //embedded: preferences//
+    //embedded: vehicle_info//
+    --
+    created_at : Date
+    last_login : Date
+}
+
+entity "**stations**" as stations #E8F5E9 {
+    PRIMARY_KEY(_id) : ObjectId
+    --
+    external_id : String (OCPI)
+    name : String
+    status : Enum
+    --
+    //embedded: location (GeoJSON)//
+    //embedded: address//
+    //embedded: operator//
+    //embedded: opening_hours//
+    //embedded: **outlets[]**//
+    //embedded: pricing//
+    //embedded: reservation_settings//
+    --
+    amenities[] : Enum
+    ratings : Object
+    created_at : Date
+}
+
+entity "**reservations**" as reservations #FFF3E0 {
+    PRIMARY_KEY(_id) : ObjectId
+    --
+    FOREIGN_KEY(user_id) : ObjectId
+    FOREIGN_KEY(station_id) : ObjectId
+    outlet_id : String
+    --
+    start_time : Date
+    end_time : Date
+    duration_minutes : Integer
+    status : Enum
+    --
+    //embedded: station_snapshot//
+    --
+    reservation_fee : Double
+    FOREIGN_KEY(charging_session_id) : ObjectId
+    created_at : Date
+}
+
+entity "**charging_sessions**" as sessions #FCE4EC {
+    PRIMARY_KEY(_id) : ObjectId
+    --
+    FOREIGN_KEY(user_id) : ObjectId
+    FOREIGN_KEY(station_id) : ObjectId
+    outlet_id : String
+    FOREIGN_KEY(reservation_id) : ObjectId
+    --
+    status : Enum
+    start_time : Date
+    end_time : Date
+    --
+    //embedded: station_snapshot//
+    //embedded: energy (meter values)//
+    //embedded: cost//
+    //embedded: payment//
+    //embedded: vehicle_info//
+    --
+    stop_reason : Enum
+    ocpp_transaction_id : String
+    created_at : Date
+}
+
+entity "**auth_sessions**" as auth #F3E5F5 {
+    PRIMARY_KEY(_id) : ObjectId
+    --
+    FOREIGN_KEY(user_id) : ObjectId
+    token_id : String
+    --
+    //embedded: device_info//
+    --
+    created_at : Date
+    expires_at : Date (TTL)
+    is_valid : Boolean
+}
+
+entity "**audit_logs**" as audit #EFEBE9 {
+    PRIMARY_KEY(_id) : ObjectId
+    --
+    event_type : Enum
+    FOREIGN_KEY(user_id) : ObjectId
+    ip_address : String
+    timestamp : Date (TTL 90d)
+    outcome : Enum
+    --
+    resource_type : String
+    resource_id : String
+    details : Object
+}
+
+entity "**energy_prices**" as prices #FFFDE7 {
+    PRIMARY_KEY(_id) : ObjectId
+    --
+    date : Date
+    hour : Integer
+    price_per_kwh : Double
+    currency : String
+    region : String
+    source : String
+}
+
+entity "**notifications**" as notif #E0F7FA {
+    PRIMARY_KEY(_id) : ObjectId
+    --
+    FOREIGN_KEY(user_id) : ObjectId
+    type : Enum
+    title : String
+    message : String
+    channels[] : Enum
+    status : Enum
+    --
+    sent_at : Date
+    read_at : Date
+}
+
+entity "**provider_config**" as config #F5F5F5 {
+    PRIMARY_KEY(_id) : ObjectId
+    --
+    key : String
+    value : Mixed
+    category : Enum
+    FOREIGN_KEY(updated_by) : ObjectId
+    updated_at : Date
+}
+
+' ===== RELATIONSHIPS =====
+
+users "1" ||--o{ "0..*" reservations : "creates >"
+users "1" ||--o{ "0..*" sessions : "initiates >"
+users "1" ||--o{ "0..*" auth : "has >"
+users "1" ||--o{ "0..*" notif : "receives >"
+users "1" ||--o{ "0..*" audit : "generates >"
+
+stations "1" ||--o{ "0..*" reservations : "< for"
+stations "1" ||--o{ "0..*" sessions : "< at"
+
+reservations "0..1" |o--o| "0..1" sessions : "converts to >"
+
+users "1" ||--o{ "0..*" config : "updates >"
+
+note bottom of stations
+  **Outlets are embedded** within stations.
+  Each outlet has: connector_type, power_kw,
+  status, and optional references to
+  current_session_id / current_reservation_id
+end note
+
+note bottom of prices
+  Standalone collection for
+  wholesale energy market prices.
+  Used for dynamic pricing calculations.
+end note
+
+@enduml
+
+```
 ]
 
 ## 3.5 Other requirements
