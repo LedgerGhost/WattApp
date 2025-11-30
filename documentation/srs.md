@@ -275,7 +275,7 @@ end note
 | **UUID (Universally Unique Identifier)** | 128-bit unique identifier used to distinguish users, chargers, sessions, and reservations in the system. |
 
     
-]
+
 ## 3. Software requirements
  
 ### 3.1 Τop-level use-case diagram  
@@ -1081,9 +1081,9 @@ package "Functional Requirements" {
   rectangle FR08 as "FR-08: Navigation link (no reservation)"
   rectangle FR09 as "FR-09: View reservation details"
 
-  rectangle FR10 as "FR-10: View charging history"
-  rectangle FR11 as "FR-11: View energy & cost stats"
-  rectangle FR12 as "FR-12: Filter stats by date range"
+  rectangle FR10 as "FR-10: View user statistics."
+  rectangle FR11 as "FR-11: Filter stats by date range"
+  rectangle FR12 as "FR-12: Compute and Display Energy and Cost Metrics"
   rectangle FR13 as "FR-13: View payment records"
 
   rectangle FR14 as "FR-14: Filter by location"
@@ -1129,6 +1129,10 @@ UC4 --> FR19
 UC4 --> FR20
 UC4 --> FR21
 UC4 --> FR23
+UC4 --> FR24
+UC4 --> FR25
+UC4 --> FR26
+UC4 --> FR27
 @enduml
 ```
 
