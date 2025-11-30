@@ -1462,10 +1462,6 @@ end note
 ]
 
 ## 3.5 Other requirements
-[  
-    - other non-functional requirements       
-]
-
 ### 3.5.1 Availability
 
 The system shall maintain high availability to ensure continuous service for EV charging operations:
