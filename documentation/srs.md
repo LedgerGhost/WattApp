@@ -1000,7 +1000,6 @@ The performance requirements PR-01 to PR-09 are based on empirical data from EV 
 ## 3.4 Data requirements
 
 ### 3.4.1 Data access requirements
-### 3.4.1 Data Access Requirements and Constraints
 
 The data organization is based on a **document-oriented model** using MongoDB, where each collection stores JSON documents with a unique identifier `_id` (ObjectId) for record identification. Primary collections include `users`, `stations`, `reservations`, `charging_sessions`, `auth_sessions`, and `audit_logs`.
 
