@@ -235,12 +235,9 @@ end note
 - **OAuth 2.0**: Standard authentication and authorization protocol for user identity management
 - **Async Webhooks**: Payment gateway sends callbacks for transaction confirmations
 #### 1.2.2 User Interfaces
-[  
-    - Use wireframes or any image-based description of UI elements  
-    - Use plantuml/salt, mermaid.js/"user journey", or D2  
-    - Flow between screens, etc.  
-    - No aesthetic details needed  
-]   
+
+**[Figma Wireframes Link](https://www.figma.com/design/wbsxFSCCXe3ZcqxwnqeykU/WattApp-Wireframes?node-id=5-2952&t=cAZzDcldBpT0kh0s-1)**
+
 
 ## 2. References
 
