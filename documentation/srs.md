@@ -1100,6 +1100,10 @@ package "Functional Requirements" {
   rectangle FR21 as "FR-21: Role-based features"
   rectangle FR22 as "FR-22: Require authentication"
   rectangle FR23 as "FR-23: Logout"
+  rectangle FR24 as "FR-24: Customer registration"
+  rectangle FR25 as "FR-25: Email verification"
+  rectangle FR26 as "FR-26: Password reset"
+  rectangle FR27 as "FR-27: Account lockout"
 }
 
 UC1 --> FR01
@@ -1153,12 +1157,15 @@ UC4 --> FR23
 |  | FR-16 | Filter chargers by price. |
 |  | FR-17 | Filter chargers by real-time availability. |
 |  | FR-18 | Support combining multiple filter criteria. |
-| **Access Management** | FR-19 | Provide login for users and aggregators. |
+| **Access Management** | FR-19 | Provide login for users and administrators. |
 |  | FR-20 | Validate login credentials. |
 |  | FR-21 | Show role-appropriate features after login. |
 |  | FR-22 | Require authentication for reservation actions. |
 |  | FR-23 | Allow authenticated users to log out. |
-
+|  | FR-24 | The system shall allow new users to register by providing at least a unique email and a password, and shall create a corresponding user account with a default role.
+|  | FR-25 | Send a verification email after registration and activate the customer account only after successful verification. |
+|  | FR-26 | Provide a “forgot password” flow that sends a reset link to the user’s email and allows setting a new password after validation. |
+|  | FR-27 | Lock a user account for a defined period (e.g., 15 minutes) after a configured number of consecutive failed login attempts and notify the user. |
 
 
 ## 3.3 Performance requirements
