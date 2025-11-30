@@ -1000,9 +1000,82 @@ The performance requirements PR-01 to PR-09 are based on empirical data from EV 
 ## 3.4 Data requirements
 
 ### 3.4.1 Data access requirements
-[  
-    - sources, technologies protocols, authentication, whatever applies       
-]
+### 3.4.1 Data Access Requirements and Constraints
+
+The data organization is based on a **document-oriented model** using MongoDB, where each collection stores JSON documents with a unique identifier `_id` (ObjectId) for record identification. Primary collections include `users`, `stations`, `reservations`, `charging_sessions`, `auth_sessions`, and `audit_logs`.
+
+---
+
+#### **Relationships and References**
+
+MongoDB does not enforce referential integrity through foreign keys. Relationships are implemented through:
+
+**1. References**: ObjectIds linking documents across collections (e.g., `reservations.user_id` → `users._id`)
+
+**2. Embedded Documents**: Nested data for tightly coupled information (e.g., `stations.outlets[]` array)
+
+**3. Snapshots**: Duplicated data to preserve historical accuracy (e.g., `charging_sessions.station_name`)
+
+---
+
+#### **Data Integrity Requirements**
+
+Since MongoDB lacks database-level constraints, integrity is enforced at the application layer:
+
+1. **Pre-Write Validation**: Verify referenced documents exist before creating relationships
+2. **Uniqueness Constraints**: Unique indexes prevent duplicates (e.g., `users.email`)
+3. **Value Constraints**: Enforce business rules (e.g., `energy_kwh > 0`, `end_time > start_time`)
+4. **Optimistic Locking**: Version fields detect concurrent modifications
+5. **Atomic Operations**: Use `findOneAndUpdate` with conditions for critical state changes
+6. **Transactions**: Multi-document transactions for operations requiring cross-collection consistency
+
+---
+
+#### **Indexes for Performance**
+
+Required indexes to optimize queries:
+
+| Collection | Index | Purpose |
+|-----------|-------|---------|
+| `users` | `{ email: 1 }` (unique) | Fast lookup, prevent duplicates |
+| `stations` | `{ location: "2dsphere" }` | Geospatial queries for nearby stations |
+| `stations` | `{ "outlets.status": 1 }` | Filter available outlets |
+| `reservations` | `{ station_id: 1, outlet_id: 1, status: 1 }` | Check reservation conflicts |
+| `charging_sessions` | `{ user_id: 1, start_time: -1 }` | User history (newest first) |
+| `auth_sessions` | `{ token_id: 1 }` | Token validation |
+
+---
+
+#### **Preventing Duplicate Records**
+
+To avoid duplicate entries, the system employs:
+
+- **Unique Indexes**: Database-level enforcement on key fields (e.g., email)
+- **Temporal Overlap Validation**: Before creating a reservation, query for active reservations on the same outlet with overlapping time periods. If found, reject with "Outlet already reserved."
+- **Idempotent Operations**: Use `upsert` with unique keys for safely retryable operations
+
+---
+
+#### **Normalization Strategy**
+
+**Normalized** (separate collections): Users, stations, reservations, charging sessions—maintains single source of truth for frequently-changing data.
+
+**Denormalized** (embedded/duplicated): Outlets embedded in stations (always queried together), station snapshots in sessions (historical accuracy), precomputed statistics (performance).
+
+---
+
+#### **Authentication and Authorization**
+
+**Database Level**: 
+- Role-based access control (RBAC) with roles: `app_service` (read/write), `readonly` (analytics), `admin` (DBA)
+- SCRAM-SHA-256 authentication with TLS 1.2+ encryption
+
+**Application Level**:
+- Users access only their own data (filtered by `user_id`)
+- Admins scoped to their `provider_id`
+- All access logged in `audit_logs` collection
+- JWT tokens with 24h (customer) / 8h (admin) expiration
+
 
 ### 3.4.2 Semantic data model
 [  
