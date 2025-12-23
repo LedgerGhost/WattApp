@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import './login.css'
 
 interface LoginFormData {
@@ -114,9 +115,9 @@ export default function Login() {
         <div className="login-footer">
           <p>
             Don't have an account?{' '}
-            <a href="#signup" className="signup-link">
+            <Link to="/register" className="signup-link">
               Sign up
-            </a>
+            </Link>
           </p>
         </div>
       </div>
