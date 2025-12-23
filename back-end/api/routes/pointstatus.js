@@ -1,6 +1,12 @@
-const router = require("express").Router();
+// FILE: back-end/api/routes/pointStatus.js
 
-// προσωρινά άδειο
-router.get("/", (req,res)=>res.send("pointstatus route up"));
+const express = require('express');
+const router = express.Router();
+
+const pointStatusController = require('../controllers/pointstatusController');
+
+// Define the path
+router.get('/point-status/:pointid/:from/:to', pointStatusController.getPointStatusHistory);
 
 module.exports = router;
+
