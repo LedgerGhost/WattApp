@@ -1,5 +1,11 @@
 import { useState } from 'react'
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import './map.css'
+
+type ChargerType = 'AC_Type2' | 'AC_GB/T' | 'DC_Fast_CCS' | 'DC_Fast_CHAdeMO' | 'DC_Fast_GB/T'
+type AvailabilityStatus = 'Available' | 'InUse' | 'Offline'
 
 interface Charger {
   id: number
@@ -9,74 +15,146 @@ interface Charger {
   available: number
   distance: number
   rating: number
+  latitude: number
+  longitude: number
+  chargerType: ChargerType
+  status: AvailabilityStatus
+  power: number // kW
 }
 
 export default function Map() {
   const [selectedCharger, setSelectedCharger] = useState<Charger | null>(null)
-  const [filters, setFilters] = useState({
-    priceRange: [0, 100],
-    available: false,
+  const [filters, setFilters] = useState<{
+    priceRange: [number, number]
+    availabilityFilter: 'All' | 'Available' | 'InUse' | 'Offline'
+    chargerTypeFilter: ChargerType[]
+    distance: number
+  }>({
+    priceRange: [0, 1],
+    availabilityFilter: 'All',
+    chargerTypeFilter: [],
     distance: 50,
   })
 
-  // Mock charger data
+  const getChargerIcon = (chargerType: ChargerType): string => {
+    const iconMap: Record<ChargerType, string> = {
+      AC_Type2: '/src/assets/images/actyp2.jpg', // AC Type 2
+      'AC_GB/T': '/src/assets/images/gb-t_ac.jpg', // AC GB/T
+      DC_Fast_CCS: '/src/assets/images/ccs2.jpg', // DC Fast CCS
+      DC_Fast_CHAdeMO: '/src/assets/images/chademo.jpg', // DC Fast CHAdeMO
+      'DC_Fast_GB/T': '/src/assets/images/gb-t_dc.jpg', // DC Fast GB/T
+    }
+    return iconMap[chargerType]
+  }
+
+  const getMapPinColor = (status: AvailabilityStatus): string => {
+    switch (status) {
+      case 'Available':
+        return 'green'
+      case 'InUse':
+        return 'red'
+      case 'Offline':
+        return 'grey'
+      default:
+        return 'blue'
+    }
+  }
+//dummy daya 
+  // Mock charger data - Greece locations
   const chargers: Charger[] = [
     {
       id: 1,
-      name: 'FastCharge Station',
-      address: '123 Main St, Downtown',
+      name: 'FastCharge Athens',
+      address: 'Syntagma, Athens',
       price: 0.45,
       available: 5,
       distance: 2.3,
       rating: 4.8,
+      latitude: 37.9761,
+      longitude: 23.7348,
+      chargerType: 'DC_Fast_CCS',
+      status: 'Available',
+      power: 150,
     },
     {
       id: 2,
-      name: 'EV Hub Center',
-      address: '456 Tech Ave, Innovation District',
+      name: 'EV Hub Thessaloniki',
+      address: 'Aristotelous Square, Thessaloniki',
       price: 0.38,
       available: 2,
       distance: 4.1,
       rating: 4.5,
+      latitude: 40.6332,
+      longitude: 22.9411,
+      chargerType: 'AC_Type2',
+      status: 'InUse',
+      power: 22,
     },
     {
       id: 3,
-      name: 'Green Energy Charging',
-      address: '789 Eco Blvd, Sustainable Park',
+      name: 'Green Energy Charging Patras',
+      address: 'Patras Port, Patras',
       price: 0.32,
       available: 8,
       distance: 5.7,
       rating: 4.9,
+      latitude: 38.2466,
+      longitude: 21.7345,
+      chargerType: 'DC_Fast_CHAdeMO',
+      status: 'Available',
+      power: 50,
     },
     {
       id: 4,
-      name: 'PowerUp Station',
-      address: '321 Energy St, Industrial Zone',
+      name: 'PowerUp Station Heraklion',
+      address: 'Old Port, Heraklion',
       price: 0.42,
       available: 1,
       distance: 3.2,
       rating: 4.3,
+      latitude: 35.3387,
+      longitude: 25.1442,
+      chargerType: 'DC_Fast_GB/T',
+      status: 'Available',
+      power: 100,
     },
     {
       id: 5,
-      name: 'Quick Charge Hub',
-      address: '654 Speed Lane, Commercial Area',
+      name: 'Quick Charge Hub Larissa',
+      address: 'Central Station, Larissa',
       price: 0.5,
       available: 6,
       distance: 1.8,
       rating: 4.6,
+      latitude: 39.6364,
+      longitude: 22.6158,
+      chargerType: 'AC_GB/T',
+      status: 'Available',
+      power: 11,
     },
   ]
 
-  // Filter chargers based on criteria
+  // Filter chargers based on criteria from SRS
   const filteredChargers = chargers.filter(charger => {
+    // Price filter
     const priceMatch =
       charger.price >= filters.priceRange[0] &&
       charger.price <= filters.priceRange[1]
-    const availableMatch = !filters.available || charger.available > 0
+
+    // Availability filter
+    const availabilityMatch =
+      filters.availabilityFilter === 'All' ||
+      charger.status === filters.availabilityFilter
+
+    // Charger type filter
+    const chargerTypeMatch =
+      filters.chargerTypeFilter.length === 0 ||
+      filters.chargerTypeFilter.includes(charger.chargerType)
+
+    // Distance filter
     const distanceMatch = charger.distance <= filters.distance
 
-    return priceMatch && availableMatch && distanceMatch
+    return priceMatch && availabilityMatch && chargerTypeMatch && distanceMatch
   })
 
   return (
@@ -126,19 +204,72 @@ export default function Map() {
           </div>
 
           <div className="filter-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={filters.available}
-                onChange={e =>
-                  setFilters(prev => ({
-                    ...prev,
-                    available: e.target.checked,
-                  }))
-                }
-              />
-              <span>Available Only</span>
-            </label>
+            <label>Availability Status</label>
+            <div className="availability-filter">
+              {(['All', 'Available', 'InUse', 'Offline'] as const).map(status => (
+                <label key={status} className="checkbox-label">
+                  <input
+                    type="radio"
+                    name="availability"
+                    value={status}
+                    checked={filters.availabilityFilter === status}
+                    onChange={e =>
+                      setFilters(prev => ({
+                        ...prev,
+                        availabilityFilter: e.target.value as 'All' | 'Available' | 'InUse' | 'Offline',
+                      }))
+                    }
+                  />
+                  <span>{status}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="filter-group">
+            <label>Charger Type</label>
+            <div className="charger-type-filter">
+              <div className="filter-subgroup">
+                <strong>AC Mode</strong>
+                {(['AC_Type2', 'AC_GB/T'] as const).map(type => (
+                  <label key={type} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={filters.chargerTypeFilter.includes(type)}
+                      onChange={e => {
+                        setFilters(prev => ({
+                          ...prev,
+                          chargerTypeFilter: e.target.checked
+                            ? [...prev.chargerTypeFilter, type]
+                            : prev.chargerTypeFilter.filter(t => t !== type),
+                        }))
+                      }}
+                    />
+                    <span>{type === 'AC_Type2' ? 'Type 2' : 'GB/T'}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="filter-subgroup">
+                <strong>DC Fast</strong>
+                {(['DC_Fast_CCS', 'DC_Fast_CHAdeMO', 'DC_Fast_GB/T'] as const).map(type => (
+                  <label key={type} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={filters.chargerTypeFilter.includes(type)}
+                      onChange={e => {
+                        setFilters(prev => ({
+                          ...prev,
+                          chargerTypeFilter: e.target.checked
+                            ? [...prev.chargerTypeFilter, type]
+                            : prev.chargerTypeFilter.filter(t => t !== type),
+                        }))
+                      }}
+                    />
+                    <span>{type.replace('DC_Fast_', '')}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="filter-group">
@@ -174,9 +305,13 @@ export default function Map() {
                 <span className="price">${charger.price.toFixed(2)}/kWh</span>
                 <span className="distance">{charger.distance} km</span>
               </div>
+              <div className="charger-specs">
+                <span className="type">{charger.chargerType}</span>
+                <span className="power">{charger.power}kW</span>
+              </div>
               <div className="charger-status">
-                <span className={`available ${charger.available > 0 ? 'in-stock' : 'out-of-stock'}`}>
-                  {charger.available} Available
+                <span className={`status ${charger.status.toLowerCase()}`}>
+                  {charger.status}
                 </span>
                 <span className="rating">⭐ {charger.rating}</span>
               </div>
@@ -187,20 +322,84 @@ export default function Map() {
 
       {/* Map area */}
       <div className="map-area">
-        <div className="map-placeholder">
-          <h3>📍 Map View</h3>
-          <p>Chargers will appear on the map here</p>
-          {selectedCharger && (
-            <div className="selected-charger-info">
-              <h4>{selectedCharger.name}</h4>
-              <p>{selectedCharger.address}</p>
-              <p>Price: ${selectedCharger.price.toFixed(2)}/kWh</p>
-              <p>Available Chargers: {selectedCharger.available}</p>
-              <p>Rating: ⭐ {selectedCharger.rating}</p>
-              <button className="reserve-btn">Reserve Spot</button>
+        <MapContainer
+          center={[37.9761, 23.7348]}
+          zoom={6}
+          scrollWheelZoom={false}
+          className="leaflet-container"
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          {filteredChargers.map(charger => (
+            <Marker
+              key={charger.id}
+              position={[charger.latitude, charger.longitude]}
+              icon={L.icon({
+                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${getMapPinColor(charger.status)}.png`,
+                shadowUrl:
+                  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41],
+              })}
+              eventHandlers={{
+                click: () => setSelectedCharger(charger),
+              }}
+            >
+              <Popup>
+                <div className="popup-content">
+                  <h4>{charger.name}</h4>
+                  <p>{charger.address}</p>
+                  <p>
+                    <strong>${charger.price.toFixed(2)}</strong>/kWh
+                  </p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+
+        {selectedCharger && (
+          <div className="selected-charger-info">
+            <div className="charger-icon-header">
+              <img 
+                src={getChargerIcon(selectedCharger.chargerType)} 
+                alt={selectedCharger.chargerType}
+                className="charger-type-icon"
+              />
             </div>
-          )}
-        </div>
+            <h4>{selectedCharger.name}</h4>
+            <p>{selectedCharger.address}</p>
+            <div className="charger-details">
+              <div className="detail-item">
+                <span className="label">Type:</span>
+                <span className="value">{selectedCharger.chargerType}</span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Power:</span>
+                <span className="value">{selectedCharger.power} kW</span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Price:</span>
+                <span className="value">${selectedCharger.price.toFixed(2)}/kWh</span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Status:</span>
+                <span className={`value status ${selectedCharger.status.toLowerCase()}`}>
+                  {selectedCharger.status}
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Rating:</span>
+                <span className="value">⭐ {selectedCharger.rating}</span>
+              </div>
+            </div>
+            <button className="reserve-btn">Reserve Spot</button>
+          </div>
+        )}
       </div>
     </div>
   )
