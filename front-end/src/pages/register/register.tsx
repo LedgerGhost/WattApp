@@ -130,7 +130,6 @@ export default function Register() {
               value={formData.fullName}
               onChange={handleChange}
               required
-              disabled={isLoading}
             />
             {errors.fullName && (
               <span className="error-message">{errors.fullName}</span>
@@ -148,7 +147,6 @@ export default function Register() {
               value={formData.email}
               onChange={handleChange}
               required
-              disabled={isLoading}
             />
             {errors.email && (
               <span className="error-message">{errors.email}</span>
@@ -167,13 +165,11 @@ export default function Register() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                disabled={isLoading}
               />
               <button
                 type="button"
                 className="toggle-password"
                 onClick={() => setShowPassword(!showPassword)}
-                disabled={isLoading}
                 aria-label="Toggle password visibility"
               >
                 {showPassword ? '👁️' : '👁️‍🗨️'}
@@ -196,13 +192,11 @@ export default function Register() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                disabled={isLoading}
               />
               <button
                 type="button"
                 className="toggle-password"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                disabled={isLoading}
                 aria-label="Toggle password visibility"
               >
                 {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
@@ -221,7 +215,6 @@ export default function Register() {
                 name="agreeTerms"
                 checked={formData.agreeTerms}
                 onChange={handleChange}
-                disabled={isLoading}
               />
               <span>
                 I agree to the{' '}

@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/login/login'
-import Register from './pages/register/register'
+import Register from './pages/register/register.tsx'
 import Map from './pages/map/map'
 
 function App() {

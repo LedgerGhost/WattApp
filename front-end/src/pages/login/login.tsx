@@ -62,7 +62,6 @@ export default function Login() {
               value={formData.email}
               onChange={handleChange}
               required
-              disabled={isLoading}
             />
           </div>
 
@@ -78,13 +77,11 @@ export default function Login() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                disabled={isLoading}
               />
               <button
                 type="button"
                 className="toggle-password"
                 onClick={() => setShowPassword(!showPassword)}
-                disabled={isLoading}
                 aria-label="Toggle password visibility"
               >
                 {showPassword ? '👁️' : '👁️‍🗨️'}
@@ -95,7 +92,7 @@ export default function Login() {
           {/* Remember Me & Forgot Password */}
           <div className="form-extras">
             <label className="remember-me">
-              <input type="checkbox" disabled={isLoading} />
+              <input type="checkbox" />
               <span>Remember me</span>
             </label>
             <a href="#forgot" className="forgot-password">
