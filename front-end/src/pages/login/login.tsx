@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import './login.css'
 
 interface LoginFormData {
@@ -14,6 +14,7 @@ export default function Login() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const navigate = useNavigate()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.currentTarget
@@ -31,8 +32,9 @@ export default function Login() {
     setTimeout(() => {
       console.log('Login attempt:', formData)
       setIsLoading(false)
-      // TODO: Add actual authentication logic
-    }, 1000)
+      // Redirect to map page
+      navigate('/map')
+    }, 500)
   }
 
   const isFormValid = formData.email && formData.password
