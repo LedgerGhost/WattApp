@@ -4,7 +4,7 @@
 const { points, pointStatusHistory } = require("../utils/database");
 const { parseDateStartOfDay, parseDateEndOfDay, isValidDateRange, isDateInRange} = require("../utils/dateParser");
 
-exports.getPointStatusHistory = (req, res) => {
+exports.getPointStatusHistory = async (req, res) => {
     try {
         // SETUP & INPUTS
         const pointid = req.params.pointid;
