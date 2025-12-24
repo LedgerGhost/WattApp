@@ -32,7 +32,8 @@ app.use("/api", require("./routes/pointstatus")); //g
 app.use("/api", require("./routes/activeres"));
 app.use("/api", require("./routes/navigate"));
 
-
+// Admin route:
+app.use('/api', require("./routes/admin"));
 
 app.use((req, res) => { res.status(404).json({ message: "Νot found" }) });
 
