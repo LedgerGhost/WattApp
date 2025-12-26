@@ -4,9 +4,16 @@ const express = require('express');
 const router = express.Router();
 
 // Import admin's controllers
-const adminController = require('../controllers/admin-controllers/healthcheckController');
+const healthcheckController = require('../controllers/admin-controllers/healthcheckController');
+const resetPointsController = require('../controllers/admin-controllers/resetpointsController');
+const adminController = require('../controllers/adminController');
+const multer = require('multer'); // Middleware for handling file uploads
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Define the path
-router.get('/admin/healthcheck', adminController.healthcheck);
+router.get('/admin/healthcheck', healthcheckController.healthcheck);
+router.post('/admin/resetpoints', resetPointsController.resetPoints);
+router.post('/admin/addpoints', upload.single('source'), adminController.addPoints);
+
 
 module.exports = router;
