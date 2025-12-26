@@ -2,6 +2,19 @@ const { points } = require("../../utils/database");
 
 exports.healthcheck = async (req, res) => {
     try {
+        // VALIDATE FORMAT (400 Bad Request) - (default: json)
+        const normalizedFormat = (req.query.format || 'json').toLowerCase();
+        if (normalizedFormat !== 'json') {
+            return res.status(400).json({
+                call: req.originalUrl,
+                timeref: new Date().toISOString(),
+                originator: req.ip,
+                return_code: 400,
+                error: `Invalid format '${req.query.format}'. Allowed values: json, csv`,
+                debuginfo: `format: ${req.query.format}`
+            });
+        }
+
         // DB CONNECTION CHECK 
         // Στην προσομοίωση (mock data), ελέγχουμε απλά αν φορτώθηκε ο πίνακας points.
         // Σε πραγματική ΒΔ, εδώ θα γινόταν π.χ. mongoose.connection.readyState
