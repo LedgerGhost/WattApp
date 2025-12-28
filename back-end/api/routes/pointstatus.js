@@ -6,7 +6,7 @@ const router = express.Router();
 const pointStatusController = require('../controllers/pointstatusController');
 
 // Define the path
-router.get('/point-status/:pointid/:from/:to', pointStatusController.getPointStatusHistory);
+router.get('/:pointid/:from/:to', pointStatusController.getPointStatusHistory);
 
 module.exports = router;
 

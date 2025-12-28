@@ -11,9 +11,9 @@ const multer = require('multer'); // Middleware for handling file uploads
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Define the path
-router.get('/admin/healthcheck', healthcheckController.healthcheck);
-router.post('/admin/resetpoints', resetPointsController.resetPoints);
-router.post('/admin/addpoints', upload.single('source'), adminController.addPoints);
+router.get('/healthcheck', healthcheckController.healthcheck);
+router.post('/resetpoints', resetPointsController.resetPoints);
+router.post('/addpoints', upload.single('source'), adminController.addPoints);
 
 
 module.exports = router;
