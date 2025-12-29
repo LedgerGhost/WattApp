@@ -30,6 +30,15 @@ const pointStatusHistory = [
     { pointid: 2, timeref: "2024-01-02 12:00:00", old_state: "available", new_state: "offline" }
 ];
 
+let users = [
+    // Optional: Add a default admin user for testing
+    {
+        id: 1,
+        username: "admin",
+        password: "password123" // In real life, this must be hashed!
+    }
+];
+
 module.exports = {
   points: [
     { pointid: 1, lon:"23.73", lat:"37.98", status:"available", cap:50 },
@@ -38,5 +47,6 @@ module.exports = {
   ], 
   sessions,
   reservations,
-  pointStatusHistory
+  pointStatusHistory,
+  users
 };
