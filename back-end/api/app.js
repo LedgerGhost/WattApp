@@ -21,7 +21,7 @@ const reservationLogger = require("./middlewares/reservationLogger");
 app.use("/api", reservationLogger); //store reserv
 
 /* Routes used */
-
+app.use("/api/auth",require("./routes/auth")); //for signup/login
 app.use("/api/admin",require("./routes/admin"));
 app.use("/api",require("./routes/points")); //a
 app.use("/api",require("./routes/sessions")); //e
