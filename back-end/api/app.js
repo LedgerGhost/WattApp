@@ -28,7 +28,7 @@ app.use("/api",require("./routes/sessions")); //e
 app.use("/api", require("./routes/point")); //b
 app.use("/api", require("./routes/reserve")); //c
 app.use("/api", require("./routes/updpoint"));//d
-app.use("/api", require("./routes/pointstatus")); //g
+app.use("/api/pointstatus", require("./routes/pointstatus")); //g
 app.use("/api", require("./routes/activeres"));
 app.use("/api", require("./routes/navigate"));
 
