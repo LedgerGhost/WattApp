@@ -1,0 +1,14 @@
+const { formatLocalTimestamp } = require("./time");
+
+function buildErrorLog(req, code, error, debuginfo = "") {
+  return {
+    call: req.protocol + "://" + req.get("host") + req.originalUrl,
+    timeref: formatLocalTimestamp(),   
+    originator: req.ip,
+    return_code: code,
+    error,
+    debuginfo
+  };
+}
+
+module.exports = { buildErrorLog };

@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 
-
+const { buildErrorLog } = require("./utils/errorLog");
 
 const mockAuth = require("./middlewares/mockauth");
 app.use("/api", mockAuth);//testing
@@ -35,6 +35,24 @@ app.use("/api", require("./routes/navigate"));
 // Admin route:
 app.use('/api', require("./routes/admin"));
 
-app.use((req, res) => { res.status(404).json({ message: "Νot found" }) });
+app.use((req, res) => {
+  return res.status(404).json(
+    buildErrorLog(req, 404, "Not found", "Service or endpoint does not exist")
+  );
+});
+
+app.use((err, req, res, next) => {
+  console.error(err);
+
+  return res.status(500).json(
+    buildErrorLog(
+      req,
+      500,
+      "Internal server error",
+      err?.message || "Unexpected error"
+    )
+  );
+});
+
 
 module.exports = app;
