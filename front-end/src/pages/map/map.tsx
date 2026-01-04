@@ -1,8 +1,13 @@
 import { useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { useNavigate } from 'react-router-dom'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import './map.css'
+
+
+
+
 
 type ChargerType = 'AC_Type2' | 'AC_GB/T' | 'DC_Fast_CCS' | 'DC_Fast_CHAdeMO' | 'DC_Fast_GB/T'
 type AvailabilityStatus = 'Available' | 'InUse' | 'Offline'
@@ -24,6 +29,7 @@ interface Charger {
 
 export default function Map() {
   const [selectedCharger, setSelectedCharger] = useState<Charger | null>(null)
+  const navigate = useNavigate()
   const [filters, setFilters] = useState<{
     priceRange: [number, number]
     availabilityFilter: 'All' | 'Available' | 'InUse' | 'Offline'
@@ -162,9 +168,20 @@ export default function Map() {
       {/* Sidebar with filters */}
       <div className="sidebar">
         <div className="sidebar-header">
-          <h2>⚡ WattApp</h2>
-          <p>Find Chargers</p>
-        </div>
+         <h2>⚡ WattApp</h2>
+         
+
+         <button
+           type="button"
+           className="profile-btn"
+           onClick={() => navigate('/profile')}
+          >
+           Profile
+           </button>
+         </div>
+
+      
+        
 
         {/* Filters */}
         <div className="filters">

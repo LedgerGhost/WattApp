@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './profile.css'
 
 interface Activity {
@@ -6,41 +7,44 @@ interface Activity {
   date: string
   type: 'charge' | 'reservation' | 'payment'
   value: number
-  duration?: number
+  energyKwh?: number
+  durationMin?: number
   status: 'completed' | 'pending' | 'cancelled'
   location?: string
   chargerType?: string
-  details?: string
+  powerKw?: number
 }
 
-interface Statistics {
-  totalCount: number
-  totalValue: number
-  averageValue: number
-  monthlyBreakdown: { month: string; count: number; value: number; average: number }[]
-}
+type DatePreset = 'lastMonth' | 'last3Months' | 'currentYear' | 'all' | 'custom'
 
-type DatePreset = 'all' | 'lastMonth' | 'last3Months' | 'currentYear' | 'custom'
+function money(v: number) {
+  return `$${v.toFixed(2)}`
+}
 
 export default function Profile() {
-  // Mock user data
-  const mockUser = {
+  const navigate = useNavigate()
+
+  // Mock user data (swap with real API data later)
+  const user = {
     name: 'John Doe',
     email: 'john@example.com',
     joinDate: '2023-06-15',
+    vehicle: 'Tesla Model 3',
   }
 
-  // Mock activity data dummy data 
+  // Mock activity data
   const allActivities: Activity[] = [
     {
       id: 1,
       date: '2024-12-20',
       type: 'charge',
       value: 25.5,
-      duration: 45,
+      energyKwh: 32.4,
+      durationMin: 45,
       status: 'completed',
       location: 'Athens Downtown',
       chargerType: 'DC_Fast_CCS',
+      powerKw: 50,
     },
     {
       id: 2,
@@ -49,110 +53,53 @@ export default function Profile() {
       value: 0,
       status: 'completed',
       location: 'Thessaloniki Hub',
+      chargerType: 'DC_Fast_CHAdeMO',
+      powerKw: 50,
     },
     {
       id: 3,
       date: '2024-12-15',
       type: 'charge',
       value: 18.75,
-      duration: 35,
+      energyKwh: 24.1,
+      durationMin: 35,
       status: 'completed',
       location: 'Patras Port',
       chargerType: 'DC_Fast_CHAdeMO',
+      powerKw: 50,
     },
-    {
-      id: 4,
-      date: '2024-12-10',
-      type: 'payment',
-      value: 50.0,
-      status: 'completed',
-    },
+    { id: 4, date: '2024-12-10', type: 'payment', value: 50.0, status: 'completed' },
     {
       id: 5,
       date: '2024-12-08',
       type: 'charge',
       value: 22.3,
-      duration: 40,
+      energyKwh: 28.2,
+      durationMin: 40,
       status: 'completed',
       location: 'Heraklion Station',
       chargerType: 'AC_Type2',
-    },
-    {
-      id: 6,
-      date: '2024-11-25',
-      type: 'charge',
-      value: 19.8,
-      duration: 38,
-      status: 'completed',
-      location: 'Larissa Central',
-      chargerType: 'AC_GB/T',
-    },
-    {
-      id: 7,
-      date: '2024-11-20',
-      type: 'reservation',
-      value: 0,
-      status: 'cancelled',
-      location: 'Athens Downtown',
-    },
-    {
-      id: 8,
-      date: '2024-11-15',
-      type: 'charge',
-      value: 24.5,
-      duration: 50,
-      status: 'completed',
-      location: 'Syntagma Square',
-      chargerType: 'DC_Fast_CCS',
-    },
-    {
-      id: 9,
-      date: '2024-10-30',
-      type: 'payment',
-      value: 75.0,
-      status: 'completed',
-    },
-    {
-      id: 10,
-      date: '2024-10-15',
-      type: 'charge',
-      value: 21.6,
-      duration: 42,
-      status: 'completed',
-      location: 'Patras Port',
-      chargerType: 'DC_Fast_CHAdeMO',
+      powerKw: 22,
     },
   ]
 
-  // State management
   const [datePreset, setDatePreset] = useState<DatePreset>('lastMonth')
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
-  const [sortBy, setSortBy] = useState<'date' | 'value'>('date')
-  const [expandedActivityId, setExpandedActivityId] = useState<number | null>(null)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
   const [dateError, setDateError] = useState('')
 
-  // Helper function to get date range based on preset
-  const getDateRange = (): { start: Date; end: Date } => {
+  const range = () => {
     const today = new Date()
     const end = new Date(today)
 
     switch (datePreset) {
       case 'lastMonth':
-        return {
-          start: new Date(today.getFullYear(), today.getMonth() - 1, today.getDate()),
-          end,
-        }
+        return { start: new Date(today.getFullYear(), today.getMonth() - 1, today.getDate()), end }
       case 'last3Months':
-        return {
-          start: new Date(today.getFullYear(), today.getMonth() - 3, today.getDate()),
-          end,
-        }
+        return { start: new Date(today.getFullYear(), today.getMonth() - 3, today.getDate()), end }
       case 'currentYear':
-        return {
-          start: new Date(today.getFullYear(), 0, 1),
-          end,
-        }
+        return { start: new Date(today.getFullYear(), 0, 1), end }
       case 'custom':
         return {
           start: customStartDate ? new Date(customStartDate) : new Date(0),
@@ -160,394 +107,270 @@ export default function Profile() {
         }
       case 'all':
       default:
-        return {
-          start: new Date(2020, 0, 1),
-          end,
-        }
+        return { start: new Date(2020, 0, 1), end }
     }
   }
 
-  // Validate and filter activities
-  const { filteredActivities, stats, hasError } = useMemo(() => {
-    const { start, end } = getDateRange()
+  const computed = useMemo(() => {
+    const { start, end } = range()
 
-    // Validate date range
     if (datePreset === 'custom' && customStartDate && customEndDate) {
       if (new Date(customStartDate) > new Date(customEndDate)) {
-        setDateError('Start date cannot be after end date. Please check your selection.')
-        return { filteredActivities: [], stats: null, hasError: true }
+        setDateError('Start date cannot be after end date.')
+        return { items: [], stats: null as any, hasError: true }
       }
     }
     setDateError('')
 
-    // Filter activities
-    const filtered = allActivities.filter(activity => {
-      const activityDate = new Date(activity.date)
-      return activityDate >= start && activityDate <= end
-    })
-
-    // Sort activities
-    const sorted = [...filtered].sort((a, b) => {
-      if (sortBy === 'date') {
-        return new Date(b.date).getTime() - new Date(a.date).getTime()
-      } else {
-        return b.value - a.value
-      }
-    })
-
-    // Calculate statistics
-    let statistics: Statistics | null = null
-    if (sorted.length > 0) {
-      const chargeActivities = sorted.filter(a => a.type === 'charge')
-      const totalValue = chargeActivities.reduce((sum, a) => sum + a.value, 0)
-
-      // Monthly breakdown
-      const monthlyMap = new Map<string, { count: number; value: number }>()
-      sorted.forEach(activity => {
-        const date = new Date(activity.date)
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-        const existing = monthlyMap.get(monthKey) || { count: 0, value: 0 }
-        existing.count++
-        if (activity.type === 'charge') {
-          existing.value += activity.value
-        }
-        monthlyMap.set(monthKey, existing)
+    const items = allActivities
+      .filter(a => {
+        const d = new Date(a.date)
+        return d >= start && d <= end
       })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-      const monthlyBreakdown = Array.from(monthlyMap.entries())
-        .map(([month, data]) => ({
-          month,
-          count: data.count,
-          value: data.value,
-          average: data.value / data.count,
-        }))
-        .sort((a, b) => a.month.localeCompare(b.month))
+    const charges = items.filter(a => a.type === 'charge')
+    const totalCost = charges.reduce((s, a) => s + a.value, 0)
+    const totalKwh = charges.reduce((s, a) => s + (a.energyKwh ?? 0), 0)
+    const avgCostPerKwh = totalKwh > 0 ? totalCost / totalKwh : 0
 
-      statistics = {
-        totalCount: sorted.length,
-        totalValue: totalValue,
-        averageValue: chargeActivities.length > 0 ? totalValue / chargeActivities.length : 0,
-        monthlyBreakdown,
-      }
+    return {
+      items,
+      hasError: false,
+      stats: {
+        totalActivities: items.length,
+        sessions: charges.length,
+        totalCost,
+        totalKwh,
+        avgCostPerKwh,
+      },
     }
-
-    return { filteredActivities: sorted, stats: statistics, hasError: false }
-  }, [datePreset, customStartDate, customEndDate, sortBy])
+  }, [datePreset, customStartDate, customEndDate])
 
   return (
-    <div className="profile-container">
-      {/* Header */}
-      <div className="profile-header">
-        <div className="profile-user-info">
-          <div className="profile-avatar">👤</div>
-          <div className="profile-details">
-            <h1>{mockUser.name}</h1>
-            <p>{mockUser.email}</p>
-            <p className="join-date">Member since {new Date(mockUser.joinDate).toLocaleDateString()}</p>
+    <div className="wa-shell">
+      {/* Sidebar */}
+      <aside className="wa-sidebar">
+        <div className="wa-brand">
+          <div className="wa-logo">⚡</div>
+          <div className="wa-brand-text">
+            <div className="wa-brand-name">WattApp</div>
+            <div className="wa-brand-sub">Charge Smart, Drive Far</div>
           </div>
         </div>
-      </div>
 
-      {/* Controls Section */}
-      <div className="profile-controls">
-        <div className="controls-header">
-          <h2>📊 History & Statistics</h2>
+        <nav className="wa-nav" aria-label="Main navigation">
+          <button className="wa-nav-item" type="button" onClick={() => navigate('/map')}>
+            <span className="wa-nav-ico">🗺️</span>
+            <span>Find Chargers</span>
+          </button>
+
+          <button className="wa-nav-item active" type="button">
+            <span className="wa-nav-ico">👤</span>
+            <span>Profile & Stats</span>
+          </button>
+        </nav>
+
+        <div className="wa-side-footer">
+          {/* Hook to your auth later */}
+          <button className="wa-ghost" type="button" onClick={() => navigate('/login')}>
+            Logout
+          </button>
         </div>
+      </aside>
 
-        {/* Date Range Controls */}
-        <div className="controls-section">
-          <h3>Time Period</h3>
-          <div className="preset-buttons">
-            {(['all', 'lastMonth', 'last3Months', 'currentYear', 'custom'] as const).map(preset => (
-              <button
-                key={preset}
-                className={`preset-btn ${datePreset === preset ? 'active' : ''}`}
-                onClick={() => setDatePreset(preset)}
-              >
-                {preset === 'all' && 'All Time'}
-                {preset === 'lastMonth' && 'Last Month'}
-                {preset === 'last3Months' && 'Last 3 Months'}
-                {preset === 'currentYear' && 'This Year'}
-                {preset === 'custom' && 'Custom'}
-              </button>
-            ))}
+      {/* Main */}
+      <div className="wa-main">
+        {/* Topbar */}
+        <header className="wa-topbar">
+          <div className="wa-page">
+            <div className="wa-page-title">Profile</div>
+            <div className="wa-page-sub">Account, history, and charging statistics</div>
           </div>
 
-          {/* Custom Date Range */}
-          {datePreset === 'custom' && (
-            <div className="custom-date-range">
-              <div className="date-input-group">
-                <label htmlFor="startDate">Start Date</label>
-                <input
-                  id="startDate"
-                  type="date"
-                  value={customStartDate}
-                  onChange={e => setCustomStartDate(e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
-                />
-              </div>
-              <div className="date-input-group">
-                <label htmlFor="endDate">End Date</label>
-                <input
-                  id="endDate"
-                  type="date"
-                  value={customEndDate}
-                  onChange={e => setCustomEndDate(e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Date Error */}
-          {dateError && (
-            <div className="error-state">
-              <span className="error-icon">⚠️</span>
-              <p>{dateError}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Sort Controls */}
-        <div className="controls-section">
-          <h3>Sort By</h3>
-          <div className="sort-buttons">
-            <button
-              className={`sort-btn ${sortBy === 'date' ? 'active' : ''}`}
-              onClick={() => setSortBy('date')}
-            >
-              📅 Date (Newest First)
+          <div className="wa-actions">
+            <button className="wa-icon" type="button" aria-label="Notifications">
+              🔔
             </button>
-            <button
-              className={`sort-btn ${sortBy === 'value' ? 'active' : ''}`}
-              onClick={() => setSortBy('value')}
-            >
-              💰 Value (Highest First)
+            <button className="wa-icon" type="button" aria-label="Account">
+              👤
             </button>
           </div>
-        </div>
-      </div>
+        </header>
 
-      {/* Statistics Section */}
-      {hasError ? (
-        <div className="error-state" style={{ margin: '20px 0' }}>
-          <span className="error-icon">❌</span>
-          <p>Unable to display statistics due to invalid date range</p>
-        </div>
-      ) : stats ? (
-        <div className="statistics-section">
-          <h2>📈 Statistics</h2>
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-label">Total Activities</div>
-              <div className="stat-value">{stats.totalCount}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Total Charged (kWh)</div>
-              <div className="stat-value">${stats.totalValue.toFixed(2)}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Average per Charge</div>
-              <div className="stat-value">${stats.averageValue.toFixed(2)}</div>
-            </div>
-          </div>
-
-          {/* Monthly Breakdown */}
-          {stats.monthlyBreakdown.length > 0 && (
-            <div className="monthly-breakdown">
-              <h3>Monthly Breakdown</h3>
-              <div className="monthly-table">
-                <div className="table-header">
-                  <div className="col-month">Month</div>
-                  <div className="col-count">Activities</div>
-                  <div className="col-value">Total</div>
-                  <div className="col-average">Average</div>
-                </div>
-                {stats.monthlyBreakdown.map((month, idx) => (
-                  <div key={idx} className="table-row">
-                    <div className="col-month">{month.month}</div>
-                    <div className="col-count">{month.count}</div>
-                    <div className="col-value">${month.value.toFixed(2)}</div>
-                    <div className="col-average">${month.average.toFixed(2)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Trend Visualization */}
-          {stats.monthlyBreakdown.length > 0 && (
-            <div className="trend-visualization">
-              <h3>⚡ Monthly Energy Consumption Chart</h3>
-              <div className="chart-container">
-                <div className="chart-y-axis">
-                  <div className="y-label">kWh</div>
-                </div>
-                <div className="chart-area">
-                  <div className="chart-grid">
-                    <div className="grid-line" style={{ height: '0%' }}></div>
-                    <div className="grid-line" style={{ height: '25%' }}></div>
-                    <div className="grid-line" style={{ height: '50%' }}></div>
-                    <div className="grid-line" style={{ height: '75%' }}></div>
-                    <div className="grid-line" style={{ height: '100%' }}></div>
-                  </div>
-
-                  <div className="bars-wrapper">
-                    {stats.monthlyBreakdown.map((month, idx) => {
-                      const maxValue = Math.max(...stats.monthlyBreakdown.map(m => m.value)) || 1
-                      const percentage = (month.value / maxValue) * 100
-                      return (
-                        <div key={idx} className="bar-group">
-                          <div className="bar-wrapper">
-                            <div
-                              className="bar"
-                              style={{
-                                height: `${percentage}%`,
-                              }}
-                              title={`${month.month}: ${month.value.toFixed(2)} kWh`}
-                            >
-                              {percentage > 10 && (
-                                <span className="bar-label">${month.value.toFixed(1)}</span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="bar-month">{month.month.split('-')[1]}</div>
-                          <div className="bar-count">{month.count} sessions</div>
-                        </div>
-                      )
-                    })}
-                  </div>
+        {/* Content */}
+        <main className="wa-content">
+          {/* Row: account + stats */}
+          <section className="wa-grid wa-grid-12">
+            <div className="wa-card span-5">
+              <div className="wa-card-head">
+                <div>
+                  <div className="wa-card-title">Account</div>
+                  <div className="wa-card-sub">Your WattApp profile</div>
                 </div>
               </div>
 
-              {/* Chart Legend and Stats */}
-              <div className="chart-info">
-                <div className="info-item">
-                  <span className="info-icon">📊</span>
-                  <div>
-                    <div className="info-label">Peak Month</div>
-                    <div className="info-value">
-                      {stats.monthlyBreakdown.reduce((max, m) => (m.value > max.value ? m : max)).month} (
-                      {stats.monthlyBreakdown.reduce((max, m) => (m.value > max.value ? m : max)).value.toFixed(2)} kWh)
-                    </div>
-                  </div>
+              <div className="wa-profile">
+                <div className="wa-avatar">👤</div>
+                <div className="wa-profile-info">
+                  <div className="wa-profile-name">{user.name}</div>
+                  <div className="wa-muted">{user.email}</div>
+                  <div className="wa-muted">Member since {new Date(user.joinDate).toLocaleDateString()}</div>
+                  <div className="wa-muted">Vehicle: {user.vehicle}</div>
                 </div>
-                <div className="info-item">
-                  <span className="info-icon">📈</span>
-                  <div>
-                    <div className="info-label">Lowest Month</div>
-                    <div className="info-value">
-                      {stats.monthlyBreakdown.reduce((min, m) => (m.value < min.value ? m : min)).month} (
-                      {stats.monthlyBreakdown.reduce((min, m) => (m.value < min.value ? m : min)).value.toFixed(2)} kWh)
-                    </div>
-                  </div>
-                </div>
-                <div className="info-item">
-                  <span className="info-icon">⚡</span>
-                  <div>
-                    <div className="info-label">Average per Month</div>
-                    <div className="info-value">
-                      {(stats.monthlyBreakdown.reduce((sum, m) => sum + m.value, 0) / stats.monthlyBreakdown.length).toFixed(2)} kWh
-                    </div>
-                  </div>
+              </div>
+
+              <div className="wa-divider" />
+
+              <div className="wa-note">
+                <div className="wa-note-title">Tip</div>
+                <div className="wa-note-text">
+                  Reservations and navigation start from <b>Find Chargers</b>.
                 </div>
               </div>
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="empty-state">
-          <span className="empty-icon">📭</span>
-          <h3>No data for this period</h3>
-          <p>Try selecting a different time range to view your activity history</p>
-        </div>
-      )}
 
-      {/* History Section */}
-      <div className="history-section">
-        <h2>📋 Activity History</h2>
+            <div className="wa-card span-7">
+              <div className="wa-card-head">
+                <div>
+                  <div className="wa-card-title">History & Statistics</div>
+                  <div className="wa-card-sub">Filter by time period</div>
+                </div>
+              </div>
 
-        {filteredActivities.length === 0 && !hasError ? (
-          <div className="empty-state">
-            <span className="empty-icon">📭</span>
-            <h3>No activities found</h3>
-            <p>No activities match your selected filters</p>
-          </div>
-        ) : (
-          <div className="activities-list">
-            {filteredActivities.map(activity => (
-              <div key={activity.id} className="activity-card">
-                <div className="activity-main" onClick={() => setExpandedActivityId(expandedActivityId === activity.id ? null : activity.id)}>
-                  <div className="activity-icon">
-                    {activity.type === 'charge' && '⚡'}
-                    {activity.type === 'reservation' && '🅿️'}
-                    {activity.type === 'payment' && '💳'}
-                  </div>
-                  <div className="activity-info">
-                    <div className="activity-type">
-                      {activity.type === 'charge' && 'Charging'}
-                      {activity.type === 'reservation' && 'Reservation'}
-                      {activity.type === 'payment' && 'Payment'}
-                    </div>
-                    {activity.location && <div className="activity-location">{activity.location}</div>}
-                    <div className="activity-date">{new Date(activity.date).toLocaleDateString()} {new Date(activity.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                  </div>
-                  <div className="activity-value">
-                    <div className="value-amount">${activity.value.toFixed(2)}</div>
-                    <div className={`status-badge ${activity.status}`}>{activity.status}</div>
-                  </div>
-                  <div className="expand-icon">{expandedActivityId === activity.id ? '▼' : '▶'}</div>
+              <div className="wa-section">
+                <div className="wa-section-title">Time period</div>
+                <div className="wa-pills">
+                  <button className={`wa-pill ${datePreset === 'lastMonth' ? 'active' : ''}`} onClick={() => setDatePreset('lastMonth')} type="button">
+                    Last Month
+                  </button>
+                  <button className={`wa-pill ${datePreset === 'last3Months' ? 'active' : ''}`} onClick={() => setDatePreset('last3Months')} type="button">
+                    Last 3 Months
+                  </button>
+                  <button className={`wa-pill ${datePreset === 'currentYear' ? 'active' : ''}`} onClick={() => setDatePreset('currentYear')} type="button">
+                    This Year
+                  </button>
+                  <button className={`wa-pill ${datePreset === 'all' ? 'active' : ''}`} onClick={() => setDatePreset('all')} type="button">
+                    All Time
+                  </button>
+                  <button className={`wa-pill ${datePreset === 'custom' ? 'active' : ''}`} onClick={() => setDatePreset('custom')} type="button">
+                    Custom
+                  </button>
                 </div>
 
-                {/* Expanded Details */}
-                {expandedActivityId === activity.id && (
-                  <div className="activity-details">
-                    <div className="detail-row">
-                      <span className="detail-label">Type:</span>
-                      <span className="detail-value">
-                        {activity.type === 'charge' && 'Charging Session'}
-                        {activity.type === 'reservation' && 'Spot Reservation'}
-                        {activity.type === 'payment' && 'Account Payment'}
-                      </span>
-                    </div>
-                    {activity.location && (
-                      <div className="detail-row">
-                        <span className="detail-label">Location:</span>
-                        <span className="detail-value">{activity.location}</span>
-                      </div>
-                    )}
-                    {activity.chargerType && (
-                      <div className="detail-row">
-                        <span className="detail-label">Charger Type:</span>
-                        <span className="detail-value">{activity.chargerType}</span>
-                      </div>
-                    )}
-                    {activity.duration && (
-                      <div className="detail-row">
-                        <span className="detail-label">Duration:</span>
-                        <span className="detail-value">{activity.duration} minutes</span>
-                      </div>
-                    )}
-                    <div className="detail-row">
-                      <span className="detail-label">Status:</span>
-                      <span className={`detail-value status ${activity.status}`}>{activity.status}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Amount:</span>
-                      <span className="detail-value">${activity.value.toFixed(2)}</span>
-                    </div>
-                    {activity.details && (
-                      <div className="detail-row">
-                        <span className="detail-label">Notes:</span>
-                        <span className="detail-value">{activity.details}</span>
-                      </div>
-                    )}
+                {datePreset === 'custom' && (
+                  <div className="wa-dates">
+                    <label className="wa-date">
+                      <span>Start</span>
+                      <input type="date" value={customStartDate} onChange={e => setCustomStartDate(e.target.value)} />
+                    </label>
+                    <label className="wa-date">
+                      <span>End</span>
+                      <input type="date" value={customEndDate} onChange={e => setCustomEndDate(e.target.value)} />
+                    </label>
                   </div>
                 )}
+
+                {dateError && <div className="wa-error">⚠ {dateError}</div>}
               </div>
-            ))}
-          </div>
-        )}
+
+              <div className="wa-divider" />
+
+              {computed.hasError ? (
+                <div className="wa-error">❌ Invalid date range.</div>
+              ) : (
+                <div className="wa-stats">
+                  <div className="wa-stat">
+                    <div className="wa-stat-label">Total Activities</div>
+                    <div className="wa-stat-value">{computed.stats.totalActivities}</div>
+                  </div>
+                  <div className="wa-stat">
+                    <div className="wa-stat-label">Total Energy</div>
+                    <div className="wa-stat-value">{computed.stats.totalKwh.toFixed(1)} kWh</div>
+                  </div>
+                  <div className="wa-stat">
+                    <div className="wa-stat-label">Total Cost</div>
+                    <div className="wa-stat-value">{money(computed.stats.totalCost)}</div>
+                  </div>
+                  <div className="wa-stat">
+                    <div className="wa-stat-label">Avg Cost / kWh</div>
+                    <div className="wa-stat-value">{money(computed.stats.avgCostPerKwh)}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Activity table */}
+          <section className="wa-grid wa-grid-12">
+            <div className="wa-card span-12">
+              <div className="wa-card-head">
+                <div>
+                  <div className="wa-card-title">Activity History</div>
+                  <div className="wa-card-sub">Click a row to expand</div>
+                </div>
+              </div>
+
+              {computed.items.length === 0 ? (
+                <div className="wa-empty">No activity found for this period.</div>
+              ) : (
+                <div className="wa-table">
+                  <div className="wa-thead">
+                    <div>Type</div>
+                    <div>Location</div>
+                    <div>Date</div>
+                    <div className="right">Amount</div>
+                    <div className="right">Status</div>
+                  </div>
+
+                  {computed.items.map(a => {
+                    const open = expandedId === a.id
+                    return (
+                      <div key={a.id} className={`wa-row ${open ? 'open' : ''}`}>
+                        <button className="wa-row-main" type="button" onClick={() => setExpandedId(open ? null : a.id)}>
+                          <div className="cell">
+                            <span className="wa-badge">
+                              {a.type === 'charge' && '⚡ Charging'}
+                              {a.type === 'reservation' && '🅿️ Reservation'}
+                              {a.type === 'payment' && '💳 Payment'}
+                            </span>
+                          </div>
+                          <div className="cell wa-muted">{a.location || '—'}</div>
+                          <div className="cell">{new Date(a.date).toLocaleString()}</div>
+                          <div className="cell right">{money(a.value)}</div>
+                          <div className="cell right">
+                            <span className={`wa-status ${a.status}`}>{a.status}</span>
+                          </div>
+                        </button>
+
+                        {open && (
+                          <div className="wa-details">
+                            <div className="wa-detail">
+                              <span className="k">Connector</span>
+                              <span className="v">{a.chargerType || '—'}</span>
+                            </div>
+                            <div className="wa-detail">
+                              <span className="k">Power</span>
+                              <span className="v">{a.powerKw ? `${a.powerKw} kW` : '—'}</span>
+                            </div>
+                            <div className="wa-detail">
+                              <span className="k">Energy</span>
+                              <span className="v">{a.energyKwh ? `${a.energyKwh.toFixed(1)} kWh` : '—'}</span>
+                            </div>
+                            <div className="wa-detail">
+                              <span className="k">Duration</span>
+                              <span className="v">{a.durationMin ? `${a.durationMin} min` : '—'}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </section>
+        </main>
       </div>
     </div>
   )
