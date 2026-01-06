@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import './register.css'
+import { useNavigate } from 'react-router-dom';
 
 interface RegisterFormData {
   fullName: string
@@ -26,6 +27,7 @@ export default function Register() {
     confirmPassword: '',
     agreeTerms: false,
   })
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -96,6 +98,7 @@ export default function Register() {
       })
       setIsLoading(false)
       // TODO: Add actual registration logic
+      navigate('/map');
     }, 1500)
   }
 
@@ -241,7 +244,7 @@ export default function Register() {
             {isLoading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
-
+            
         {/* Footer */}
         <div className="register-footer">
           <p>

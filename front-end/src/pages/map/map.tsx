@@ -5,12 +5,14 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import './map.css'
 
+type ChargerType =
+  | 'AC_Type2'
+  | 'AC_GB/T'
+  | 'DC_Fast_CCS'
+  | 'DC_Fast_CHAdeMO'
+  | 'DC_Fast_GB/T'
 
-
-
-
-type ChargerType = 'AC_Type2' | 'AC_GB/T' | 'DC_Fast_CCS' | 'DC_Fast_CHAdeMO' | 'DC_Fast_GB/T'
-type AvailabilityStatus = 'Available' | 'InUse' | 'Offline'
+type AvailabilityStatus = 'Available' | 'Charging' | 'Offline' | 'Malfunction'
 
 interface Charger {
   id: number
@@ -19,7 +21,6 @@ interface Charger {
   price: number
   available: number
   distance: number
-  rating: number
   latitude: number
   longitude: number
   chargerType: ChargerType
@@ -28,11 +29,12 @@ interface Charger {
 }
 
 export default function Map() {
-  const [selectedCharger, setSelectedCharger] = useState<Charger | null>(null)
   const navigate = useNavigate()
+  const [selectedCharger, setSelectedCharger] = useState<Charger | null>(null)
+
   const [filters, setFilters] = useState<{
     priceRange: [number, number]
-    availabilityFilter: 'All' | 'Available' | 'InUse' | 'Offline'
+    availabilityFilter: 'All' | AvailabilityStatus
     chargerTypeFilter: ChargerType[]
     distance: number
   }>({
@@ -42,13 +44,28 @@ export default function Map() {
     distance: 50,
   })
 
+  // =========================
+  // RESERVE MODAL STATE
+  // =========================
+  const [showReserveModal, setShowReserveModal] = useState(false)
+  const [reserveMinutes, setReserveMinutes] = useState(30)
+  const [reserveStatus, setReserveStatus] = useState<
+    'idle' | 'loading' | 'success' | 'error'
+  >('idle')
+  const [reserveMessage, setReserveMessage] = useState('')
+
+  const API_BASE = 'http://localhost:9876/api' // change if needed
+
+  // =========================
+  // HELPERS
+  // =========================
   const getChargerIcon = (chargerType: ChargerType): string => {
     const iconMap: Record<ChargerType, string> = {
-      AC_Type2: '/src/assets/images/actyp2.jpg', // AC Type 2
-      'AC_GB/T': '/src/assets/images/gb-t_ac.jpg', // AC GB/T
-      DC_Fast_CCS: '/src/assets/images/ccs2.jpg', // DC Fast CCS
-      DC_Fast_CHAdeMO: '/src/assets/images/chademo.jpg', // DC Fast CHAdeMO
-      'DC_Fast_GB/T': '/src/assets/images/gb-t_dc.jpg', // DC Fast GB/T
+      AC_Type2: '/src/assets/images/actyp2.jpg',
+      'AC_GB/T': '/src/assets/images/gb-t_ac.jpg',
+      DC_Fast_CCS: '/src/assets/images/ccs2.jpg',
+      DC_Fast_CHAdeMO: '/src/assets/images/chademo.jpg',
+      'DC_Fast_GB/T': '/src/assets/images/gb-t_dc.jpg',
     }
     return iconMap[chargerType]
   }
@@ -57,16 +74,82 @@ export default function Map() {
     switch (status) {
       case 'Available':
         return 'green'
-      case 'InUse':
+      case 'Charging':
         return 'red'
       case 'Offline':
         return 'grey'
+      case 'Malfunction':
+        return 'orange'
       default:
         return 'blue'
     }
   }
-//dummy daya 
-  // Mock charger data - Greece locations
+
+  // =========================
+  // RESERVE HANDLERS
+  // =========================
+  const openReserveModal = () => {
+    if (!selectedCharger) return
+    setReserveMinutes(30)
+    setReserveStatus('idle')
+    setReserveMessage('')
+    setShowReserveModal(true)
+  }
+
+  const closeReserveModal = () => {
+    setShowReserveModal(false)
+  }
+
+  const confirmReservation = async () => {
+    if (!selectedCharger) return
+
+    const minutes = Math.max(1, Math.min(60, reserveMinutes))
+
+    try {
+      setReserveStatus('loading')
+      setReserveMessage('')
+
+      const res = await fetch(
+        `${API_BASE}/reserve/${selectedCharger.id}/${minutes}`,
+        {
+          method: 'POST',
+          headers: {
+            // Add auth headers if your backend needs them, e.g.:
+            // 'X-API-KEY': apiKey,
+            // 'Authorization': `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (res.ok) {
+        setReserveStatus('success')
+        setReserveMessage(`Reserved for ${minutes} minutes ✅`)
+        return
+      }
+
+      if (res.status === 400) {
+        setReserveStatus('error')
+        setReserveMessage('Point is not available for reservation.')
+        return
+      }
+
+      if (res.status === 404) {
+        setReserveStatus('error')
+        setReserveMessage('Point not found.')
+        return
+      }
+
+      setReserveStatus('error')
+      setReserveMessage('Unexpected error. Please try again.')
+    } catch (e) {
+      setReserveStatus('error')
+      setReserveMessage('Network error. Please try again.')
+    }
+  }
+
+  // =========================
+  // DATA (mock)
+  // =========================
   const chargers: Charger[] = [
     {
       id: 1,
@@ -75,7 +158,6 @@ export default function Map() {
       price: 0.45,
       available: 5,
       distance: 2.3,
-      rating: 4.8,
       latitude: 37.9761,
       longitude: 23.7348,
       chargerType: 'DC_Fast_CCS',
@@ -89,11 +171,10 @@ export default function Map() {
       price: 0.38,
       available: 2,
       distance: 4.1,
-      rating: 4.5,
       latitude: 40.6332,
       longitude: 22.9411,
       chargerType: 'AC_Type2',
-      status: 'InUse',
+      status: 'Charging',
       power: 22,
     },
     {
@@ -103,7 +184,6 @@ export default function Map() {
       price: 0.32,
       available: 8,
       distance: 5.7,
-      rating: 4.9,
       latitude: 38.2466,
       longitude: 21.7345,
       chargerType: 'DC_Fast_CHAdeMO',
@@ -117,7 +197,6 @@ export default function Map() {
       price: 0.42,
       available: 1,
       distance: 3.2,
-      rating: 4.3,
       latitude: 35.3387,
       longitude: 25.1442,
       chargerType: 'DC_Fast_GB/T',
@@ -131,7 +210,6 @@ export default function Map() {
       price: 0.5,
       available: 6,
       distance: 1.8,
-      rating: 4.6,
       latitude: 39.6364,
       longitude: 22.6158,
       chargerType: 'AC_GB/T',
@@ -140,48 +218,42 @@ export default function Map() {
     },
   ]
 
-  // Filter chargers based on criteria from SRS
   const filteredChargers = chargers.filter(charger => {
-    // Price filter
     const priceMatch =
       charger.price >= filters.priceRange[0] &&
       charger.price <= filters.priceRange[1]
 
-    // Availability filter
     const availabilityMatch =
       filters.availabilityFilter === 'All' ||
       charger.status === filters.availabilityFilter
 
-    // Charger type filter
     const chargerTypeMatch =
       filters.chargerTypeFilter.length === 0 ||
       filters.chargerTypeFilter.includes(charger.chargerType)
 
-    // Distance filter
     const distanceMatch = charger.distance <= filters.distance
 
     return priceMatch && availabilityMatch && chargerTypeMatch && distanceMatch
   })
 
+  // =========================
+  // RENDER
+  // =========================
   return (
     <div className="map-container">
-      {/* Sidebar with filters */}
+      {/* Sidebar */}
       <div className="sidebar">
         <div className="sidebar-header">
-         <h2>⚡ WattApp</h2>
-         
+          <h2>⚡ WattApp</h2>
 
-         <button
-           type="button"
-           className="profile-btn"
-           onClick={() => navigate('/profile')}
+          <button
+            type="button"
+            className="profile-btn"
+            onClick={() => navigate('/profile')}
           >
-           Profile
-           </button>
-         </div>
-
-      
-        
+            Profile
+          </button>
+        </div>
 
         {/* Filters */}
         <div className="filters">
@@ -215,7 +287,8 @@ export default function Map() {
                 }
               />
               <div className="price-display">
-                ${filters.priceRange[0].toFixed(2)} - ${filters.priceRange[1].toFixed(2)}
+                ${filters.priceRange[0].toFixed(2)} - $
+                {filters.priceRange[1].toFixed(2)}
               </div>
             </div>
           </div>
@@ -223,23 +296,25 @@ export default function Map() {
           <div className="filter-group">
             <label>Availability Status</label>
             <div className="availability-filter">
-              {(['All', 'Available', 'InUse', 'Offline'] as const).map(status => (
-                <label key={status} className="checkbox-label">
-                  <input
-                    type="radio"
-                    name="availability"
-                    value={status}
-                    checked={filters.availabilityFilter === status}
-                    onChange={e =>
-                      setFilters(prev => ({
-                        ...prev,
-                        availabilityFilter: e.target.value as 'All' | 'Available' | 'InUse' | 'Offline',
-                      }))
-                    }
-                  />
-                  <span>{status}</span>
-                </label>
-              ))}
+              {(['All', 'Available', 'Charging', 'Offline', 'Malfunction'] as const).map(
+                status => (
+                  <label key={status} className="checkbox-label">
+                    <input
+                      type="radio"
+                      name="availability"
+                      value={status}
+                      checked={filters.availabilityFilter === status}
+                      onChange={e =>
+                        setFilters(prev => ({
+                          ...prev,
+                          availabilityFilter: e.target.value as any,
+                        }))
+                      }
+                    />
+                    <span>{status}</span>
+                  </label>
+                )
+              )}
             </div>
           </div>
 
@@ -266,6 +341,7 @@ export default function Map() {
                   </label>
                 ))}
               </div>
+
               <div className="filter-subgroup">
                 <strong>DC Fast</strong>
                 {(['DC_Fast_CCS', 'DC_Fast_CHAdeMO', 'DC_Fast_GB/T'] as const).map(type => (
@@ -307,14 +383,12 @@ export default function Map() {
           </div>
         </div>
 
-        {/* Chargers List */}
+        {/* Chargers list */}
         <div className="chargers-list">
           {filteredChargers.map(charger => (
             <div
               key={charger.id}
-              className={`charger-card ${
-                selectedCharger?.id === charger.id ? 'active' : ''
-              }`}
+              className={`charger-card ${selectedCharger?.id === charger.id ? 'active' : ''}`}
               onClick={() => setSelectedCharger(charger)}
             >
               <div className="charger-name">{charger.name}</div>
@@ -327,10 +401,7 @@ export default function Map() {
                 <span className="power">{charger.power}kW</span>
               </div>
               <div className="charger-status">
-                <span className={`status ${charger.status.toLowerCase()}`}>
-                  {charger.status}
-                </span>
-                <span className="rating">⭐ {charger.rating}</span>
+                <span className={`status ${charger.status.toLowerCase()}`}>{charger.status}</span>
               </div>
             </div>
           ))}
@@ -349,12 +420,15 @@ export default function Map() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+
           {filteredChargers.map(charger => (
             <Marker
               key={charger.id}
               position={[charger.latitude, charger.longitude]}
               icon={L.icon({
-                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${getMapPinColor(charger.status)}.png`,
+                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${getMapPinColor(
+                  charger.status
+                )}.png`,
                 shadowUrl:
                   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
                 iconSize: [25, 41],
@@ -373,23 +447,35 @@ export default function Map() {
                   <p>
                     <strong>${charger.price.toFixed(2)}</strong>/kWh
                   </p>
+
+                  <a
+                    href={`https://www.google.com/maps?q=${charger.latitude},${charger.longitude}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="gmaps-link"
+                  >
+                    See location ↗
+                  </a>
                 </div>
               </Popup>
             </Marker>
           ))}
         </MapContainer>
 
+        {/* Selected charger panel */}
         {selectedCharger && (
           <div className="selected-charger-info">
             <div className="charger-icon-header">
-              <img 
-                src={getChargerIcon(selectedCharger.chargerType)} 
+              <img
+                src={getChargerIcon(selectedCharger.chargerType)}
                 alt={selectedCharger.chargerType}
                 className="charger-type-icon"
               />
             </div>
+
             <h4>{selectedCharger.name}</h4>
             <p>{selectedCharger.address}</p>
+
             <div className="charger-details">
               <div className="detail-item">
                 <span className="label">Type:</span>
@@ -409,12 +495,62 @@ export default function Map() {
                   {selectedCharger.status}
                 </span>
               </div>
-              <div className="detail-item">
-                <span className="label">Rating:</span>
-                <span className="value">⭐ {selectedCharger.rating}</span>
+            </div>
+
+            <button className="reserve-btn" onClick={openReserveModal}>
+              Reserve Spot
+            </button>
+          </div>
+        )}
+
+        {/* Reserve modal */}
+        {showReserveModal && selectedCharger && (
+          <div className="modal-overlay" onClick={closeReserveModal}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Reserve: {selectedCharger.name}</h3>
+                <button className="modal-close" onClick={closeReserveModal}>
+                  ✕
+                </button>
+              </div>
+
+              <div className="modal-body">
+                <label className="modal-label">Duration (minutes)</label>
+
+                <div className="modal-row">
+                  <input
+                    type="range"
+                    min={1}
+                    max={60}
+                    value={reserveMinutes}
+                    onChange={e => setReserveMinutes(parseInt(e.target.value, 10))}
+                  />
+                  <span className="minutes-pill">{reserveMinutes} min</span>
+                </div>
+
+                {reserveMessage && (
+                  <div className={`modal-alert ${reserveStatus}`}>{reserveMessage}</div>
+                )}
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  className="modal-btn secondary"
+                  onClick={closeReserveModal}
+                  disabled={reserveStatus === 'loading'}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  className="modal-btn primary"
+                  onClick={confirmReservation}
+                  disabled={reserveStatus === 'loading'}
+                >
+                  {reserveStatus === 'loading' ? 'Reserving...' : 'Confirm Reservation'}
+                </button>
               </div>
             </div>
-            <button className="reserve-btn">Reserve Spot</button>
           </div>
         )}
       </div>
