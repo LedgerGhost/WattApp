@@ -1,0 +1,44 @@
+{
+  "name": "wattapp-backend-models",
+  "version": "1.0.0",
+  "description": "Mongoose ODM models for WattApp EV Charging Station Management System",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "test:coverage": "NODE_OPTIONS='--experimental-vm-modules' jest --coverage",
+    "test:watch": "NODE_OPTIONS='--experimental-vm-modules' jest --watch",
+    "lint": "eslint .",
+    "validate": "node scripts/validateModels.js"
+  },
+  "keywords": [
+    "ev",
+    "charging",
+    "station",
+    "mongodb",
+    "mongoose",
+    "api",
+    "wattapp"
+  ],
+  "author": "softeng25-37",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "mongoose": "^8.0.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.3.1",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ntua/softeng25-37.git"
+  }
+}
