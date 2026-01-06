@@ -4,8 +4,8 @@ const express = require('express');
 const router = express.Router();
 
 // Import the new controller
-const login = require('../controllers/auth-controllers/login');
-const signup = require('../controllers/auth-controllers/signup'); 
+const { login }  = require('../controllers/auth-controllers/login');
+const { signup } = require('../controllers/auth-controllers/signup'); 
 
 ///const { login } = require('../controllers/auth-controllers/login');
 ///const { signup } = require('../controllers/auth-controllers/signup'); //maybe this works?

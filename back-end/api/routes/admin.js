@@ -6,7 +6,7 @@ const router = express.Router();
 // Import admin's controllers
 const healthcheckController = require('../controllers/admin-controllers/healthcheckController');
 const resetPointsController = require('../controllers/admin-controllers/resetpointsController');
-const adminController = require('../controllers/adminController');
+const adminController = require('../controllers/admin-controllers/addpointsController');
 const multer = require('multer'); // Middleware for handling file uploads
 const upload = multer({ storage: multer.memoryStorage() });
 
