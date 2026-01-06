@@ -34,8 +34,69 @@ let users = [
     // Optional: Add a default admin user for testing
     {
         id: 1,
-        username: "admin",
+        email: "admin@example.com",
+        fullName: "Admin User",
         password: "password123" // In real life, this must be hashed!
+    },
+    {
+        id: 2,
+        email: "john.doe@example.com",
+        fullName: "John Doe",
+        password: "pass456"
+    },
+    {
+        id: 3,
+        email: "jane.smith@example.com",
+        fullName: "Jane Smith",
+        password: "securePass1"
+    },
+    {
+        id: 4,
+        email: "alice.wonder@example.com",
+        fullName: "Alice Wonder",
+        password: "wonderland99"
+    },
+    {
+        id: 5,
+        email: "bob.builder@example.com",
+        fullName: "Bob Builder",
+        password: "canWeFixIt"
+    },
+    {
+        id: 6,
+        email: "charlie.brown@example.com",
+        fullName: "Charlie Brown",
+        password: "snoopy123"
+    },
+    {
+        id: 7,
+        email: "diana.prince@example.com",
+        fullName: "Diana Prince",
+        password: "wonderWoman"
+    },
+    {
+        id: 8,
+        email: "eve.online@example.com",
+        fullName: "Eve Online",
+        password: "spaceGame777"
+    },
+    {
+        id: 9,
+        email: "frank.castle@example.com",
+        fullName: "Frank Castle",
+        password: "punisher2024"
+    },
+    {
+        id: 10,
+        email: "grace.hopper@example.com",
+        fullName: "Grace Hopper",
+        password: "nanoseconds"
+    },
+    {
+        id: 11,
+        email: "henry.ford@example.com",
+        fullName: "Henry Ford",
+        password: "modelT1908"
     }
 ];
 
