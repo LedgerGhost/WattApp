@@ -12,10 +12,10 @@ exports.getPoints = (req, res) => {
       const allowed = ["available", "charging", "reserved", "malfunction", "offline"];
 
       if (!allowed.includes(status)) {
-        return res.status(400).json(
+        return res.status(401).json(
           buildErrorLog(
             req,
-            400,
+            401,
             `Invalid status '${status}'`,
             "Allowed values: available, charging, reserved, malfunction, offline"
           )
