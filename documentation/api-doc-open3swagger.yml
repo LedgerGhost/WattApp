@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: API for managing Electric Vehicle Charging Points, Reservations, Sessions, and Admin operations.
 servers:
-  - url: http://localhost:8765/api
+  - url: http://localhost:9876/api
     description: Local Development Server
 
 # ------------------------------------------------------------------------------
