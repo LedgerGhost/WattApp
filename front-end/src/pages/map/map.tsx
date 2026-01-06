@@ -4,6 +4,38 @@ import { useNavigate } from 'react-router-dom'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import './map.css'
+import { useEffect } from 'react'
+
+interface BackendPoint {
+  pointid: string
+  lat: number
+  lon: number
+  status: 'available' | 'charging' | 'reserved' | 'malfunction' | 'offline'
+  cap: number
+  kwhprice: number
+}
+
+
+const DEFAULT_CHARGER_TYPE: ChargerType = 'DC_Fast_CCS'
+
+
+
+const mapStatus = (status: BackendPoint['status']): AvailabilityStatus => {
+  switch (status) {
+    case 'available':
+      return 'Available'
+    case 'charging':
+    case 'reserved':
+      return 'Charging'
+    case 'malfunction':
+      return 'Malfunction'
+    case 'offline':
+      return 'Offline'
+    default:
+      return 'Offline'
+  }
+}
+
 
 type ChargerType =
   | 'AC_Type2'
@@ -15,7 +47,7 @@ type ChargerType =
 type AvailabilityStatus = 'Available' | 'Charging' | 'Offline' | 'Malfunction'
 
 interface Charger {
-  id: number
+  id: string
   name: string
   address: string
   price: number
@@ -29,31 +61,100 @@ interface Charger {
 }
 
 export default function Map() {
+  console.log('✅ Map component mounted')
+
+  const [chargers, setChargers] = useState<Charger[]>([])
+  const [isLoadingChargers, setIsLoadingChargers] = useState(true)
+  const [chargersError, setChargersError] = useState<string | null>(null)
+
   const navigate = useNavigate()
   const [selectedCharger, setSelectedCharger] = useState<Charger | null>(null)
+  
 
-  const [filters, setFilters] = useState<{
-    priceRange: [number, number]
-    availabilityFilter: 'All' | AvailabilityStatus
-    chargerTypeFilter: ChargerType[]
-    distance: number
-  }>({
-    priceRange: [0, 1],
-    availabilityFilter: 'All',
-    chargerTypeFilter: [],
+    const [filters, setFilters] = useState({
+    priceRange: [0, 1] as [number, number],
+    availabilityFilter: 'All' as 'All' | AvailabilityStatus,
+    chargerTypeFilter: [] as ChargerType[],
     distance: 50,
   })
 
-  // =========================
-  // RESERVE MODAL STATE
-  // =========================
-  const [showReserveModal, setShowReserveModal] = useState(false)
+
+
+  //reserve hooks 
+   const [showReserveModal, setShowReserveModal] = useState(false)
   const [reserveMinutes, setReserveMinutes] = useState(30)
   const [reserveStatus, setReserveStatus] = useState<
     'idle' | 'loading' | 'success' | 'error'
   >('idle')
   const [reserveMessage, setReserveMessage] = useState('')
 
+
+
+useEffect(() => {
+  const fetchChargers = async () => {
+    try {
+      setIsLoadingChargers(true)
+      setChargersError(null)
+
+      const res = await fetch('http://localhost:9876/api/points')
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch points')
+      }
+      const raw = await res.json()
+console.log('RAW /points response:', raw)
+
+// The backend might return either an array OR an object with an array inside.
+const points: BackendPoint[] = Array.isArray(raw)
+  ? raw
+  : Array.isArray(raw.points)
+    ? raw.points
+    : []
+
+if (points.length === 0) {
+  throw new Error('No points array found in response')
+}
+
+const mapped: Charger[] = points.map(p => ({
+  id: p.pointid, // ✅ keep as string (recommended)
+  name: `Charging Point ${String(p.pointid).slice(0, 6)}`,
+  address: 'Unknown location',
+  price: p.kwhprice ?? 0,
+  available: p.status === 'available' ? 1 : 0,
+  distance: 0,
+  latitude: p.lat,
+  longitude: p.lon,
+  chargerType: DEFAULT_CHARGER_TYPE,
+  status: mapStatus(p.status),
+  power: p.cap ?? 0,
+}))
+
+setChargers(mapped)
+
+      
+
+      
+    } catch (err) {
+      setChargersError('Could not load charging points')
+    } finally {
+      setIsLoadingChargers(false)
+    }
+  }
+
+  fetchChargers()
+}, [])
+
+
+    if (isLoadingChargers) {
+  return <div className="map-container">Loading chargers…</div>
+}
+
+    if (chargersError) {
+  return <div className="map-container">{chargersError}</div>
+}
+
+
+ 
   const API_BASE = 'http://localhost:9876/api' // change if needed
 
   // =========================
@@ -147,77 +248,9 @@ export default function Map() {
     }
   }
 
-  // =========================
-  // DATA (mock)
-  // =========================
-  const chargers: Charger[] = [
-    {
-      id: 1,
-      name: 'FastCharge Athens',
-      address: 'Syntagma, Athens',
-      price: 0.45,
-      available: 5,
-      distance: 2.3,
-      latitude: 37.9761,
-      longitude: 23.7348,
-      chargerType: 'DC_Fast_CCS',
-      status: 'Available',
-      power: 150,
-    },
-    {
-      id: 2,
-      name: 'EV Hub Thessaloniki',
-      address: 'Aristotelous Square, Thessaloniki',
-      price: 0.38,
-      available: 2,
-      distance: 4.1,
-      latitude: 40.6332,
-      longitude: 22.9411,
-      chargerType: 'AC_Type2',
-      status: 'Charging',
-      power: 22,
-    },
-    {
-      id: 3,
-      name: 'Green Energy Charging Patras',
-      address: 'Patras Port, Patras',
-      price: 0.32,
-      available: 8,
-      distance: 5.7,
-      latitude: 38.2466,
-      longitude: 21.7345,
-      chargerType: 'DC_Fast_CHAdeMO',
-      status: 'Available',
-      power: 50,
-    },
-    {
-      id: 4,
-      name: 'PowerUp Station Heraklion',
-      address: 'Old Port, Heraklion',
-      price: 0.42,
-      available: 1,
-      distance: 3.2,
-      latitude: 35.3387,
-      longitude: 25.1442,
-      chargerType: 'DC_Fast_GB/T',
-      status: 'Available',
-      power: 100,
-    },
-    {
-      id: 5,
-      name: 'Quick Charge Hub Larissa',
-      address: 'Central Station, Larissa',
-      price: 0.5,
-      available: 6,
-      distance: 1.8,
-      latitude: 39.6364,
-      longitude: 22.6158,
-      chargerType: 'AC_GB/T',
-      status: 'Available',
-      power: 11,
-    },
-  ]
-
+  //take chargers from dummy api 
+ // const chargers: Charger[] = [];
+  
   const filteredChargers = chargers.filter(charger => {
     const priceMatch =
       charger.price >= filters.priceRange[0] &&
