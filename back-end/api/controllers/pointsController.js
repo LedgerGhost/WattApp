@@ -1,11 +1,26 @@
 //a
+
 const PROVIDER_NAME = "bestPowerGR";
-const { points } = require("../utils/database"); // <-- must exist before functions
+const { points } = require("../utils/database");
 const { buildErrorLog } = require("../utils/errorLog");
+
+function toCSV(data) {
+  if (!Array.isArray(data) || data.length === 0) {
+    return "";
+  }
+
+  const headers = Object.keys(data[0]);
+  const lines = data.map(obj =>
+    headers.map(h => `"${obj[h] ?? ""}"`).join(",")
+  );
+
+  return [headers.join(","), ...lines].join("\n");
+}
 
 exports.getPoints = (req, res) => {
   try {
     const status = req.query.status;
+    const format = req.query.format || "json"; // default για API
     let result = points;
 
     if (status) {
@@ -22,7 +37,7 @@ exports.getPoints = (req, res) => {
         );
       }
 
-      result = points.filter(p => p.status === status);
+      result = result.filter(p => p.status === status);
     }
 
     // 204: success but empty response
@@ -31,6 +46,15 @@ exports.getPoints = (req, res) => {
     }
 
     result = result.map(p => ({ providerName: PROVIDER_NAME, ...p }));
+
+    // ===== FORMAT HANDLING =====
+    if (format === "csv") {
+      const csv = toCSV(result);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      return res.status(200).send(csv);
+    }
+
+    // default json
     return res.status(200).json(result);
 
   } catch (err) {

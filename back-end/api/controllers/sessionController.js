@@ -91,11 +91,11 @@ exports.newSession = (req, res) => {
   }
 };
 
-
 // f. GET /sessions/:id/:from/:to
 exports.getSessions = (req, res) => {
   try {
     const { id, from, to } = req.params;
+    const format = req.query.format || "json"; // default για API
 
     // YYYYMMDD -> Date at start of day
     const parseDate = (d) => {
@@ -108,12 +108,7 @@ exports.getSessions = (req, res) => {
     // basic date validation
     if (!from || !to || from.length !== 8 || to.length !== 8) {
       return res.status(400).json(
-        buildErrorLog(
-          req,
-          400,
-          "Invalid date format",
-          "Dates must be YYYYMMDD"
-        )
+        buildErrorLog(req, 400, "Invalid date format", "Dates must be YYYYMMDD")
       );
     }
 
@@ -148,14 +143,19 @@ exports.getSessions = (req, res) => {
     const pointExists = points.find(p => p.pointid == id);
     if (!pointExists) {
       return res.status(404).json(
-        buildErrorLog(
-          req,
-          404,
-          `Point with id ${id} not found`,
-          "Invalid pointid"
-        )
+        buildErrorLog(req, 404, `Point with id ${id} not found`, "Invalid pointid")
       );
     }
+
+    // helper: CSV with quotes everywhere (όπως στο αρχικό σου)
+    const toCSV = (data) => {
+      if (!Array.isArray(data) || data.length === 0) return "";
+      const headers = Object.keys(data[0]);
+      const lines = data.map(obj =>
+        headers.map(h => `"${obj[h] ?? ""}"`).join(",")
+      );
+      return [headers.join(","), ...lines].join("\n");
+    };
 
     // filter sessions
     const result = sessions
@@ -177,6 +177,13 @@ exports.getSessions = (req, res) => {
     // no content
     if (result.length === 0) {
       return res.status(204).send();
+    }
+
+    // ===== FORMAT HANDLING (ίδιο με getPoints) =====
+    if (format === "csv") {
+      const csv = toCSV(result);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      return res.status(200).send(csv);
     }
 
     return res.status(200).json(result);
