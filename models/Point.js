@@ -94,7 +94,7 @@ const pointSchema = new mongoose.Schema(
     },
     {
       timestamps: true,
-      collection: 'points'
+      collection: 'charge_points'
     }
 );
 

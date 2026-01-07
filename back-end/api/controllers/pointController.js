@@ -1,24 +1,44 @@
-//b
-const { points } = require("../utils/database");
-const { formatLocalTimestamp } = require("../utils/time");
+// b) GET /api/point/:id
+
+const Point = require("../../../models/Point");
 const { buildErrorLog } = require("../utils/errorLog");
 
-// GET /api/point/:id
-exports.getPointById = (req, res) => {
+exports.getPointById = async (req, res) => {
   try {
-    const id = req.params.id;
-    const point = points.find(p => p.pointid == id);
+    const rawId = req.params.id;
+    const idStr = String(rawId).trim();
+    const idNum = Number(idStr);
+
+    //  Bypass Mongoose casting: query directly on the underlying collection
+    let point = null;
+
+    // 1) try numeric match (what your DB likely has)
+    if (Number.isFinite(idNum)) {
+      point = await Point.collection.findOne({ pointid: idNum });
+    }
+
+    // 2) fallback: try string match (in case some docs are strings)
+    if (!point) {
+      point = await Point.collection.findOne({ pointid: idStr });
+    }
 
     if (!point) {
       return res.status(404).json(
         buildErrorLog(
           req,
           404,
-          `Point with id ${id} not found`,
-          "Check if id exists in mock DB"
+          `Point with id ${idStr} not found`,
+          "Point exists in DB?"
         )
       );
     }
+
+    // reservationendtime rule (εκφώνηση):
+    // if NOT reserved -> return NOW
+    const reservationendtime =
+      point.status === "reserved" && point.reservationendtime
+        ? Point.formatTimestamp(point.reservationendtime)
+        : Point.formatTimestamp(new Date());
 
     return res.status(200).json({
       pointid: point.pointid,
@@ -26,22 +46,13 @@ exports.getPointById = (req, res) => {
       lat: point.lat,
       status: point.status,
       cap: point.cap,
-      reservationendtime: point.reservationendtime
-        ? point.reservationendtime
-        : formatLocalTimestamp(),
-      kwhprice: point.kwhprice !== undefined
-        ? point.kwhprice
-        : 0.50
+      reservationendtime,
+      kwhprice: point.kwhprice
     });
 
   } catch (err) {
     return res.status(500).json(
-      buildErrorLog(
-        req,
-        500,
-        "Internal server error",
-        err.message
-      )
+      buildErrorLog(req, 500, "Internal server error", err.message)
     );
   }
 };

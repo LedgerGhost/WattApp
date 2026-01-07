@@ -1,6 +1,6 @@
-// d
+// d) POST /updpoint/:id
 
-const { points } = require("../utils/database");
+const Point = require("../../../models/Point");
 const { buildErrorLog } = require("../utils/errorLog");
 
 const ALLOWED_STATUS = [
@@ -11,34 +11,34 @@ const ALLOWED_STATUS = [
   "offline"
 ];
 
-exports.updatePoint = (req, res) => {
+
+
+exports.updatePoint = async (req, res) => {
   try {
-    const id = req.params.id;
+    const allowedKeys = ["status", "kwhprice"];
+    const bodyKeys = Object.keys(req.body);
+
+    const invalidKeys = bodyKeys.filter(k => !allowedKeys.includes(k));
+    if (invalidKeys.length > 0) {
+    return res.status(400).json(
+    buildErrorLog(
+      req,
+      400,
+      "Invalid fields in body",
+      `Allowed fields: ${allowedKeys.join(", ")}`
+    )
+  );
+  }
+    const rawId = req.params.id;
+    const idStr = String(rawId).trim();
+    const idNum = Number(idStr);
+
     const { status, kwhprice } = req.body;
-
-    const point = points.find(p => p.pointid == id);
-
-    // 404: point not found
-    if (!point) {
-      return res.status(404).json(
-        buildErrorLog(
-          req,
-          404,
-          `Point with id ${id} not found`,
-          "Check if pointid exists"
-        )
-      );
-    }
 
     // 400: empty body
     if (status === undefined && kwhprice === undefined) {
       return res.status(400).json(
-        buildErrorLog(
-          req,
-          400,
-          "Empty body",
-          "Provide status and/or kwhprice"
-        )
+        buildErrorLog(req, 400, "Empty body", "Provide status and/or kwhprice")
       );
     }
 
@@ -55,31 +55,47 @@ exports.updatePoint = (req, res) => {
     }
 
     // 400: invalid kwhprice
-    // Δέχεται number (όπως το στέλνεις από Postman ως JSON number)
     if (kwhprice !== undefined && (typeof kwhprice !== "number" || kwhprice < 0)) {
       return res.status(400).json(
-        buildErrorLog(
-          req,
-          400,
-          "Invalid kwhprice",
-          "kwhprice must be a non-negative number"
-        )
+        buildErrorLog(req, 400, "Invalid kwhprice", "kwhprice must be a non-negative number")
       );
     }
 
-    // Update
-    if (status !== undefined) {
-      point.status = status;
-    }
-    if (kwhprice !== undefined) {
-      point.kwhprice = kwhprice;
+    // Find point (bypass schema casting issues)
+    let point = null;
+    if (Number.isFinite(idNum)) point = await Point.collection.findOne({ pointid: idNum });
+    if (!point) point = await Point.collection.findOne({ pointid: idStr });
+
+    // 404: point not found
+    if (!point) {
+      return res.status(404).json(
+        buildErrorLog(req, 404, `Point with id ${idStr} not found`, "Check if pointid exists")
+      );
     }
 
-    // 200 success
+    // Build update
+    const $set = {};
+    if (status !== undefined) {
+      $set.status = status;
+
+      // optional but nice: keep data clean
+      if (status !== "reserved") {
+        $set.reservationendtime = null;
+        $set.reservedBy = null;
+      }
+      $set.lastStatusChange = new Date();
+    }
+    if (kwhprice !== undefined) {
+      $set.kwhprice = kwhprice;
+    }
+
+    await Point.collection.updateOne({ _id: point._id }, { $set });
+
+    // Return the updated values (use local computed ones, no need for second read)
     return res.status(200).json({
-      pointid: point.pointid,   // κρατάς number για συνέπεια με τα παραδείγματα
-      status: point.status,
-      kwhprice: point.kwhprice
+      pointid: point.pointid,
+      status: status !== undefined ? status : point.status,
+      kwhprice: kwhprice !== undefined ? kwhprice : point.kwhprice
     });
 
   } catch (err) {

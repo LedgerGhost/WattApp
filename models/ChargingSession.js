@@ -3,9 +3,8 @@ const mongoose = require('mongoose');
 const chargingSessionSchema = new mongoose.Schema(
     {
       pointid: {
-        type: String,
+        type: Number,
         required: [true, 'Point ID is required'],
-        trim: true,
         index: true
       },
       starttime: {
@@ -68,7 +67,7 @@ const chargingSessionSchema = new mongoose.Schema(
     },
     {
       timestamps: true,
-      collection: 'charging_sessions'
+      collection: 'sessions_api'
     }
 );
 

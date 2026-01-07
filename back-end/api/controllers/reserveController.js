@@ -1,33 +1,38 @@
-// c
+// c) POST /reserve/:id(/:minutes)
 
-const { points } = require("../utils/database");
-const { formatLocalTimestamp } = require("../utils/time");
+const Point = require("../../../models/Point");
 const { buildErrorLog } = require("../utils/errorLog");
 
+// Timestamp format: "YYYY-MM-DD hh:mm"
+function formatLocalTimestamp(date = new Date()) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+}
+
 // POST /reserve/:id(/:minutes)
-exports.reservePoint = (req, res) => {
+exports.reservePoint = async (req, res) => {
   try {
-    const id = req.params.id;
+    const rawId = req.params.id;
+    const idStr = String(rawId).trim();
+    const idNum = Number(idStr);
 
     // default 30'
-    let minutes = req.params.minutes !== undefined ? parseInt(req.params.minutes, 10) : 30;
-
-    // Validate minutes (400)
+    let minutes = req.params.minutes !== undefined ? Number(req.params.minutes) : 30;
     if (!Number.isFinite(minutes) || minutes <= 0) {
-      return res.status(400).json(
-        buildErrorLog(
-          req,
-          400,
-          "Invalid minutes parameter",
-          `minutes: ${req.params.minutes}`
-        )
-      );
+      minutes = 30; // safest default
     }
-
-    // Max limit 60'
+    // max 60'
     minutes = Math.min(minutes, 60);
 
-    const point = points.find(p => p.pointid == id);
+    // Find point (bypass schema casting issues)
+    let point = null;
+    if (Number.isFinite(idNum)) point = await Point.collection.findOne({ pointid: idNum });
+    if (!point) point = await Point.collection.findOne({ pointid: idStr });
 
     // 404 + error log
     if (!point) {
@@ -35,36 +40,42 @@ exports.reservePoint = (req, res) => {
         buildErrorLog(
           req,
           404,
-          `Point with id ${id} not found`,
+          `Point with id ${idStr} not found`,
           "Check if pointid exists"
         )
       );
     }
 
-    // Must be available to reserve
-    // Spec: returns epoch time when reservation fails
-    if (point.status !== "available") {
-      return res.status(400).json({
-        pointid: String(id),              // αν θες strict string, αλλιώς αφαίρεσέ το
-        status: point.status,
-        reservationendtime: "1970-01-01 00:00"
+    // Compute reservation end
+    const now = new Date();
+    const endDate = new Date(now.getTime() + minutes * 60 * 1000);
+
+    // Atomic reserve ONLY if currently available
+    const updateResult = await Point.collection.updateOne(
+      { _id: point._id, status: "available" },
+      {
+        $set: {
+          status: "reserved",
+          reservationendtime: endDate,
+          lastStatusChange: now
+        }
+      }
+    );
+
+    // Success
+    if (updateResult.modifiedCount === 1) {
+      return res.status(200).json({
+        pointid: point.pointid,
+        status: "reserved",
+        reservationendtime: formatLocalTimestamp(endDate)
       });
     }
 
-    // Change status
-    point.status = "reserved";
-
-    // Calculate end time (YYYY-MM-DD hh:mm)
-    const endDate = new Date(Date.now() + minutes * 60 * 1000);
-    const end = formatLocalTimestamp(endDate);
-
-    // store for /point/:id
-    point.reservationendtime = end;
-
+    // Reservation failed (was not available) -> epoch time
     return res.status(200).json({
       pointid: point.pointid,
-      status: "reserved",
-      reservationendtime: end
+      status: point.status,
+      reservationendtime: "1970-01-01 00:00"
     });
 
   } catch (err) {
