@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './login.css'
+import { login } from '../../services/api'
 
 interface LoginFormData {
   email: string
@@ -14,6 +15,7 @@ export default function Login() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,19 +24,21 @@ export default function Login() {
       ...prev,
       [name]: value,
     }))
+    setError(null)
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Login attempt:', formData)
-      setIsLoading(false)
-      // Redirect to map page
+    setError(null)
+
+    try {
+      await login(formData.email, formData.password)
       navigate('/map')
-    }, 500)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed')
+      setIsLoading(false)
+    }
   }
 
   const isFormValid = formData.email && formData.password
@@ -51,6 +55,19 @@ export default function Login() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="login-form">
+          {error && (
+            <div style={{ 
+              color: '#d32f2f', 
+              fontSize: '14px', 
+              marginBottom: '16px',
+              padding: '8px',
+              backgroundColor: '#ffebee',
+              borderRadius: '4px'
+            }}>
+              {error}
+            </div>
+          )}
+
           {/* Email Input */}
           <div className="form-group">
             <label htmlFor="email">Email</label>
