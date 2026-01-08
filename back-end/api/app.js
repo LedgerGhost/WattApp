@@ -33,7 +33,7 @@ app.use("/api", require("./routes/activeres"));
 app.use("/api", require("./routes/navigate"));
 
 // Admin route:
-app.use('/api', require("./routes/admin"));
+// app.use('/api', require("./routes/admin"));
 
 app.use((req, res) => {
   return res.status(404).json(
