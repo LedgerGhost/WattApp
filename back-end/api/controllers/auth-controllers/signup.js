@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 exports.signup = async (req, res) => {
     try {
         // Accept 'fullName' instead of separate fields
-        const { fullName, email, password, phone } = req.body;
+        const { fullName, email, password, phone, aydya } = req.body;
 
         if (!email || !password || !fullName) {
             return res.status(400).json({ 
@@ -61,7 +61,7 @@ exports.signup = async (req, res) => {
             email,
             phone,
             password_hash: hashedPassword,
-            role: 'user',
+            role: 'customer',
             status: 'active'
         });
 
