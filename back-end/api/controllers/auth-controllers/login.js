@@ -1,51 +1,52 @@
 // FILE: back-end/api/controllers/auth-controllers/login.js
+const User = require('../../../../models/User');
+const AuthSession = require('../../../../models/AuthSession'); // Import the session model
 
-// Import the users array
-const { users } = require("../../utils/database");
-
-// --- LOGIN ---
 exports.login = async (req, res) => {
     try {
-        // Get input
-        const  email  = req.body.email;
-        const  password  = req.body.password;
-    
-        if (email == null) {
-            return res.status(400).json({
-                isAuth : false, message : 'Auth failed, email field is required'
-            });
-        } 
+        const { email, password } = req.body;
 
-        if (password == null) {
-            return res.status(400).json({
-                isAuth : false, message : 'Auth failed, password field is required'
+        // This handles findByEmail AND comparePassword internally.
+        const user = await User.authenticate(email, password);
+
+        // Check if authentication failed
+        if (!user) {
+            return res.status(400).json({ 
+                call: req.originalUrl,
+                timeref: new Date().toISOString(),
+                originator: req.ip,
+                return_code: 400,
+                error: `Invalid email or password`,
+                debuginfo: `format: ${req.query.format || 'json'}` 
             });
         }
 
-        // Find the user
-        const user = users.find(u => u.email === email);
+        // This generates a random token and saves it to MongoDB
+        const session = await AuthSession.createSession(user._id, {
+            userAgent: req.get('User-Agent'), // Tracks if they are on Chrome/Mobile
+            ipAddress: req.ip                 // Tracks their IP
+        });
 
-        // Check if user exists AND password matches
-        // (We check both at once for security, to not reveal if a email exists)
-        if (!user || user.password !== password) {
-            // 401 Unauthorized
-            return res.status(401).json({ error: "Invalid email or password." });
-        }
+        console.log(`🔑 User logged in: ${user.email} | Session Token: ${session.token}`);
+        await user.updateLastLogin();
 
-        console.log(`🔑 User logged in: ${email}`);
-
-        // Return success & a mock token
-        // In a real app, you would generate a JWT token here.
+        // Return the Opaque Token
         return res.status(200).json({
             status: "OK",
             message: "Login successful",
-            // Sending a fake token for now just to show the structure
-            token: `mock_token_for_${user.id}_${Date.now()}`, 
+            token: session.token,
             email: user.email
         });
 
     } catch (error) {
-        console.error("Login Error:", error);
-        return res.status(500).json({ error: "Internal Server Error during login." });
+        console.error("Server Error:", error);
+        return res.status(500).json({
+            call: req.originalUrl,
+            timeref: new Date().toISOString(),
+            originator: req.ip,
+            return_code: 500,
+            error: "Internal Server Error",
+            debuginfo: error.message
+        });
     }
 };
