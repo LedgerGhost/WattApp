@@ -60,13 +60,13 @@ const userSchema = new mongoose.Schema(
       type: [mongoose.Schema.Types.Mixed], 
       default: []
     },
-    preferences: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {}
+     preferences: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: []
     },
     vehicle_info: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {}
+      type: [mongoose.Schema.Types.Mixed],
+      default: []
     },
 
     // --- LOGIC FIELDS ---
@@ -100,7 +100,6 @@ const userSchema = new mongoose.Schema(
 );
 
 // --- INDEXES ---
-userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ role: 1 });
 
 // --- INSTANCE METHODS ---
