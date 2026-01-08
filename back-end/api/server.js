@@ -1,21 +1,25 @@
-require("dotenv").config();
-const mongoose = require("mongoose");
-const app = require("./app");
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+const mongoose = require('mongoose');
+const app = require('./app');
+
+// Connect to the database before starting the server
+const { connectDB } = require('../../config/database');
 
 const PORT = process.env.PORT || 9876;
 
-async function start() {
-  try {
-    if (!process.env.MONGO_URI) throw new Error("Missing MONGO_URI in .env");
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("✅ MongoDB connected");
-    console.log("DB name:", mongoose.connection.name);
+console.log("⏳ Initializing Database Connection...");
 
-    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}!`));
-  } catch (err) {
-    console.error("❌ Failed to start:", err.message);
+connectDB()
+  .then(() => {
+    //Start Server only after database connects
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}!`);
+      console.log(`✅ Database connected successfully`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ Failed to connect to Database. Server shutting down.");
+    console.error(err.message);
     process.exit(1);
-  }
-}
-
-start();
+  });
