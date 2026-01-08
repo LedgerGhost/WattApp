@@ -1,6 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './profile.css'
+import { getSessions, logout, getCurrentUser } from '../../services/api'
+
+interface User {
+  _id?: string
+  first_name?: string
+  last_name?: string
+  email?: string
+  created_at?: string
+}
 
 interface Activity {
   id: number
@@ -23,65 +32,62 @@ function money(v: number) {
 
 export default function Profile() {
   const navigate = useNavigate()
+  const [user, setUser] = useState<User>({
+    first_name: 'Loading...',
+    last_name: '',
+    email: 'Loading...',
+    created_at: '2023-06-15',
+  })
+  const [allActivities, setAllActivities] = useState<Activity[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  // Mock user data (swap with real API data later)
-  const user = {
-    name: 'John Doe',
-    email: 'john@example.com',
-    joinDate: '2023-06-15',
-    vehicle: 'Tesla Model 3',
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true)
+        // Fetch current user
+        const userData = await getCurrentUser()
+        setUser({
+          first_name: userData.first_name || 'User',
+          last_name: userData.last_name || '',
+          email: userData.email || '',
+          created_at: userData.created_at || new Date().toISOString(),
+        })
 
-  // Mock activity data
-  const allActivities: Activity[] = [
-    {
-      id: 1,
-      date: '2024-12-20',
-      type: 'charge',
-      value: 25.5,
-      energyKwh: 32.4,
-      durationMin: 45,
-      status: 'completed',
-      location: 'Athens Downtown',
-      chargerType: 'DC_Fast_CCS',
-      powerKw: 50,
-    },
-    {
-      id: 2,
-      date: '2024-12-18',
-      type: 'reservation',
-      value: 0,
-      status: 'completed',
-      location: 'Thessaloniki Hub',
-      chargerType: 'DC_Fast_CHAdeMO',
-      powerKw: 50,
-    },
-    {
-      id: 3,
-      date: '2024-12-15',
-      type: 'charge',
-      value: 18.75,
-      energyKwh: 24.1,
-      durationMin: 35,
-      status: 'completed',
-      location: 'Patras Port',
-      chargerType: 'DC_Fast_CHAdeMO',
-      powerKw: 50,
-    },
-    { id: 4, date: '2024-12-10', type: 'payment', value: 50.0, status: 'completed' },
-    {
-      id: 5,
-      date: '2024-12-08',
-      type: 'charge',
-      value: 22.3,
-      energyKwh: 28.2,
-      durationMin: 40,
-      status: 'completed',
-      location: 'Heraklion Station',
-      chargerType: 'AC_Type2',
-      powerKw: 22,
-    },
-  ]
+        // Fetch sessions/activities from API
+        const sessions = await getSessions()
+        console.log('Sessions data:', sessions)
+        
+        // Transform API response to Activity format
+        const activities = Array.isArray(sessions) 
+          ? sessions.map((session: any, idx: number) => ({
+              id: idx,
+              date: session.starttime || new Date().toISOString().split('T')[0],
+              type: 'charge' as const,
+              value: session.cost || 0,
+              energyKwh: session.enerjy || 0,
+              durationMin: session.duration || 0,
+              status: 'completed' as const,
+              location: session.location || 'Unknown',
+              chargerType: 'DC_Fast_CCS',
+              powerKw: session.power || 50,
+            }))
+          : []
+
+        setAllActivities(activities)
+      } catch (err) {
+        setLoadError(err instanceof Error ? err.message : 'Failed to load data')
+        setAllActivities([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+     
+  
 
   const [datePreset, setDatePreset] = useState<DatePreset>('lastMonth')
   const [customStartDate, setCustomStartDate] = useState('')
@@ -200,6 +206,26 @@ export default function Profile() {
 
         {/* Content */}
         <main className="wa-content">
+          {loadError && (
+            <div style={{ 
+              color: '#d32f2f', 
+              backgroundColor: '#ffebee', 
+              padding: '12px', 
+              borderRadius: '4px',
+              marginBottom: '16px'
+            }}>
+              Error loading data: {loadError}
+            </div>  
+          )}
+
+          {isLoading && (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+              Loading profile data...
+            </div>
+          )}
+
+          {!isLoading && (
+          <>
           {/* Row: account + stats */}
           <section className="wa-grid wa-grid-12">
             <div className="wa-card span-5">
@@ -213,10 +239,9 @@ export default function Profile() {
               <div className="wa-profile">
                 <div className="wa-avatar">👤</div>
                 <div className="wa-profile-info">
-                  <div className="wa-profile-name">{user.name}</div>
+                  <div className="wa-profile-name">{user.first_name} {user.last_name}</div>
                   <div className="wa-muted">{user.email}</div>
-                  <div className="wa-muted">Member since {new Date(user.joinDate).toLocaleDateString()}</div>
-                  <div className="wa-muted">Vehicle: {user.vehicle}</div>
+                  <div className="wa-muted">Member since {new Date(user.created_at || '2023-06-15').toLocaleDateString()}</div>
                 </div>
               </div>
 
@@ -370,6 +395,8 @@ export default function Profile() {
               )}
             </div>
           </section>
+          </>
+          )}
         </main>
       </div>
     </div>

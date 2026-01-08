@@ -42,7 +42,6 @@ type ChargerType =
   | 'AC_GB/T'
   | 'DC_Fast_CCS'
   | 'DC_Fast_CHAdeMO'
-  | 'DC_Fast_GB/T'
 
 type AvailabilityStatus = 'Available' | 'Charging' | 'Offline' | 'Malfunction'
 
@@ -74,7 +73,7 @@ export default function Map() {
     const [filters, setFilters] = useState({
     priceRange: [0, 1] as [number, number],
     availabilityFilter: 'All' as 'All' | AvailabilityStatus,
-    chargerTypeFilter: [] as ChargerType[],
+    chargerTypeFilter: null as ChargerType | null,
     distance: 50,
   })
 
@@ -261,8 +260,8 @@ setChargers(mapped)
       charger.status === filters.availabilityFilter
 
     const chargerTypeMatch =
-      filters.chargerTypeFilter.length === 0 ||
-      filters.chargerTypeFilter.includes(charger.chargerType)
+      !filters.chargerTypeFilter ||
+      charger.chargerType === filters.chargerTypeFilter
 
     const distanceMatch = charger.distance <= filters.distance
 
@@ -357,16 +356,15 @@ setChargers(mapped)
               <div className="filter-subgroup">
                 <strong>AC Mode</strong>
                 {(['AC_Type2', 'AC_GB/T'] as const).map(type => (
-                  <label key={type} className="checkbox-label">
+                  <label key={type} className="radio-label">
                     <input
-                      type="checkbox"
-                      checked={filters.chargerTypeFilter.includes(type)}
-                      onChange={e => {
+                      type="radio"
+                      name="chargerType"
+                      checked={filters.chargerTypeFilter === type}
+                      onChange={() => {
                         setFilters(prev => ({
                           ...prev,
-                          chargerTypeFilter: e.target.checked
-                            ? [...prev.chargerTypeFilter, type]
-                            : prev.chargerTypeFilter.filter(t => t !== type),
+                          chargerTypeFilter: type,
                         }))
                       }}
                     />
@@ -377,17 +375,16 @@ setChargers(mapped)
 
               <div className="filter-subgroup">
                 <strong>DC Fast</strong>
-                {(['DC_Fast_CCS', 'DC_Fast_CHAdeMO', 'DC_Fast_GB/T'] as const).map(type => (
-                  <label key={type} className="checkbox-label">
+                {(['DC_Fast_CCS', 'DC_Fast_CHAdeMO'] as const).map(type => (
+                  <label key={type} className="radio-label">
                     <input
-                      type="checkbox"
-                      checked={filters.chargerTypeFilter.includes(type)}
-                      onChange={e => {
+                      type="radio"
+                      name="chargerType"
+                      checked={filters.chargerTypeFilter === type}
+                      onChange={() => {
                         setFilters(prev => ({
                           ...prev,
-                          chargerTypeFilter: e.target.checked
-                            ? [...prev.chargerTypeFilter, type]
-                            : prev.chargerTypeFilter.filter(t => t !== type),
+                          chargerTypeFilter: type,
                         }))
                       }}
                     />
@@ -395,6 +392,21 @@ setChargers(mapped)
                   </label>
                 ))}
               </div>
+
+              <label className="radio-label">
+                <input
+                  type="radio"
+                  name="chargerType"
+                  checked={filters.chargerTypeFilter === null}
+                  onChange={() => {
+                    setFilters(prev => ({
+                      ...prev,
+                      chargerTypeFilter: null,
+                    }))
+                  }}
+                />
+                <span>All Types</span>
+              </label>
             </div>
           </div>
 

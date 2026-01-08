@@ -36,8 +36,14 @@ export const apiCall = async (
   })
 
   if (!res.ok) {
-    const error = await res.text()
-    throw new Error(`API error ${res.status}: ${error}`)
+    let errorMessage = `API error ${res.status}`
+    try {
+      const errorData = await res.json()
+      errorMessage = errorData.error || errorMessage
+    } catch {
+      // If response is not JSON, just use the status-based message
+    }
+    throw new Error(errorMessage)
   }
 
   return res.json()
@@ -80,6 +86,11 @@ export const logout = async () => {
   } finally {
     clearAuthToken()
   }
+}
+
+// Get current logged-in user
+export const getCurrentUser = async () => {
+  return apiCall('/auth/me')
 }
 
 // Points endpoints
