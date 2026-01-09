@@ -35,7 +35,8 @@ exports.login = async (req, res) => {
             status: "OK",
             message: "Login successful",
             token: session.token_id,
-            email: user.email
+            email: user.email,
+            role: user.role
         });
 
     } catch (error) {
