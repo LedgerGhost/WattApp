@@ -5,7 +5,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import './map.css'
 import { useEffect } from 'react'
-import { getPointsInfo } from '../../services/api'
+import { getPointsInfo, getAuthToken } from '../../services/api'
 
 interface BackendPoint {
   pointid: string
@@ -33,8 +33,9 @@ const mapStatus = (status: BackendPoint['status']): AvailabilityStatus => {
     case 'available':
       return 'Available'
     case 'charging':
-    case 'reserved':
       return 'Charging'
+    case 'reserved':
+      return 'Reserved'
     case 'malfunction':
       return 'Malfunction'
     case 'offline':
@@ -52,7 +53,7 @@ type ChargerType =
   | 'CHAdeMO'
   | string
 
-type AvailabilityStatus = 'Available' | 'Charging' | 'Offline' | 'Malfunction'
+type AvailabilityStatus = 'Available' | 'Charging' | 'Reserved' | 'Offline' | 'Malfunction'
 
 interface Charger {
   id: string
@@ -87,7 +88,6 @@ export default function Map() {
     maxPrice: 1 as number,
     availabilityFilter: 'All' as 'All' | AvailabilityStatus,
     chargerTypeFilter: '' as string,
-    distance: 50,
   })
 
 
@@ -213,6 +213,7 @@ useEffect(() => {
     if (!selectedCharger) return
 
     const minutes = Math.max(1, Math.min(60, reserveMinutes))
+    const token = getAuthToken()
 
     try {
       setReserveStatus('loading')
@@ -223,16 +224,15 @@ useEffect(() => {
         {
           method: 'POST',
           headers: {
-            // Add auth headers if your backend needs them, e.g.:
-            // 'X-API-KEY': apiKey,
-            // 'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` }),
           },
         }
       )
 
       if (res.ok) {
         setReserveStatus('success')
-        setReserveMessage(`Reserved for ${minutes} minutes ✅`)
+        setReserveMessage(`Reserved for ${minutes} minutes `)
         return
       }
 
@@ -280,9 +280,7 @@ useEffect(() => {
       !filters.chargerTypeFilter ||
       charger.chargerType === filters.chargerTypeFilter
 
-    const distanceMatch = charger.distance <= filters.distance
-
-    return priceMatch && availabilityMatch && chargerTypeMatch && distanceMatch
+    return priceMatch && availabilityMatch && chargerTypeMatch
   })
 
   // =========================
@@ -341,7 +339,7 @@ useEffect(() => {
           <div className="filter-group">
             <label>Availability Status</label>
             <div className="availability-filter">
-              {(['All', 'Available', 'Charging', 'Offline', 'Malfunction'] as const).map(
+              {(['All', 'Available', 'Charging', 'Reserved', 'Offline', 'Malfunction'] as const).map(
                 status => (
                   <label key={status} className="checkbox-label">
                     <input
@@ -421,23 +419,6 @@ useEffect(() => {
                 </div>
               )}
             </div>
-          </div>
-
-          <div className="filter-group">
-            <label>Distance (km)</label>
-            <input
-              type="range"
-              min="1"
-              max="50"
-              value={filters.distance}
-              onChange={e =>
-                setFilters(prev => ({
-                  ...prev,
-                  distance: parseFloat(e.target.value),
-                }))
-              }
-            />
-            <div className="distance-display">{filters.distance.toFixed(1)} km</div>
           </div>
         </div>
 
@@ -530,7 +511,9 @@ useEffect(() => {
 
         {/* Selected charger panel */}
         {selectedCharger && (
-          <div className="selected-charger-info">
+          <>
+            {console.log('Selected charger:', selectedCharger)}
+            <div className="selected-charger-info">
             <div className="charger-icon-header">
               <img
                 //src={getChargerIcon(selectedCharger.chargerType)}  //need fixing 
@@ -563,10 +546,16 @@ useEffect(() => {
               </div>
             </div>
 
-            <button className="reserve-btn" onClick={openReserveModal}>
+            <button 
+              className="reserve-btn" 
+              onClick={openReserveModal}
+              disabled={selectedCharger.status !== 'Available'}
+              title={selectedCharger.status !== 'Available' ? 'Can only reserve available chargers' : 'Reserve this charger'}
+            >
               Reserve Spot
             </button>
           </div>
+          </>
         )}
 
         {/* Reserve modal */}

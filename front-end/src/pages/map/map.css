@@ -432,6 +432,7 @@
   justify-content: flex-end;
   background: linear-gradient(135deg, #f0faf7 0%, #e8f5f1 100%);
   position: relative;
+  z-index: 1;
 }
 
 .leaflet-container {
@@ -452,8 +453,8 @@
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  transition: width 0.3s ease;
+  overflow: visible;
+  z-index: 20;
 }
 
 .charger-icon-header {
@@ -467,7 +468,7 @@
 }
 
 .charger-type-icon {
-  width: 200x;
+  width: 200px;
   height: 200px;
   object-fit: contain;
   filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.15));
@@ -564,9 +565,20 @@
   flex-shrink: 0;
 }
 
-.reserve-btn:hover {
+.reserve-btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(25, 233, 171, 0.3);
+}
+
+.reserve-btn:disabled {
+  background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.reserve-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 /* Leaflet overrides */
