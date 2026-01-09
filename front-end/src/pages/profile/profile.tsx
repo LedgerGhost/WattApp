@@ -179,7 +179,7 @@ export default function Profile() {
 
         <div className="wa-side-footer">
           {/* Hook to your auth later */}
-          <button className="wa-ghost" type="button" onClick={() => navigate('/login')}>
+          <button className="wa-ghost" type="button" onClick={() => logout().then(() => navigate('/login')) }>
             Logout
           </button>
         </div>

@@ -5,6 +5,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import './map.css'
 import { useEffect } from 'react'
+import { getPointsInfo } from '../../services/api'
 
 interface BackendPoint {
   pointid: string
@@ -15,8 +16,15 @@ interface BackendPoint {
   kwhprice: number
 }
 
+interface BackendPointInfo extends BackendPoint {
+  station_name?: string
+  connector_type?: string
+  address?: string
+  providerName?: string
+}
 
-const DEFAULT_CHARGER_TYPE: ChargerType = 'DC_Fast_CCS'
+
+
 
 
 
@@ -38,10 +46,11 @@ const mapStatus = (status: BackendPoint['status']): AvailabilityStatus => {
 
 
 type ChargerType =
-  | 'AC_Type2'
+  | 'Type2'
   | 'AC_GB/T'
-  | 'DC_Fast_CCS'
-  | 'DC_Fast_CHAdeMO'
+  | 'CCS'
+  | 'CHAdeMO'
+  | string
 
 type AvailabilityStatus = 'Available' | 'Charging' | 'Offline' | 'Malfunction'
 
@@ -68,12 +77,16 @@ export default function Map() {
 
   const navigate = useNavigate()
   const [selectedCharger, setSelectedCharger] = useState<Charger | null>(null)
+  const [chargerTypeSearch, setChargerTypeSearch] = useState('')
+  const [showChargerTypeSuggestions, setShowChargerTypeSuggestions] = useState(false)
+  const [isLeftSidebarMinimized, setIsLeftSidebarMinimized] = useState(false)
+  const [isFiltersMinimized, setIsFiltersMinimized] = useState(false)
   
 
     const [filters, setFilters] = useState({
-    priceRange: [0, 1] as [number, number],
+    maxPrice: 1 as number,
     availabilityFilter: 'All' as 'All' | AvailabilityStatus,
-    chargerTypeFilter: null as ChargerType | null,
+    chargerTypeFilter: '' as string,
     distance: 50,
   })
 
@@ -95,44 +108,39 @@ useEffect(() => {
       setIsLoadingChargers(true)
       setChargersError(null)
 
-      const res = await fetch('http://localhost:9876/api/points')
+      const raw = await getPointsInfo()
 
-      if (!res.ok) {
-        throw new Error('Failed to fetch points')
+      console.log('RAW /pointsinfo response:', raw)
+
+      // The backend might return either an array OR an object with an array inside.
+      const points: BackendPointInfo[] = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw.points)
+          ? raw.points
+          : Array.isArray(raw.pointsinfo)
+            ? raw.pointsinfo
+            : []
+
+      if (points.length === 0) {
+        throw new Error('No points array found in response')
       }
-      const raw = await res.json()
-console.log('RAW /points response:', raw)
 
-// The backend might return either an array OR an object with an array inside.
-const points: BackendPoint[] = Array.isArray(raw)
-  ? raw
-  : Array.isArray(raw.points)
-    ? raw.points
-    : []
 
-if (points.length === 0) {
-  throw new Error('No points array found in response')
-}
+      const mapped: Charger[] = points.map(p => ({
+        id: p.pointid, // ✅ keep as string (recommended)
+        name: p.station_name || p.providerName || 'Unknown Station',
+        address: p.address || 'Unknown location',
+        price: p.kwhprice ?? 0,
+        available: p.status === 'available' ? 1 : 0,
+        distance: 0,
+        latitude: p.lat,
+        longitude: p.lon,
+        chargerType: (p.connector_type as ChargerType) ,
+        status: mapStatus(p.status),
+        power: p.cap ?? 0,
+      }))
 
-const mapped: Charger[] = points.map(p => ({
-  id: p.pointid, // ✅ keep as string (recommended)
-  name: `Charging Point ${String(p.pointid).slice(0, 6)}`,
-  address: 'Unknown location',
-  price: p.kwhprice ?? 0,
-  available: p.status === 'available' ? 1 : 0,
-  distance: 0,
-  latitude: p.lat,
-  longitude: p.lon,
-  chargerType: DEFAULT_CHARGER_TYPE,
-  status: mapStatus(p.status),
-  power: p.cap ?? 0,
-}))
-
-setChargers(mapped)
-
-      
-
-      
+      setChargers(mapped)
     } catch (err) {
       setChargersError('Could not load charging points')
     } finally {
@@ -159,17 +167,18 @@ setChargers(mapped)
   // =========================
   // HELPERS
   // =========================
-  const getChargerIcon = (chargerType: ChargerType): string => {
+ 
+ /* const getChargerIcon = (chargerType: ChargerType): string => {
     const iconMap: Record<ChargerType, string> = {
       AC_Type2: '/src/assets/images/actyp2.jpg',
       'AC_GB/T': '/src/assets/images/gb-t_ac.jpg',
       DC_Fast_CCS: '/src/assets/images/ccs2.jpg',
       DC_Fast_CHAdeMO: '/src/assets/images/chademo.jpg',
-      'DC_Fast_GB/T': '/src/assets/images/gb-t_dc.jpg',
+    //  'DC_Fast_GB/T': '/src/assets/images/gb-t_dc.jpg',
     }
     return iconMap[chargerType]
   }
-
+*/
   const getMapPinColor = (status: AvailabilityStatus): string => {
     switch (status) {
       case 'Available':
@@ -250,10 +259,18 @@ setChargers(mapped)
   //take chargers from dummy api 
  // const chargers: Charger[] = [];
   
+  // Get unique charger types from all chargers
+  const uniqueChargerTypes = Array.from(
+    new Set(chargers.map(c => c.chargerType).filter(Boolean))
+  ).sort()
+
+  // Filter suggestions based on search input
+  const chargerTypeSuggestions = uniqueChargerTypes.filter(type =>
+    type.toLowerCase().includes(chargerTypeSearch.toLowerCase())
+  )
+  
   const filteredChargers = chargers.filter(charger => {
-    const priceMatch =
-      charger.price >= filters.priceRange[0] &&
-      charger.price <= filters.priceRange[1]
+    const priceMatch = charger.price <= filters.maxPrice
 
     const availabilityMatch =
       filters.availabilityFilter === 'All' ||
@@ -273,10 +290,20 @@ setChargers(mapped)
   // =========================
   return (
     <div className="map-container">
-      {/* Sidebar */}
-      <div className="sidebar">
+      {/* Left Sidebar */}
+      <div className={`sidebar sidebar-left ${isLeftSidebarMinimized ? 'minimized' : ''}`}>
         <div className="sidebar-header">
-          <h2>⚡ WattApp</h2>
+          <div className="header-top">
+            <h2>⚡ WattApp</h2>
+            <button
+              type="button"
+              className="minimize-btn"
+              onClick={() => setIsLeftSidebarMinimized(!isLeftSidebarMinimized)}
+              title={isLeftSidebarMinimized ? 'Expand filters' : 'Minimize filters'}
+            >
+              {isLeftSidebarMinimized ? '▶' : '◀'}
+            </button>
+          </div>
 
           <button
             type="button"
@@ -288,39 +315,25 @@ setChargers(mapped)
         </div>
 
         {/* Filters */}
-        <div className="filters">
+        <div className={`filters ${isFiltersMinimized ? 'minimized' : ''}`}>
           <div className="filter-group">
-            <label>Price Range ($/kWh)</label>
+            <label>Max Price ($/kWh)</label>
             <div className="price-range">
               <input
                 type="range"
                 min="0"
                 max="1"
                 step="0.01"
-                value={filters.priceRange[0]}
+                value={filters.maxPrice}
                 onChange={e =>
                   setFilters(prev => ({
                     ...prev,
-                    priceRange: [parseFloat(e.target.value), prev.priceRange[1]],
-                  }))
-                }
-              />
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={filters.priceRange[1]}
-                onChange={e =>
-                  setFilters(prev => ({
-                    ...prev,
-                    priceRange: [prev.priceRange[0], parseFloat(e.target.value)],
+                    maxPrice: parseFloat(e.target.value),
                   }))
                 }
               />
               <div className="price-display">
-                ${filters.priceRange[0].toFixed(2)} - $
-                {filters.priceRange[1].toFixed(2)}
+                ${filters.maxPrice.toFixed(2)}/kWh
               </div>
             </div>
           </div>
@@ -352,61 +365,61 @@ setChargers(mapped)
 
           <div className="filter-group">
             <label>Charger Type</label>
-            <div className="charger-type-filter">
-              <div className="filter-subgroup">
-                <strong>AC Mode</strong>
-                {(['AC_Type2', 'AC_GB/T'] as const).map(type => (
-                  <label key={type} className="radio-label">
-                    <input
-                      type="radio"
-                      name="chargerType"
-                      checked={filters.chargerTypeFilter === type}
-                      onChange={() => {
-                        setFilters(prev => ({
-                          ...prev,
-                          chargerTypeFilter: type,
-                        }))
-                      }}
-                    />
-                    <span>{type === 'AC_Type2' ? 'Type 2' : 'GB/T'}</span>
-                  </label>
-                ))}
-              </div>
-
-              <div className="filter-subgroup">
-                <strong>DC Fast</strong>
-                {(['DC_Fast_CCS', 'DC_Fast_CHAdeMO'] as const).map(type => (
-                  <label key={type} className="radio-label">
-                    <input
-                      type="radio"
-                      name="chargerType"
-                      checked={filters.chargerTypeFilter === type}
-                      onChange={() => {
-                        setFilters(prev => ({
-                          ...prev,
-                          chargerTypeFilter: type,
-                        }))
-                      }}
-                    />
-                    <span>{type.replace('DC_Fast_', '')}</span>
-                  </label>
-                ))}
-              </div>
-
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="chargerType"
-                  checked={filters.chargerTypeFilter === null}
-                  onChange={() => {
+            <div className="charger-type-search-container">
+              <input
+                type="text"
+                placeholder="Search charger type..."
+                value={chargerTypeSearch}
+                onChange={e => {
+                  setChargerTypeSearch(e.target.value)
+                  setShowChargerTypeSuggestions(true)
+                }}
+                onFocus={() => setShowChargerTypeSuggestions(true)}
+                className="charger-type-search-input"
+              />
+              {filters.chargerTypeFilter && (
+                <button
+                  className="clear-search-btn"
+                  onClick={() => {
+                    setChargerTypeSearch('')
                     setFilters(prev => ({
                       ...prev,
-                      chargerTypeFilter: null,
+                      chargerTypeFilter: '',
                     }))
                   }}
-                />
-                <span>All Types</span>
-              </label>
+                >
+                  ✕
+                </button>
+              )}
+              {showChargerTypeSuggestions && chargerTypeSearch && (
+                <div className="charger-type-suggestions">
+                  {chargerTypeSuggestions.length > 0 ? (
+                    chargerTypeSuggestions.map(type => (
+                      <div
+                        key={type}
+                        className="suggestion-item"
+                        onClick={() => {
+                          setChargerTypeSearch(type)
+                          setFilters(prev => ({
+                            ...prev,
+                            chargerTypeFilter: type,
+                          }))
+                          setShowChargerTypeSuggestions(false)
+                        }}
+                      >
+                        {type}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="suggestion-item no-results">No matches found</div>
+                  )}
+                </div>
+              )}
+              {filters.chargerTypeFilter && (
+                <div className="selected-filter">
+                  Selected: <strong>{filters.chargerTypeFilter}</strong>
+                </div>
+              )}
             </div>
           </div>
 
@@ -427,6 +440,14 @@ setChargers(mapped)
             <div className="distance-display">{filters.distance.toFixed(1)} km</div>
           </div>
         </div>
+
+        <button
+          className="toggle-filters-btn"
+          onClick={() => setIsFiltersMinimized(!isFiltersMinimized)}
+          title={isFiltersMinimized ? 'Show filters' : 'Hide filters'}
+        >
+          {isFiltersMinimized ? '▼ Show Filters' : '▲ Hide Filters'}
+        </button>
 
         {/* Chargers list */}
         <div className="chargers-list">
@@ -512,7 +533,7 @@ setChargers(mapped)
           <div className="selected-charger-info">
             <div className="charger-icon-header">
               <img
-                src={getChargerIcon(selectedCharger.chargerType)}
+                //src={getChargerIcon(selectedCharger.chargerType)}  //need fixing 
                 alt={selectedCharger.chargerType}
                 className="charger-type-icon"
               />

@@ -15,6 +15,12 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  transition: width 0.3s ease;
+}
+
+.sidebar.sidebar-left.minimized {
+  width: 60px;
+  overflow: hidden;
 }
 
 .sidebar-header {
@@ -22,10 +28,71 @@
   border-bottom: 1px solid #e2e8f0;
   background: linear-gradient(135deg, #d8e0d7 0%, #19e9ab 100%);
   color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: padding 0.3s ease;
+}
+
+.sidebar.minimized .sidebar-header {
+  padding: 12px;
+  align-items: center;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sidebar.minimized .header-top {
+  flex-direction: column;
+}
+
+.sidebar.minimized .header-top h2 {
+  display: none;
+}
+
+.minimize-btn {
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.minimize-btn:hover {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: white;
+}
+
+.sidebar.minimized .profile-btn {
+  display: none;
+}
+
+.sidebar.minimized .filters {
+  display: none;
+}
+
+.sidebar.minimized .chargers-list {
+  display: none;
+}
+
+.sidebar.minimized .toggle-filters-btn {
+  margin: 0;
+  width: 40px;
+  padding: 8px;
+  font-size: 0;
+}
 }
 
 .sidebar-header h2 {
-  margin: 0 0 8px 0;
+  margin: 0;
   font-size: 24px;
   font-weight: 700;
 }
@@ -43,6 +110,33 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  transition: all 0.3s ease;
+  max-height: 600px;
+  overflow: hidden;
+}
+
+.filters.minimized {
+  max-height: 0;
+  padding: 0;
+  border-bottom: none;
+  gap: 0;
+}
+
+.toggle-filters-btn {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #c8e6d7 0%, #19e9ab 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 0 16px 16px 16px;
+}
+
+.toggle-filters-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(25, 233, 171, 0.3);
 }
 
 .filter-group {
@@ -98,6 +192,107 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-top: 4px;
+}
+
+.charger-type-search-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.charger-type-search-input {
+  padding: 10px 36px 10px 12px;
+  border: 1px solid #c8e6d7;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.charger-type-search-input:focus {
+  border-color: #19e9ab;
+  box-shadow: 0 0 0 3px rgba(25, 233, 171, 0.1);
+}
+
+.charger-type-search-input::placeholder {
+  color: #a0aec0;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: none;
+  border: none;
+  color: #a0aec0;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  transition: color 0.2s ease;
+}
+
+.clear-search-btn:hover {
+  color: #19e9ab;
+}
+
+.charger-type-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #c8e6d7;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.suggestion-item {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #4a5568;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.suggestion-item:hover {
+  background-color: #f0f9f7;
+  color: #0d7d5a;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item.no-results {
+  cursor: default;
+  color: #a0aec0;
+  text-align: center;
+  padding: 12px;
+}
+
+.suggestion-item.no-results:hover {
+  background-color: transparent;
+  color: #a0aec0;
+}
+
+.selected-filter {
+  padding: 8px 12px;
+  background-color: #f0f9f7;
+  border: 1px solid #c8e6d7;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #0d7d5a;
+}
+
+.selected-filter strong {
+  color: #0d7d5a;
+  font-weight: 600;
 }
 
 .checkbox-label {
@@ -257,8 +452,8 @@
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  z-index: 10;
   overflow: hidden;
+  transition: width 0.3s ease;
 }
 
 .charger-icon-header {

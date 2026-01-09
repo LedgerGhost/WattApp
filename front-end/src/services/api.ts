@@ -98,6 +98,10 @@ export const getPoints = async () => {
   return apiCall('/points')
 }
 
+export const getPointsInfo = async () => {
+  return apiCall('/pointsinfo')
+}
+
 // Sessions endpoints
 export const getSessions = async () => {
   return apiCall('/sessions')
@@ -107,3 +111,29 @@ export const getSessions = async () => {
 export const getPointStatus = async () => {
   return apiCall('/pointstatus')
 }
+
+
+// logout endpoint
+export const performLogout = async () => {
+  return apiCall('/auth/logout', { method: 'POST' })
+}
+
+//admin endpoints
+//admin me vasi to swagger
+export const getAdmin = async () => {
+  return apiCall('/admin')
+}
+
+export const getHealthCheck = async () => {
+  return apiCall('/admin/healthcheck')
+}
+
+export const resetpoints = async () => {
+  return apiCall('/admin/resetpoints', { method: 'POST' })
+}
+
+export const addpoints = async () => {
+  return apiCall('/admin/addpoints', { method: 'POST' })
+}
+
+
