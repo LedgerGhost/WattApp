@@ -83,10 +83,15 @@ const pointSchema = new mongoose.Schema(
         type: String,
         trim: true
       },
-      connectorType: {
+      station_name: {
         type: String,
         trim: true
       },
+      connector_type: {
+        type: String,
+        trim: true
+      },
+
       lastStatusChange: {
         type: Date,
         default: Date.now
