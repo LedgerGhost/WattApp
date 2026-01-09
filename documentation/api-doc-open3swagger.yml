@@ -62,30 +62,51 @@ paths:
   # AUTHENTICATION
   # ==============================
   /auth/signup:
-    post:
-      summary: Register a new user
-      tags: [Auth]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [username, password]
-              properties:
-                username:
-                  type: string
-                  example: "newuser"
-                password:
-                  type: string
-                  example: "secret123"
-      responses:
-        '201':
-          description: User created successfully
-        '400':
-          description: Missing username or password
-        '409':
-          description: Username already exists
+      post:
+        summary: Register a new user
+        tags: [Auth]
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [full_name, email, password]
+                properties:
+                  full_name:
+                    type: string
+                    example: "Dimitris Christou"
+                    description: "Full name (First and Last name separated by space)"
+                  email:
+                    type: string
+                    format: email
+                    example: "dimitris@wattapp.com"
+                  password:
+                    type: string
+                    format: password
+                    example: "secret123"
+                  phone:
+                    type: string
+                    example: "+306912345678"
+        responses:
+          '200':
+            description: User created successfully
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    status:
+                      type: string
+                      example: "OK"
+                    message:
+                      type: string
+                      example: "User created successfully"
+                    userId:
+                      type: string
+                      example: "65b9dc7d6902b282a0"
+          '400':
+            description: Missing required fields/invalid name format/email already in use
 
   /auth/login:
     post:
@@ -97,9 +118,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [username, password]
+              required: [email, password]
               properties:
-                username:
+                email:
                   type: string
                 password:
                   type: string
@@ -111,23 +132,58 @@ paths:
               schema:
                 type: object
                 properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  message:
+                    type: string  
+                    example: "Login successful"
                   token:
                     type: string
                     description: The JWT or Session token
-        '401':
+                  email:
+                    type: string 
+                    example: "newuser@wattapp.com"
+        '400':
           description: Invalid credentials
 
   /auth/logout:
-    post:
-      summary: Logout the current user (Invalidate token)
-      tags: [Auth]
-      security:
-        - ApiKeyAuth: []
-      responses:
-        '200':
-          description: Logged out successfully
-        '400':
-          description: No token provided
+      post:
+        summary: Logout user (invalidate session token)
+        tags: [Auth]
+        parameters:
+          - in: header
+            name: X-OBSERVATORY-AUTH
+            schema:
+              type: string
+            required: true
+            description: Session token received from login
+        responses:
+          '200':
+            description: Logged out successfully
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    status:
+                      type: string
+                      example: "OK"
+                    message:
+                      type: string
+                      example: "Logged out successfully"
+          '400':
+            description: Missing Authentication Token
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+          '500':
+            description: Server Error
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
 
   # ==============================
   # ADMIN OPERATIONS
