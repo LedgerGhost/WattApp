@@ -6,7 +6,7 @@ const ONLINE_STATUSES = ['available', 'charging', 'reserved', 'malfunction'];
 const pointSchema = new mongoose.Schema(
     {
       pointid: {
-        type: String,
+        type: Number,
         required: [true, 'Point ID is required'],
         unique: true,
         trim: true
@@ -14,7 +14,8 @@ const pointSchema = new mongoose.Schema(
       providerName: {
         type: String,
         required: [true, 'Provider name is required'],
-        trim: true
+        trim: true,
+        default: "Unknown"
       },
       lon: {
         type: String,
@@ -46,7 +47,6 @@ const pointSchema = new mongoose.Schema(
         },
         coordinates: {
           type: [Number],
-          default: undefined
         }
       },
       status: {
@@ -77,25 +77,30 @@ const pointSchema = new mongoose.Schema(
       reservedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        default: null
+      },
+      lastStatusChange: {
+        type: Date,
       },
       address: {
         type: String,
-        trim: true
+        trim: true,
+        default: "Unknown"
       },
       station_name: {
         type: String,
-        trim: true
+        trim: true,
+        default: "Unknown"
+      },
+      external_station_id: {
+        type: String,
+        trim: true,
+        default: "Unknown"
       },
       connector_type: {
         type: String,
-        trim: true
+        trim: true,
+        default: "Unknown"
       },
-
-      lastStatusChange: {
-        type: Date,
-        default: Date.now
-      }
     },
     {
       timestamps: true,
@@ -111,6 +116,17 @@ pointSchema.index({ location: '2dsphere' });
 pointSchema.index({ reservationendtime: 1 });
 
 // Pre-save sync location
+pointSchema.pre('validate', function (next) {
+  // Check if lon/lat exist and location is missing or needs update
+  if (this.lon && this.lat) {
+    this.location = {
+      type: 'Point',
+      coordinates: [parseFloat(this.lon), parseFloat(this.lat)]
+    };
+  }
+  next();
+});
+
 pointSchema.pre('save', function (next) {
   if (this.lon && this.lat) {
     this.location = {
