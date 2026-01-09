@@ -1,6 +1,5 @@
 // a) /points
 
-const PROVIDER_NAME = "bestPowerGR";
 
 
 const Point = require("../../../models/Point");
@@ -54,7 +53,7 @@ exports.getPoints = async (req, res) => {
     // Ensure providerName is the constant required by the assignment
     // and output only the fields required by the /points spec
     result = result.map(p => ({
-      providerName: PROVIDER_NAME,
+      providerName: p.providerName,
       pointid: p.pointid,
       lon: p.lon,
       lat: p.lat,
