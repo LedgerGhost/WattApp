@@ -3,13 +3,11 @@ info:
   title: WattApp EV Charging API
   version: 1.0.0
   description: API for managing Electric Vehicle Charging Points, Reservations, Sessions, and Admin operations.
+
 servers:
   - url: http://localhost:9876/api
     description: Local Development Server
 
-# ------------------------------------------------------------------------------
-# SECURITY SCHEMES
-# ------------------------------------------------------------------------------
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -18,7 +16,7 @@ components:
       name: X-OBSERVATORY-AUTH
 
   schemas:
-    # Reusable Point Object
+    # Reusable Point Object (endpoint a)
     Point:
       type: object
       properties:
@@ -38,6 +36,19 @@ components:
         kwhprice:
           type: number
 
+    # Point + extra info (NEW endpoint /pointsinfo)
+    PointInfo:
+      allOf:
+        - $ref: '#/components/schemas/Point'
+        - type: object
+          properties:
+            station_name:
+              type: string
+              nullable: true
+            connector_type:
+              type: string
+              nullable: true
+
     # Standard Error Response
     ErrorResponse:
       type: object
@@ -55,58 +66,57 @@ components:
         debuginfo:
           type: string
 
-
 paths:
 
   # ==============================
   # AUTHENTICATION
   # ==============================
   /auth/signup:
-      post:
-        summary: Register a new user
-        tags: [Auth]
-        requestBody:
-          required: true
+    post:
+      summary: Register a new user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [full_name, email, password]
+              properties:
+                full_name:
+                  type: string
+                  example: "Dimitris Christou"
+                  description: "Full name (First and Last name separated by space)"
+                email:
+                  type: string
+                  format: email
+                  example: "dimitris@wattapp.com"
+                password:
+                  type: string
+                  format: password
+                  example: "secret123"
+                phone:
+                  type: string
+                  example: "+306912345678"
+      responses:
+        '200':
+          description: User created successfully
           content:
             application/json:
               schema:
                 type: object
-                required: [full_name, email, password]
                 properties:
-                  full_name:
+                  status:
                     type: string
-                    example: "Dimitris Christou"
-                    description: "Full name (First and Last name separated by space)"
-                  email:
+                    example: "OK"
+                  message:
                     type: string
-                    format: email
-                    example: "dimitris@wattapp.com"
-                  password:
+                    example: "User created successfully"
+                  userId:
                     type: string
-                    format: password
-                    example: "secret123"
-                  phone:
-                    type: string
-                    example: "+306912345678"
-        responses:
-          '200':
-            description: User created successfully
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    status:
-                      type: string
-                      example: "OK"
-                    message:
-                      type: string
-                      example: "User created successfully"
-                    userId:
-                      type: string
-                      example: "65b9dc7d6902b282a0"
-          '400':
-            description: Missing required fields/invalid name format/email already in use
+                    example: "65b9dc7d6902b282a0"
+        '400':
+          description: Missing required fields/invalid name format/email already in use
 
   /auth/login:
     post:
@@ -136,54 +146,54 @@ paths:
                     type: string
                     example: "OK"
                   message:
-                    type: string  
+                    type: string
                     example: "Login successful"
                   token:
                     type: string
                     description: The JWT or Session token
                   email:
-                    type: string 
+                    type: string
                     example: "newuser@wattapp.com"
         '400':
           description: Invalid credentials
 
   /auth/logout:
-      post:
-        summary: Logout user (invalidate session token)
-        tags: [Auth]
-        parameters:
-          - in: header
-            name: X-OBSERVATORY-AUTH
-            schema:
-              type: string
-            required: true
-            description: Session token received from login
-        responses:
-          '200':
-            description: Logged out successfully
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    status:
-                      type: string
-                      example: "OK"
-                    message:
-                      type: string
-                      example: "Logged out successfully"
-          '400':
-            description: Missing Authentication Token
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ErrorResponse'
-          '500':
-            description: Server Error
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Logout user (invalidate session token)
+      tags: [Auth]
+      parameters:
+        - in: header
+          name: X-OBSERVATORY-AUTH
+          schema:
+            type: string
+          required: true
+          description: Session token received from login
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  message:
+                    type: string
+                    example: "Logged out successfully"
+        '400':
+          description: Missing Authentication Token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   # ==============================
   # ADMIN OPERATIONS
@@ -205,8 +215,12 @@ paths:
                     example: "OK"
                   dbconnection:
                     type: string
-        '500':
+        '400':
           description: Database connection failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /admin/resetpoints:
     post:
@@ -227,6 +241,10 @@ paths:
                     example: "OK"
         '500':
           description: Reset failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /admin/addpoints:
     post:
@@ -260,6 +278,10 @@ paths:
                     type: integer
         '400':
           description: Invalid file format or missing file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   # ==============================
   # POINTS OPERATIONS
@@ -275,6 +297,13 @@ paths:
             type: string
             enum: [available, charging, reserved, malfunction, offline]
           description: Filter points by current status
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+          description: Response format (json or csv). Default is json.
       responses:
         '200':
           description: List of points retrieved successfully
@@ -284,8 +313,71 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Point'
+            text/csv:
+              schema:
+                type: string
+        '204':
+          description: Success but empty response (no points found)
         '401':
           description: Invalid status parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid format parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ✅ NEW ENDPOINT (your custom one)
+  /pointsinfo:
+    get:
+      summary: Get list of points with station_name and connector_type
+      tags: [Points]
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [available, charging, reserved, malfunction, offline]
+          description: Filter points by current status
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+          description: Response format (json or csv). Default is json.
+      responses:
+        '200':
+          description: List of points retrieved successfully (with extra fields)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PointInfo'
+            text/csv:
+              schema:
+                type: string
+        '204':
+          description: Success but empty response (no points found)
+        '401':
+          description: Invalid status parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid format parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -331,9 +423,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # ✅ FIXED: method should be POST (per spec + your implementation), not PUT
   /updpoint/{id}:
-    put:
-      summary: Update point status or price (Admin/Operator)
+    post:
+      summary: Update point status or price
       tags: [Points]
       parameters:
         - in: path
@@ -475,9 +568,9 @@ paths:
           description: No active reservation to cancel
 
   # ==============================
-  # SESSIONS
+  # SESSIONS (per assignment)
   # ==============================
-  /sessions:
+  /newsession:
     post:
       summary: Record a new charging session
       tags: [Sessions]
@@ -493,8 +586,10 @@ paths:
                   type: string
                 starttime:
                   type: string
+                  example: "2025-11-10 19:00"
                 endtime:
                   type: string
+                  example: "2025-11-10 22:00"
                 startsoc:
                   type: number
                 endsoc:
@@ -507,7 +602,7 @@ paths:
                   type: number
       responses:
         '200':
-          description: Session recorded successfully
+          description: Session recorded successfully (empty body)
         '400':
           description: Missing fields or invalid values
         '404':
@@ -529,15 +624,50 @@ paths:
           schema:
             type: string
             pattern: '^\d{8}$'
+          description: Start date (YYYYMMDD)
         - in: path
           name: to
           required: true
           schema:
             type: string
             pattern: '^\d{8}$'
+          description: End date (YYYYMMDD)
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+          description: Response format
       responses:
         '200':
           description: List of sessions found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    starttime:
+                      type: string
+                      example: "2025-11-07 09:10"
+                    endtime:
+                      type: string
+                      example: "2025-11-07 10:20"
+                    startsoc:
+                      type: number
+                    endsoc:
+                      type: number
+                    totalkwh:
+                      type: number
+                    kwhprice:
+                      type: number
+                    amount:
+                      type: number
+            text/csv:
+              schema:
+                type: string
         '204':
           description: No sessions found for this period
         '400':

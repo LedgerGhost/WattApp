@@ -6,7 +6,7 @@ const VALID_STATUSES = ['available', 'charging', 'reserved', 'malfunction', 'off
 const pointStatusHistorySchema = new mongoose.Schema(
     {
       pointid: {
-        type: String,
+        type: Number,
         required: [true, 'Point ID is required'],
         trim: true,
         index: true

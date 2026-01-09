@@ -1,18 +1,18 @@
-const { points } = require("../../utils/database"); // Import the mock DB array
-const fs = require('fs').promises; // Use Node.js File System with Promises
+const Point = require('../../../../models/Point'); // Adjust path as needed
+const fs = require('fs');
 const path = require('path');
 
-// --- HARDWIRED CONSTANT PATH  ---
-// We assume the file is located at: project_root/data/points_data.json
-// This path is fixed (hardwired) as required.
-const SOURCE_FILE_PATH = path.join(__dirname, '../../utils/mockinitializationdata.json');
-
-// ????????????????????????????????????????????????????????????????????????
-
+// --- HELPER FUNCTION FOR DATES ---
+// Handles both "2025-01-01" strings AND { "$date": "2025-01-01" } objects
+const cleanDate = (dateValue) => {
+    if (!dateValue) return null; // Handle null or undefined
+    if (dateValue.$date) return new Date(dateValue.$date); // Handle MongoDB Extended JSON
+    return new Date(dateValue); // Handle standard strings/dates
+};
 
 exports.resetPoints = async (req, res) => {
     try {
-        // VALIDATE FORMAT (400 Bad Request) - (default: json)
+        // VALIDATE FORMAT
         const normalizedFormat = (req.query.format || 'json').toLowerCase();
         if (normalizedFormat !== 'json') {
             return res.status(400).json({
@@ -20,65 +20,74 @@ exports.resetPoints = async (req, res) => {
                 timeref: new Date().toISOString(),
                 originator: req.ip,
                 return_code: 400,
-                error: `Invalid format '${req.query.format}'. Allowed values: json, csv`,
-                debuginfo: `format: ${req.query.format}`
+                error: `Invalid format '${req.query.format}'. Allowed values: json, csv`
             });
         }
 
-        // DB CONNECTION CHECK 
-        // Στην προσομοίωση (mock data), ελέγχουμε απλά αν φορτώθηκε ο πίνακας points.
-        // Σε πραγματική ΒΔ, εδώ θα γινόταν π.χ. mongoose.connection.readyState
-        if (!points) {
-            return res.status(400).json({
-            call: req.originalUrl,
-            timeref: new Date().toISOString(),
-            originator: req.ip,
-            return_code: 400,
-            error: "Database Connection Failed",
-            debuginfo: error.message
-        });
+        // READ THE FILE
+        const filePath = path.join(__dirname, '../../utils/resetpointsdata.json');
+
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`File not found at ${filePath}`);
+        }
+        const fileData = fs.readFileSync(filePath, 'utf8');
+        const pointsArray = JSON.parse(fileData);
+
+        // 🔍 DEBUG LOG: Check if data is actually being read
+        console.log(`📂 Read file: ${filePath}`);
+        console.log(`🔢 Items found in JSON: ${pointsArray.length}`);
+
+        if (pointsArray.length === 0) {
+            console.warn("⚠️ Warning: JSON file is empty array []");
         }
 
-        // READ INITIALIZATION DATA FROM THE FILE 
-        // "προβαίνει σε αρχικοποίηση... με τις τιμές που περιέχονται στο αρχείο json"
-        // We read the file asynchronously.
-        const fileData = await fs.readFile(SOURCE_FILE_PATH, 'utf8');
-        const newPointsData = JSON.parse(fileData);
+        // MAP & CLEAN DATA
+        // We transform the JSON raw data to match the Mongoose Schema keys exactly.
+        const cleanedPoints = pointsArray.map(p => ({
+            pointid: parseInt((p.pointid), 10),
+            external_station_id: p.external_station_id,
+            station_name: p.station_name,
+            lon: String(p.lon), // Location Data, Ensure string 
+            lat: String(p.lat), // Location Data, Ensure string 
+            status: p.status,
+            cap: parseInt(p.cap),
+            connector_type: p.connector_type,
+            kwhprice: parseFloat(p.kwhprice),
+            reservationendtime: cleanDate(p.reservationendtime),
+            address: p.address,
+            providerName: p.providerName,
+            lastStatusChange: cleanDate(p.lastStatusChange),
+            createdAt: cleanDate(p.created_at),
+            updatedAt: cleanDate(p.updated_at)
+        }));
 
-        // VALIDATE DATA 
-        if (!Array.isArray(newPointsData)) {
-            throw new Error("Invalid file format: Root element must be an array of points.");
-        }
-
-        // --- 3. RESET THE MOCK DB ---
-        // Since 'points' is an imported array reference, we cannot simply say "points = []".
-        // We must modify the array in place to ensure other controllers see the changes.
-        points.length = 0; // Clears the array completely
-        points.push(...newPointsData); // Inserts all new items
-
-        // FOR DEBUGGING PURPOSES ONLY -- UNCOMMENT THE FOLLOWING 2 LINES IF NEEDED
-        // console.log("\n CURRENT DATABASE SNAPSHOT:");
-        // console.table(points);
+        // PERFORM DATABASE RESET
+        // Delete all existing documents
+        await Point.deleteMany({});
         
-        // RETURN SUCCESS (200 OK) 
+        // Insert the cleaned data
+        // ordered: false ensures that if one bad record fails, the others are still inserted
+        const result = await Point.insertMany(cleanedPoints, { ordered: false });
+
+        // RETURN SUCCESS
         return res.status(200).json({
             status: "OK",
-            message: "Points database initialized successfully",
-            total_points: points.length
+            timeref: new Date().toISOString(),
+            action: "Database reset successfully",
+            source_file: "resetpointsdata.json",
+            total_points_imported: result.length
         });
 
     } catch (error) {
-        // --- 5. HANDLE ERRORS ---
-        // "διαφορετικά επιστρέφεται το αντίστοιχο αντικείμενο error log"
         console.error("ResetPoints Error:", error);
-
+        
         return res.status(500).json({
             call: req.originalUrl,
             timeref: new Date().toISOString(),
             originator: req.ip,
             return_code: 500,
-            error: "Failed to reset points data",
-            debuginfo: error.message // Will show "ENOENT" if file is missing, or JSON parse errors
+            error: "Failed to reset points",
+            debuginfo: error.message
         });
     }
 };
