@@ -5,9 +5,9 @@ const AuthSession = require('../../../../models/AuthSession');
 exports.logout = async (req, res) => {
     try {
         // Get Token from Header
-        const token = req.headers['x-observatory-auth'];
+        const token_id = req.headers['x-observatory-auth'];
 
-        if (!token) {
+        if (!token_id) {
             return res.status(400).json({
                 call: req.originalUrl,
                 timeref: new Date().toISOString(),
@@ -21,7 +21,7 @@ exports.logout = async (req, res) => {
         // Invalidate Token in Database
         // We set 'isActive' to false instead of deleting it, so we keep a history log.
         await AuthSession.updateOne(
-            { token: token }, 
+            { token_id: token_id },
             { isActive: false }
         );
 
