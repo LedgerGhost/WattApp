@@ -1,15 +1,12 @@
-const { points } = require("../../utils/database");
-const fs = require('fs'); // Standard file system
-const { parse } = require('csv-parse/sync'); // Synchronous CSV parser for simplicity 
-// need to install csv-parse --> npm install csv-parse 
-const { info } = require("console");
+const Point = require('../../../../models/Point'); // Import your Point Model
+const { parse } = require('csv-parse/sync'); // Synchronous CSV parser
 
 exports.addPoints = async (req, res) => {
     try {
         // VALIDATE FORMAT (400 Bad Request) - (default: json)
         const normalizedFormat = (req.query.format || 'json').toLowerCase();
         if (normalizedFormat !== 'json') {
-                return res.status(400).json({
+            return res.status(400).json({
                 call: req.originalUrl,
                 timeref: new Date().toISOString(),
                 originator: req.ip,
@@ -19,52 +16,104 @@ exports.addPoints = async (req, res) => {
             });
         }
 
-        // CHECK IF FILE EXISTS 
-        // In 'multipart/form-data', the file is usually available in req.file
-        // (provided you use middleware like multer in the route)
+        // CHECK IF FILE EXISTS
+        // Multer puts the file in req.file.buffer
         if (!req.file) {
-            throw new Error("No file uploaded. Expected CSV file in 'file' field.");
+            return res.status(400).json({
+                call: req.originalUrl,
+                timeref: new Date().toISOString(),
+                originator: req.ip,
+                return_code: 400,
+                error: "No file uploaded. Expected multipart/form-data with field 'file'."
+            });
         }
 
-        // PARSE CSV DATA 
-        // Read the file buffer/content
+        // PARSE CSV DATA
         const fileContent = req.file.buffer.toString('utf8');
+        let parsedData;
         
-        // Parse CSV to JSON. We assume the CSV headers match the JSON keys exactly.
-        // columns: true => uses the first row as keys (pointid, providerName, etc.)
-        const newPoints = parse(fileContent, {
-            columns: true, 
-            skip_empty_lines: true,
-            trim: true
-        });
-
-        // VALIDATE DATA 
-        // "The format... must strictly be the same as /admin/resetpoints" 
-        // We verify that the new data has valid fields (e.g., pointid)
-        if (newPoints.length > 0 && !newPoints[0].pointid) {
-             throw new Error("Invalid CSV format. Missing 'pointid' column.");
+        try {
+            parsedData = parse(fileContent, {
+                columns: true, // Auto-detect headers (pointid, providerName, etc.)
+                skip_empty_lines: false,
+                trim: true,
+                bom: true // Handles invisible BOM characters
+            });
+        } catch (parseError) {
+            throw new Error("Failed to parse CSV file. Ensure standard formatting.");
         }
 
-        // ADD TO DATABASE
-        points.push(...newPoints);
+        // VALIDATION LOOP
+        // We check every single row BEFORE we start preparing data for the DB.
+        for (let i = 0; i < parsedData.length; i++) {
+            const row = parsedData[i];
+            const lineNumber = i + 2; // +1 for 0-index, +1 for Header row = +2
 
-        // FOR DEBUGGING PURPOSES ONLY -- UNCOMMENT THE FOLLOWING 2 LINES IF NEEDED
-        // console.log("\n CURRENT DATABASE SNAPSHOT:");
-        // console.table(points);
+            // Check Missing Point ID
+            if (!row.pointid || String(row.pointid).trim() === '') {
+                return res.status(400).json({
+                    status: "failed",
+                    error: `Validation Error on Line ${lineNumber}`,
+                    message: `Row ${lineNumber} is missing 'pointid'. No points were added.`
+                });
+            }
+            // Check Missing Coordinates
+            if (!row.lon || !row.lat || String(row.lon).trim() === '' || String(row.lat).trim() === '') {
+                return res.status(400).json({
+                    status: "failed",
+                    error: `Validation Error on Line ${lineNumber}`,
+                    message: `Row ${lineNumber} (Point ID: ${row.pointid}) is missing longitude or latitude. No points were added.`
+                });
+            
+            }
+        }
 
-        // RETURN SUCCESS (200 OK) 
-        // Returns 200 on success
+        // TRANSFORM & MAP DATA TO SCHEMA
+        const newPoints = parsedData.map(p => ({
+            pointid: parseInt((p.pointid), 10),
+            
+            // Map CSV headers to Schema fields
+            external_stastion_id: p.external_stastion_id,
+            station_name: p.station_name,
+            lon: String(p.lon),
+            lat: String(p.lat),
+            status: p.status, 
+            cap: parseInt(p.cap),
+            connector_type: p.connector_type,
+            kwhprice: parseFloat(p.kwhprice),
+            reservationendtime: null,
+            address: p.address,                
+            providerName: p.providerName
+
+        }));
+
+        // INSERT INTO DATABASE
+        // ordered: false => If one point fails (e.g. duplicate), continue inserting the others.
+        const result = await Point.insertMany(newPoints, { ordered: false });
+
+        // RETURN SUCCESS (200 OK)
         return res.status(200).json({
             status: "OK",
             timeref: new Date().toISOString(),
             info: "New points added successfully",
-            points_added: newPoints.length,
-            total_points: points.length
+            points_imported: result.length
         });
 
     } catch (error) {
+        // HANDLE DUPLICATE KEY ERRORS (Code 11000)
+        // If some points were added but others failed due to duplicates, we can still return 200/Partial
+        if (error.code === 11000) {
+            return res.status(200).json({
+                status: "OK (Partial)",
+                timeref: new Date().toISOString(),
+                info: "Process completed, but some points were skipped (Duplicate IDs).",
+                points_imported: error.result ? error.result.nInserted : "Unknown",
+                debuginfo: "Duplicate pointid detected"
+            });
+        }
+
+        // GENERIC SERVER ERROR
         console.error("AddPoints Error:", error);
-        
         return res.status(500).json({
             call: req.originalUrl,
             timeref: new Date().toISOString(),

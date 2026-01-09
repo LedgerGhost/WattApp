@@ -1,0 +1,5 @@
+providerName,connector_type,lon,lat,cap,kwhprice,address,pointid
+PowerCharge GR,Type2,23.727539,,2,0.35,Omonoia Square 10,2001
+Attica Blue,CCS,23.729359,37.971513,4,0.45,Dionysiou Areopagitou 5,2002
+EcoMotion,CHAdeMO,23.757041,37.967839,1,0.50,Pangrati Park 2,2003
+Urban Volt,,23.791552,38.003669,2,0.30,Kifisias Avenue 100,
