@@ -51,7 +51,8 @@ exports.getPointsinfo = async (req, res) => {
 
       // ✅ extra fields (από charge_points)
       station_name: p.station_name ?? null,
-      connector_type: p.connector_type ?? null
+      connector_type: p.connector_type ?? null,
+      kwhprice: p.kwhprice ?? null
     }));
 
     if (format === "csv") {
