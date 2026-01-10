@@ -11,9 +11,7 @@ module.exports = (req, res, next) => {
             });
         }
 
-        // Check the Role
-        // We can use the helper method .isAdmin() from your User model
-        // OR check the string directly: req.user.role === 'admin'
+        // Check the Role: req.user.role === 'admin'
         if (req.user.role !== 'admin') {
             return res.status(403).json({ // 403 means "Forbidden" (You are logged in, but not allowed here)
                 call: req.originalUrl,
