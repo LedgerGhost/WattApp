@@ -27,7 +27,7 @@ exports.login = async (req, res) => {
             ipAddress: req.ip                 // Tracks their IP
         });
 
-        console.log(`🔑 User logged in: ${user.email} | Session Token: ${session.token}`);
+        console.log(`🔑 User logged in: ${user.email} | Session Token: ${session.token_id}`);
         await user.updateLastLogin();
 
         // Return the Opaque Token
