@@ -5,7 +5,10 @@ exports.healthcheck = async (req, res) => {
     try {
         // VALIDATE FORMAT (400 Bad Request) - (default: json)
         const normalizedFormat = (req.query.format || 'json').toLowerCase();
-        if (normalizedFormat !== 'json') {
+
+        // VALIDATE FORMAT (400 Bad Request)
+        const allowedFormats = ['json', 'csv'];
+        if (!allowedFormats.includes(normalizedFormat)) {
             return res.status(400).json({
                 call: req.originalUrl,
                 timeref: new Date().toISOString(),
