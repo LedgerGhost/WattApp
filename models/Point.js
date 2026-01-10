@@ -9,7 +9,13 @@ const pointSchema = new mongoose.Schema(
         type: Number,
         required: [true, 'Point ID is required'],
         unique: true,
-        trim: true
+        trim: true,
+        validate: {
+          validator: function(v) {
+              return !isNaN(v); // Stops NaN (e.g. from failed parseInt)
+          },
+          message: props => `${props.value} is not a valid Point ID!`
+        } 
       },
       providerName: {
         type: String,
