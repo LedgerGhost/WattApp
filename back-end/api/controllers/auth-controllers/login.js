@@ -27,14 +27,14 @@ exports.login = async (req, res) => {
             ipAddress: req.ip                 // Tracks their IP
         });
 
-        console.log(`🔑 User logged in: ${user.email} | Session Token: ${session.token}`);
+        console.log(`🔑 User logged in: ${user.email} | Session Token: ${session.token_id}`);
         await user.updateLastLogin();
 
         // Return the Opaque Token
         return res.status(200).json({
             status: "OK",
             message: "Login successful",
-            token_id: session.token_id,
+            token: session.token_id,
             email: user.email,
             role: user.role
         });

@@ -12,6 +12,19 @@ export const clearAuthToken = () => {
   localStorage.removeItem('authToken')
 }
 
+export const getUserData = (): any => {
+  const userData = localStorage.getItem('userData')
+  return userData ? JSON.parse(userData) : null
+}
+
+export const setUserData = (data: any) => {
+  localStorage.setItem('userData', JSON.stringify(data))
+}
+
+export const clearUserData = () => {
+  localStorage.removeItem('userData')
+}
+
 interface FetchOptions extends RequestInit {
   headers?: Record<string, string>
 }
@@ -49,15 +62,24 @@ export const apiCall = async (
   return res.json()
 }
 
-// Auth endpoints
 export const login = async (email: string, password: string) => {
   const data = await apiCall('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   })
-  if (data.token) {
-    setAuthToken(data.token)
+  
+  if (!data.token) {
+    throw new Error('Login failed: No session token received from server')
   }
+  
+  setAuthToken(data.token)
+  setUserData({
+    token: data.token,
+    email: data.email || email,
+    userId: data.userId,
+    role: data.role,
+    ...data,
+  })
   return data
 }
 
@@ -74,17 +96,40 @@ export const signup = async (
       password,
     }),
   })
-  if (data.token) {
-    setAuthToken(data.token)
+  
+  if (!data.token) {
+    throw new Error('Signup failed: No session token received from server')
   }
+  
+  setAuthToken(data.token)
+  setUserData({
+    token: data.token,
+    email: data.email || email,
+    userId: data.userId,
+    fullName: fullName,
+    role: data.role,
+    ...data,
+  })
   return data
 }
 
 export const logout = async () => {
   try {
-    await apiCall('/auth/logout', { method: 'POST' })
+    const token = getAuthToken()
+    if (token) {
+      const response = await apiCall('/auth/logout', { 
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      console.log('✅ Logout successful:', response.message)
+    }
+  } catch (err) {
+    console.error('❌ Logout error:', err)
   } finally {
     clearAuthToken()
+    console.log('✅ Local auth data cleared')
   }
 }
 
