@@ -231,7 +231,7 @@ func main() {
 		Use:   "points",
 		Short: "Lists charge points",                                               // Appears in the list of commands
 		Long:  `Returns a list of all charge points or all with the wanted status`, // Appears in list of parameters
-		Example: `  se2537 points
+		Example: `  se2537 points --status offline
   se2537 points --status online --format json`,
 		Run: func(cmd *cobra.Command, args []string) {
 			status, _ := cmd.Flags().GetString("status")
@@ -249,11 +249,10 @@ func main() {
 
 	// POINT (id is BOLD)
 	var pointCmd = &cobra.Command{
-		Use:   "point",
-		Short: "Get details of a specific point",                                                                                  // Appears in the list of commands
-		Long:  `Returns the current status, capacity, and cost information for a specific charging point based on its unique ID.`, // Appears in list of parameters
-		Example: `  se2537 point --id 45
-  se2537 point --id 45 --format json`,
+		Use:     "point",
+		Short:   "Get details of a specific point",                                                                                  // Appears in the list of commands
+		Long:    `Returns the current status, capacity, and cost information for a specific charging point based on its unique ID.`, // Appears in list of parameters
+		Example: `  se2537 point --id 45`,
 		Run: func(cmd *cobra.Command, args []string) {
 			// if no flags provided, show help and exit
 			// Example: se2537 point
