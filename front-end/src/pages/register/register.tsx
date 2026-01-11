@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import './register.css'
-import { useNavigate } from 'react-router-dom';
+import { signup } from '../../services/api'
+
 
 interface RegisterFormData {
   fullName: string
   email: string
+  phone: string
   password: string
   confirmPassword: string
   agreeTerms: boolean
@@ -23,6 +25,7 @@ export default function Register() {
   const [formData, setFormData] = useState<RegisterFormData>({
     fullName: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: '',
     agreeTerms: false,
@@ -81,7 +84,7 @@ export default function Register() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (!validateForm()) {
@@ -90,16 +93,17 @@ export default function Register() {
 
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Registration attempt:', {
-        fullName: formData.fullName,
-        email: formData.email,
-      })
+    try {
+      const phone = formData.phone ? `+30${formData.phone}` : undefined
+      await signup(formData.fullName, formData.email, formData.password, phone)
+      alert('Account created successfully! Please sign in.')
+      navigate('/login')
+    } catch (error) {
+      console.error('Registration failed:', error)
+      setErrors({ email: error instanceof Error ? error.message : 'Registration failed' })
+    } finally {
       setIsLoading(false)
-      // TODO: Add actual registration logic
-      navigate('/map');
-    }, 1500)
+    }
   }
 
   const isFormValid =
@@ -107,8 +111,7 @@ export default function Register() {
     formData.email &&
     formData.password &&
     formData.confirmPassword &&
-    formData.agreeTerms &&
-    Object.keys(errors).length === 0
+    formData.agreeTerms
 
   return (
     <div className="register-container">
@@ -154,6 +157,22 @@ export default function Register() {
             {errors.email && (
               <span className="error-message">{errors.email}</span>
             )}
+          </div>
+
+          {/* Phone Input (Optional) */}
+          <div className="form-group">
+            <label htmlFor="phone">Phone (Optional)</label>
+            <div className="phone-input-wrapper">
+              <span className="phone-prefix">+30</span>
+              <input
+                id="phone"
+                type="tel"
+                name="phone"
+                placeholder="6912345678"
+                value={formData.phone}
+                onChange={handleChange}
+              />
+            </div>
           </div>
 
           {/* Password Input */}

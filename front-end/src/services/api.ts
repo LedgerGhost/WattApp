@@ -86,30 +86,23 @@ export const login = async (email: string, password: string) => {
 export const signup = async (
   fullName: string,
   email: string,
-  password: string
+  password: string,
+  phone?: string
 ) => {
   const data = await apiCall('/auth/signup', {
     method: 'POST',
     body: JSON.stringify({
-      name: fullName,
+      fullName,
       email,
       password,
+      ...(phone && { phone }),
     }),
   })
-  
-  if (!data.token) {
-    throw new Error('Signup failed: No session token received from server')
+
+  if (data.status !== 'OK') {
+    throw new Error(data.message || 'Signup failed')
   }
-  
-  setAuthToken(data.token)
-  setUserData({
-    token: data.token,
-    email: data.email || email,
-    userId: data.userId,
-    fullName: fullName,
-    role: data.role,
-    ...data,
-  })
+
   return data
 }
 
