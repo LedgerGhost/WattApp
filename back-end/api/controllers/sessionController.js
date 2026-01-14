@@ -1,14 +1,11 @@
-// e + f (MongoDB)
-
-
+//e+f
 const Point = require("../../../models/Point");
-const ChargingSession = require("../../../models/ChargingSession"); 
+const ChargingSession = require("../../../models/ChargingSession");
 const { buildErrorLog } = require("../utils/errorLog");
 
 // "YYYY-MM-DD hh:mm" -> Date (local time)
 function parseTimestampToDate(ts) {
   if (typeof ts !== "string") return null;
-  // Accept "YYYY-MM-DD hh:mm"
   const isoLike = ts.replace(" ", "T");
   const d = new Date(isoLike);
   return isNaN(d.getTime()) ? null : d;
@@ -28,26 +25,74 @@ function formatLocalTimestamp(date) {
 function toCSV(data) {
   if (!Array.isArray(data) || data.length === 0) return "";
   const headers = Object.keys(data[0]);
-  const lines = data.map(obj => headers.map(h => `"${obj[h] ?? ""}"`).join(","));
+  const lines = data.map((obj) => headers.map((h) => `"${obj[h] ?? ""}"`).join(","));
   return [headers.join(","), ...lines].join("\n");
+}
+
+// --------- Mapping helpers (καθαρό boundary) ---------
+
+// API body (spec) -> DB document (canonical)
+function apiToDbSession(body, pointDoc, startDate, endDate) {
+  const duration_minutes = Math.round((endDate - startDate) / (1000 * 60));
+
+  const station_id = pointDoc?.external_station_id ?? null; // όπως στο Point schema σου
+  const outlet_id = String(pointDoc?.pointid ?? body.pointid); // όπως βλέπεις στο Compass ("1945")
+
+  return {
+    user_id: null, // δεν δίνεται από το API
+    station_id,
+    pointid: Number(pointDoc?.pointid ?? body.pointid),
+    outlet_id,
+    reservation_id: null,
+
+    status: "completed",
+
+    start_time: startDate,
+    end_time: endDate,
+    duration_minutes,
+
+    energy_delivered_kwh: body.totalkwh,
+
+    vehicle_info: {
+      battery_level_start: body.startsoc,
+      battery_level_end: body.endsoc
+    },
+
+    cost: {
+      energy_cost: Number((body.totalkwh * body.kwhprice).toFixed(2)),
+      total: body.amount,
+      currency: "EUR"
+    }
+  };
+}
+
+// DB doc (canonical) -> API response (spec)
+function dbToApiSession(s) {
+  const totalkwh = s.energy_delivered_kwh ?? null;
+
+  // kwhprice: ιδανικά το βγάζουμε από energy_cost / kwh
+  let kwhprice = null;
+  if (totalkwh != null && totalkwh !== 0 && s.cost?.energy_cost != null) {
+    kwhprice = Number((s.cost.energy_cost / totalkwh).toFixed(2));
+  }
+
+  return {
+    starttime: s.start_time ? formatLocalTimestamp(s.start_time) : null,
+    endtime: s.end_time ? formatLocalTimestamp(s.end_time) : null,
+    startsoc: s.vehicle_info?.battery_level_start ?? null,
+    endsoc: s.vehicle_info?.battery_level_end ?? null,
+    totalkwh,
+    kwhprice,
+    amount: s.cost?.total ?? null
+  };
 }
 
 // e) POST /newsession
 exports.newSession = async (req, res) => {
-  
   try {
-    const {
-      pointid,
-      starttime,
-      endtime,
-      startsoc,
-      endsoc,
-      totalkwh,
-      kwhprice,
-      amount
-    } = req.body;
+    const { pointid, starttime, endtime, startsoc, endsoc, totalkwh, kwhprice, amount } = req.body;
 
-    // All fields mandatory
+    // All fields mandatory (όπως το είχες)
     if (
       pointid === undefined ||
       !starttime ||
@@ -63,7 +108,7 @@ exports.newSession = async (req, res) => {
       );
     }
 
-    // Validate timestamps format & parse
+    // Validate timestamps
     const startDate = parseTimestampToDate(starttime);
     const endDate = parseTimestampToDate(endtime);
     if (!startDate || !endDate) {
@@ -91,7 +136,7 @@ exports.newSession = async (req, res) => {
       );
     }
 
-    // Check point exists (bypass casting issues like before)
+    // Check point exists
     const pidStr = String(pointid).trim();
     const pidNum = Number(pidStr);
 
@@ -105,24 +150,11 @@ exports.newSession = async (req, res) => {
       );
     }
 
-    // Store session in MongoDB
-    // We store timestamps as Date (best for range queries).
-    await ChargingSession.create({
-      pointid: point.pointid, // keep same type as DB (usually Number)
-      starttime: startDate,
-      endtime: endDate,
-      startsoc,
-      endsoc,
-      totalkwh,
-      kwhprice,
-      amount
-    });
-   
+    // ✅ Canonical DB write
+    const dbDoc = apiToDbSession(req.body, point, startDate, endDate);
+    await ChargingSession.create(dbDoc);
 
-
-    // Success: empty body
     return res.status(200).send();
-
   } catch (err) {
     return res.status(500).json(
       buildErrorLog(req, 500, "Internal server error", err.message)
@@ -134,7 +166,7 @@ exports.newSession = async (req, res) => {
 exports.getSessions = async (req, res) => {
   try {
     const { id, from, to } = req.params;
-    const format = (req.query.format || "json").toLowerCase(); // default json
+    const format = (req.query.format || "json").toLowerCase();
 
     if (format !== "json" && format !== "csv") {
       return res.status(400).json(
@@ -180,25 +212,18 @@ exports.getSessions = async (req, res) => {
       );
     }
 
-    // Query sessions by pointid + starttime within [fromStart, toEnd]
+    // ✅ Canonical DB query (start_time)
     const sessDocs = await ChargingSession.find({
       pointid: point.pointid,
-      starttime: { $gte: fromStart, $lte: toEnd }
+      start_time: { $gte: fromStart, $lte: toEnd }
     }).lean();
 
     if (!sessDocs || sessDocs.length === 0) {
       return res.status(204).send();
     }
 
-    const result = sessDocs.map(s => ({
-      starttime: s.starttime instanceof Date ? formatLocalTimestamp(s.starttime) : s.starttime,
-      endtime: s.endtime instanceof Date ? formatLocalTimestamp(s.endtime) : s.endtime,
-      startsoc: s.startsoc,
-      endsoc: s.endsoc,
-      totalkwh: s.totalkwh,
-      kwhprice: s.kwhprice,
-      amount: s.amount
-    }));
+    // ✅ Spec response (old names)
+    const result = sessDocs.map(dbToApiSession);
 
     if (format === "csv") {
       const csv = toCSV(result);
@@ -207,7 +232,6 @@ exports.getSessions = async (req, res) => {
     }
 
     return res.status(200).json(result);
-
   } catch (err) {
     return res.status(500).json(
       buildErrorLog(req, 500, "Internal server error", err.message)

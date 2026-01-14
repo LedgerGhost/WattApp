@@ -1,259 +1,154 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
+// Sub-schemas
+const chargingDataPointSchema = new mongoose.Schema(
+  {
+    timestamp: { type: Date, required: true },
+    state_of_charge: { type: Number, required: true, min: 0, max: 100 },
+    power_kw: { type: Number, required: true, min: 0 }
+  },
+  { _id: false }
+);
+
+const meterReadingsSchema = new mongoose.Schema(
+  {
+    start_meter: { type: Number, required: true },
+    end_meter: { type: Number, required: true }
+  },
+  { _id: false }
+);
+
+const costSchema = new mongoose.Schema(
+  {
+    energy_cost: { type: Number, min: 0, default: null },
+    idle_fee: { type: Number, default: 0, min: 0 },
+    connection_fee: { type: Number, default: 0, min: 0 },
+    tax: { type: Number, default: 0, min: 0 },
+    total: { type: Number, min: 0, default: null },
+    currency: { type: String, default: "EUR" }
+  },
+  { _id: false }
+);
+
+const paymentSchema = new mongoose.Schema(
+  {
+    preauthorization_amount: { type: Number, min: 0, default: null },
+    preauthorization_id: { type: String, default: null },
+    preauthorization_time: { type: Date, default: null },
+    final_charge_amount: { type: Number, min: 0, default: null },
+    payment_id: { type: String, default: null },
+    payment_time: { type: Date, default: null },
+    payment_method_token: { type: String, default: null },
+    payment_status: {
+      type: String,
+      enum: ["pending", "authorized", "captured", "failed", "refunded"],
+      default: null
+    }
+  },
+  { _id: false }
+);
+
+const vehicleInfoSchema = new mongoose.Schema(
+  {
+    battery_level_start: { type: Number, min: 0, max: 100, default: null },
+    battery_level_end: { type: Number, min: 0, max: 100, default: null }
+  },
+  { _id: false }
+);
+
+// Main schema (canonical fields ONLY)
 const chargingSessionSchema = new mongoose.Schema(
-    {
-      pointid: {
-        type: Number,
-        required: [true, 'Point ID is required'],
-        index: true
-      },
-      starttime: {
-        type: Date,
-        required: [true, 'Start time is required']
-      },
-      endtime: {
-        type: Date,
-        required: [true, 'End time is required'],
-        validate: {
-          validator: function (v) {
-            return v > this.starttime;
-          },
-          message: 'End time must be after start time'
-        }
-      },
-      startsoc: {
-        type: Number,
-        required: [true, 'Start SOC is required'],
-        min: [0, 'Start SOC must be >= 0'],
-        max: [100, 'Start SOC must be <= 100']
-      },
-      endsoc: {
-        type: Number,
-        required: [true, 'End SOC is required'],
-        min: [0, 'End SOC must be >= 0'],
-        max: [100, 'End SOC must be <= 100'],
-        validate: {
-          validator: function (v) {
-            return v >= this.startsoc;
-          },
-          message: 'End SOC should be >= Start SOC'
-        }
-      },
-      totalkwh: {
-        type: Number,
-        required: [true, 'Total kWh is required'],
-        min: [0, 'Total kWh must be positive']
-      },
-      kwhprice: {
-        type: Number,
-        required: [true, 'kWh price is required'],
-        min: [0, 'kWh price must be positive']
-      },
-      amount: {
-        type: Number,
-        required: [true, 'Amount is required'],
-        min: [0, 'Amount must be positive']
-      },
-      userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
-      },
-      reservationId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Reservation',
-        default: null
+  {
+    user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true
+    },
+
+    station_id: { type: String, default: null, index: true },
+
+    pointid: {
+      type: Number,
+      required: [true, "Point ID is required"],
+      index: true
+    },
+
+    outlet_id: { type: String, default: null },
+
+    reservation_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Reservation",
+      default: null
+    },
+
+    status: {
+      type: String,
+      enum: ["pending", "in_progress", "completed", "failed", "cancelled"],
+      default: "completed",
+      index: true
+    },
+
+    start_time: { type: Date, required: [true, "Start time is required"] },
+
+    end_time: {
+      type: Date,
+      default: null,
+      validate: {
+        validator: function (v) {
+          if (!v) return true;
+          return v > this.start_time;
+        },
+        message: "End time must be after start time"
       }
     },
-    {
-      timestamps: true,
-      collection: 'sessions_api'
-    }
+
+    duration_minutes: { type: Number, min: 0, default: null },
+
+    energy_delivered_kwh: { type: Number, min: 0, default: null },
+
+    meter_readings: { type: meterReadingsSchema, default: null },
+
+    charging_data: { type: [chargingDataPointSchema], default: [] },
+
+    cost: { type: costSchema, default: null },
+
+    payment: { type: paymentSchema, default: null },
+
+    stop_reason: {
+      type: String,
+      enum: [
+        "target_soc_reached",
+        "user_stopped",
+        "time_limit_reached",
+        "error",
+        "vehicle_disconnected",
+        "power_limit_reached",
+        "scheduled_end",
+        // αν στο Compass έχεις "battery_full", βάλε το για να μην απορρίπτεται
+        "battery_full"
+      ],
+      default: null
+    },
+
+    vehicle_info: { type: vehicleInfoSchema, default: null },
+
+    ocpp_transaction_id: { type: String, default: null, index: true }
+  },
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    collection: "charging_sessions"
+  }
 );
 
 // Indexes
-chargingSessionSchema.index({ pointid: 1, starttime: -1 });
-chargingSessionSchema.index({ starttime: -1 });
-chargingSessionSchema.index({ userId: 1 });
-chargingSessionSchema.index({ pointid: 1, starttime: 1, endtime: 1 });
+chargingSessionSchema.index({ station_id: 1, start_time: -1 });
+chargingSessionSchema.index({ pointid: 1, start_time: -1 });
+chargingSessionSchema.index({ start_time: -1 });
+chargingSessionSchema.index({ user_id: 1, start_time: -1 });
+chargingSessionSchema.index({ pointid: 1, start_time: 1, end_time: 1 });
+chargingSessionSchema.index({ status: 1, start_time: -1 });
 
-// Helpers
-function formatTimestamp(date) {
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const hours = String(d.getHours()).padStart(2, '0');
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
-}
-
-function parseTimestamp(timestamp) {
-  if (timestamp instanceof Date) return timestamp;
-  const match = String(timestamp).match(
-      /^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/
-  );
-  if (match) {
-    const [, year, month, day, hours, minutes] = match;
-    return new Date(
-        parseInt(year, 10),
-        parseInt(month, 10) - 1,
-        parseInt(day, 10),
-        parseInt(hours, 10),
-        parseInt(minutes, 10)
-    );
-  }
-  return new Date(timestamp);
-}
-
-function parseDateYYYYMMDD(dateStr, endOfDay = false) {
-  const m = String(dateStr).match(/^(\d{4})(\d{2})(\d{2})$/);
-  if (!m) return null;
-  const [, year, month, day] = m;
-  if (endOfDay) {
-    return new Date(year, parseInt(month) - 1, parseInt(day), 23, 59, 59, 999);
-  }
-  return new Date(year, parseInt(month) - 1, parseInt(day), 0, 0, 0, 0);
-}
-
-// Virtuals
-chargingSessionSchema.virtual('durationMinutes').get(function () {
-  if (!this.starttime || !this.endtime) return 0;
-  return Math.round((this.endtime - this.starttime) / (1000 * 60));
-});
-
-chargingSessionSchema.virtual('avgPower').get(function () {
-  const durationHours = this.durationMinutes / 60;
-  if (durationHours === 0) return 0;
-  return this.totalkwh / durationHours;
-});
-
-chargingSessionSchema.virtual('socGain').get(function () {
-  return this.endsoc - this.startsoc;
-});
-
-// Instance methods
-chargingSessionSchema.methods.toSessionResponse = function () {
-  return {
-    starttime: formatTimestamp(this.starttime),
-    endtime: formatTimestamp(this.endtime),
-    startsoc: this.startsoc,
-    endsoc: this.endsoc,
-    totalkwh: this.totalkwh,
-    kwhprice: this.kwhprice,
-    amount: this.amount
-  };
-};
-
-chargingSessionSchema.methods.toCSVRow = function () {
-  return [
-    formatTimestamp(this.starttime),
-    formatTimestamp(this.endtime),
-    this.startsoc,
-    this.endsoc,
-    this.totalkwh,
-    this.kwhprice,
-    this.amount
-  ].join(',');
-};
-
-// Static methods
-chargingSessionSchema.statics.createSession = async function (sessionData) {
-  const parsedData = {
-    ...sessionData,
-    starttime: parseTimestamp(sessionData.starttime),
-    endtime: parseTimestamp(sessionData.endtime)
-  };
-  const session = new this(parsedData);
-  return session.save();
-};
-
-chargingSessionSchema.statics.findByPointAndDateRange = function (
-    pointid,
-    from,
-    to
-) {
-  const fromDate = parseDateYYYYMMDD(from);
-  const toDate = parseDateYYYYMMDD(to, true);
-  if (!fromDate || !toDate) {
-    throw new Error('Invalid date format. Use YYYYMMDD');
-  }
-  return this.find({
-    pointid,
-    starttime: { $gte: fromDate, $lte: toDate }
-  }).sort({ starttime: 1 });
-};
-
-chargingSessionSchema.statics.calculateRevenue = async function (
-    pointid,
-    fromDate,
-    toDate
-) {
-  const result = await this.aggregate([
-    {
-      $match: {
-        pointid,
-        starttime: { $gte: fromDate, $lte: toDate }
-      }
-    },
-    {
-      $group: {
-        _id: null,
-        totalAmount: { $sum: '$amount' },
-        totalKwh: { $sum: '$totalkwh' },
-        sessions: { $sum: 1 }
-      }
-    }
-  ]);
-
-  if (!result.length) {
-    return {
-      pointid,
-      fromDate,
-      toDate,
-      totalAmount: 0,
-      totalKwh: 0,
-      sessions: 0
-    };
-  }
-
-  const stats = result[0];
-  return {
-    pointid,
-    fromDate,
-    toDate,
-    totalAmount: stats.totalAmount,
-    totalKwh: stats.totalKwh,
-    sessions: stats.sessions
-  };
-};
-
-chargingSessionSchema.statics.toCSV = function (sessions) {
-  return sessions
-      .map((s) =>
-          [
-            s.starttime,
-            s.endtime,
-            s.startsoc,
-            s.endsoc,
-            s.totalkwh,
-            s.kwhprice,
-            s.amount
-          ].join(',')
-      )
-      .join('\n');
-};
-
-chargingSessionSchema.statics.formatTimestamp = formatTimestamp;
-chargingSessionSchema.statics.parseTimestamp = parseTimestamp;
-chargingSessionSchema.statics.parseDateYYYYMMDD = parseDateYYYYMMDD;
-
-const ChargingSession = mongoose.model(
-    'ChargingSession',
-    chargingSessionSchema
-);
+const ChargingSession = mongoose.model("ChargingSession", chargingSessionSchema);
 
 module.exports = ChargingSession;
-module.exports.formatTimestamp = formatTimestamp;
-module.exports.parseTimestamp = parseTimestamp;
-module.exports.parseDateYYYYMMDD = parseDateYYYYMMDD;
