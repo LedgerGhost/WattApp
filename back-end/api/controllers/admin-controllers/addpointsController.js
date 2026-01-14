@@ -49,61 +49,15 @@ exports.addPoints = async (req, res) => {
         for (let i = 0; i < parsedData.length; i++) {
             const row = parsedData[i];
             const lineNumber = i + 2; // +1 for 0-index, +1 for Header row = +2
-
-            // Check Missing Point ID
-            if (!row.pointid || String(row.pointid).trim() === '') {
-                return res.status(500).json({
+            const validationResult = Point.validateImportRow(row, lineNumber);
+            if (validationResult) {
+                return res.status(500).json({ // or 400
                     call: req.originalUrl,
                     timeref: new Date().toISOString(),
                     originator: req.ip,
                     return_code: 500,
-                    error: `Validation Error on Line ${lineNumber}`,
-                    debuginfo: `Row ${lineNumber} is missing 'pointid'. No points were added.`
-                });
-            }
-            // Check Valid Point ID (is a number)
-            if (isNaN(Number(row.pointid))) {
-                return res.status(500).json({
-                    call: req.originalUrl,
-                    timeref: new Date().toISOString(),
-                    originator: req.ip,
-                    return_code: 500,
-                    error: `Validation Error on Line ${lineNumber}`,
-                    debuginfo: `Row ${lineNumber} has invalid pointid '${row.pointid}'. It must be a valid number.`
-                });
-            }
-            // Check Missing Coordinates
-            if (!row.lon || !row.lat || String(row.lon).trim() === '' || String(row.lat).trim() === '') {
-                return res.status(500).json({
-                    call: req.originalUrl,
-                    timeref: new Date().toISOString(),
-                    originator: req.ip,
-                    return_code: 500,
-                    error: `Validation Error on Line ${lineNumber}`,
-                    debuginfo: `Row ${lineNumber} (Point ID: ${row.pointid}) is missing longitude or latitude. No points were added.`
-                });
-            
-            }
-            // Check if coordinates are valid numbers (Not NaN)
-            if (isNaN(Number(row.lon)) || isNaN(Number(row.lat))) {
-                return res.status(500).json({
-                    call: req.originalUrl,
-                    timeref: new Date().toISOString(),
-                    originator: req.ip,
-                    return_code: 500,
-                    error: `Validation Error on Line ${lineNumber}`,
-                    debuginfo: `Row ${lineNumber} contains non-numeric coordinates (Lon: '${row.lon}', Lat: '${row.lat}').`
-                });
-            }
-            // Check Range (-180 to 180)
-            if (Number(row.lon) < -180 || Number(row.lon) > 180 || Number(row.lat) < -180 || Number(row.lat) > 180) {
-                 return res.status(500).json({
-                    call: req.originalUrl,
-                    timeref: new Date().toISOString(),
-                    originator: req.ip,
-                    return_code: 500,
-                    error: `Validation Error on Line ${lineNumber}`,
-                    debuginfo: `Row ${lineNumber} coordinates out of bounds. Must be between -180 and 180. (Got Lon: ${row.lon}, Lat: ${row.lat})`
+                    error: validationResult.error,
+                    debuginfo: validationResult.debuginfo
                 });
             }
         }
