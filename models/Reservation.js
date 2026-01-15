@@ -1,5 +1,7 @@
 // models/Reservation.js
 const mongoose = require("mongoose");
+const crypto = require('crypto');
+
 
 const reservationSchema = new mongoose.Schema(
   {
@@ -9,23 +11,13 @@ const reservationSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    station_id: {
-      type: String,
-      trim: true,
-      default: null,
-      index: true,
-    },
+   
     pointid: {
       type: Number,
       required: true,
       index: true,
     },
-    outlet_id: {
-      type: String,
-      trim: true,
-      default: null,
-      index: true,
-    },
+   
     start_time: {
       type: Date,
       required: true,
@@ -50,28 +42,22 @@ const reservationSchema = new mongoose.Schema(
       default: "active",
       index: true,
     },
-    station_snapshot: {
-      type: mongoose.Schema.Types.Mixed,
-      default: null,
-    },
+    
     reservation_fee: {
       type: Number,
-      default: null,
+      default: 0.5,
       min: 0,
     },
     fee_charged: {
       type: Boolean,
-      default: null,
+      default: true,
     },
     payment_token: {
       type: String,
       trim: true,
-      default: null,
+      default: () => crypto.randomBytes(16).toString('hex'),
     },
-    reminder_sent: {
-      type: Boolean,
-      default: null,
-    },
+    
   },
   {
     collection: "reservations",
