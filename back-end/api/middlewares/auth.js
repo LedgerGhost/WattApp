@@ -7,11 +7,11 @@ module.exports = async (req, res, next) => {
 
         // If no token, kick them out immediately
         if (!token) {
-            return res.status(400).json({
+            return res.status(401).json({
                 call: req.originalUrl,
                 timeref: new Date().toISOString(),
                 originator: req.ip,
-                return_code: 400,
+                return_code: 401,
                 error: "Authentication required",
                 debuginfo: "No token provided in x-observatory-auth header"
             });
@@ -25,11 +25,11 @@ module.exports = async (req, res, next) => {
         const session = await AuthSession.validateToken(token);
 
         if (!session) {
-            return res.status(400).json({
+            return res.status(401).json({
                 call: req.originalUrl,
                 timeref: new Date().toISOString(),
                 originator: req.ip,
-                return_code: 400,
+                return_code: 401,
                 error: "Invalid or expired token",
                 debuginfo: "Token not found or session expired"
             });
@@ -37,10 +37,10 @@ module.exports = async (req, res, next) => {
 
         // ATTACH THE USER TO THE REQUEST
         // We attach the whole user object (because we used .populate() in the model)
-        req.user = session.userId; 
+        req.user = session.user_id; 
         req.token = token; // Keep the token handy just in case
 
-        // Allow them to proceed to the controller
+        // Allow them to proceed to the controller/admin middleware
         next();
 
     } catch (error) {

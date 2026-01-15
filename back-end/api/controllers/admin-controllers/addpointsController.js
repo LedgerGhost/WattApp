@@ -5,7 +5,8 @@ exports.addPoints = async (req, res) => {
     try {
         // VALIDATE FORMAT (400 Bad Request) - (default: json)
         const normalizedFormat = (req.query.format || 'json').toLowerCase();
-        if (normalizedFormat !== 'json') {
+        const allowedFormats = ['json', 'csv'];
+        if (!allowedFormats.includes(normalizedFormat)) {
             return res.status(400).json({
                 call: req.originalUrl,
                 timeref: new Date().toISOString(),
@@ -48,23 +49,16 @@ exports.addPoints = async (req, res) => {
         for (let i = 0; i < parsedData.length; i++) {
             const row = parsedData[i];
             const lineNumber = i + 2; // +1 for 0-index, +1 for Header row = +2
-
-            // Check Missing Point ID
-            if (!row.pointid || String(row.pointid).trim() === '') {
-                return res.status(400).json({
-                    status: "failed",
-                    error: `Validation Error on Line ${lineNumber}`,
-                    message: `Row ${lineNumber} is missing 'pointid'. No points were added.`
+            const validationResult = Point.validateImportRow(row, lineNumber);
+            if (validationResult) {
+                return res.status(500).json({ // or 400
+                    call: req.originalUrl,
+                    timeref: new Date().toISOString(),
+                    originator: req.ip,
+                    return_code: 500,
+                    error: validationResult.error,
+                    debuginfo: validationResult.debuginfo
                 });
-            }
-            // Check Missing Coordinates
-            if (!row.lon || !row.lat || String(row.lon).trim() === '' || String(row.lat).trim() === '') {
-                return res.status(400).json({
-                    status: "failed",
-                    error: `Validation Error on Line ${lineNumber}`,
-                    message: `Row ${lineNumber} (Point ID: ${row.pointid}) is missing longitude or latitude. No points were added.`
-                });
-            
             }
         }
 

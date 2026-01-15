@@ -26,14 +26,14 @@ exports.getPoints = async (req, res) => {
       );
     }
 
-    // Spec for /points: invalid status => 401
+    // Spec for /points: invalid status => 400
     if (status) {
       const allowed = ["available", "charging", "reserved", "malfunction", "offline"];
       if (!allowed.includes(status)) {
-        return res.status(401).json(
+        return res.status(400).json(
           buildErrorLog(
             req,
-            401,
+            400,
             `Invalid status '${status}'`,
             "Allowed values: available, charging, reserved, malfunction, offline"
           )
