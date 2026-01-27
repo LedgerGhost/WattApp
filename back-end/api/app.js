@@ -23,6 +23,7 @@ app.use("/api", require("./routes/updpoint"));//d
 app.use("/api/pointstatus", require("./routes/pointstatus")); //g
 app.use("/api", require("./routes/navigate"));
 app.use("/api", require ("./routes/pointsinfo"));
+app.use("/api", require("./routes/myreservations"));
 
 // Admin route:
 // app.use('/api', require("./routes/admin"));

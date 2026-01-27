@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './profile.css'
-import { getSessions, logout, getCurrentUser } from '../../services/api'
+import { getMyReservations, logout, getCurrentUser } from '../../services/api'
 
 interface User {
   _id?: string
@@ -46,36 +46,74 @@ export default function Profile() {
     const fetchData = async () => {
       try {
         setIsLoading(true)
+        setLoadError(null)
         // Fetch current user
         const userData = await getCurrentUser()
+        console.log('Current user data:', userData)
+
+        // Support various possible backend field names
+        const fullName: string | undefined =
+          (userData.fullName as string | undefined) ||
+          (userData.name as string | undefined)
+
+        let firstNameFromApi: string | undefined =
+          (userData.first_name as string | undefined) ||
+          (userData.firstName as string | undefined)
+
+        let lastNameFromApi: string | undefined =
+          (userData.last_name as string | undefined) ||
+          (userData.lastName as string | undefined)
+
+        // If only fullName is provided, split it into first/last for display
+        if ((!firstNameFromApi && !lastNameFromApi) && fullName) {
+          const parts = fullName.trim().split(' ')
+          firstNameFromApi = parts[0]
+          lastNameFromApi = parts.slice(1).join(' ')
+        }
+
         setUser({
-          first_name: userData.first_name || 'User',
-          last_name: userData.last_name || '',
-          email: userData.email || '',
-          created_at: userData.created_at || new Date().toISOString(),
+          first_name: firstNameFromApi || 'User',
+          last_name: lastNameFromApi || '',
+          email: (userData.email as string | undefined) || '',
+          created_at:
+            (userData.created_at as string | undefined) ||
+            (userData.createdAt as string | undefined) ||
+            new Date().toISOString(),
         })
 
-        // Fetch sessions/activities from API
-        const sessions = await getSessions()
-        console.log('Sessions data:', sessions)
-        
-        // Transform API response to Activity format
-        const activities = Array.isArray(sessions) 
-          ? sessions.map((session: any, idx: number) => ({
-              id: idx,
-              date: session.starttime || new Date().toISOString().split('T')[0],
-              type: 'charge' as const,
-              value: session.cost || 0,
-              energyKwh: session.enerjy || 0,
-              durationMin: session.duration || 0,
-              status: 'completed' as const,
-              location: session.location || 'Unknown',
-              chargerType: 'DC_Fast_CCS',
-              powerKw: session.power || 50,
-            }))
-          : []
+        // Fetch reservations for current user
+        let reservations: any[] = []
+        try {
+          const resData = await getMyReservations()
+          // If backend returned 204, apiCall would have thrown,
+          // so we only reach here when we have JSON data
+          if (Array.isArray(resData)) {
+            reservations = resData
+          }
+        } catch {
+          // No reservations or endpoint returned 204 – just ignore
+          reservations = []
+        }
 
-        setAllActivities(activities)
+        // Transform reservations to Activity format
+        const reservationActivities = reservations.map((r, idx) => {
+          const resStatus = (r.status || '').toLowerCase()
+          let mappedStatus: Activity['status'] = 'pending'
+          if (resStatus === 'completed' || resStatus === 'converted') mappedStatus = 'completed'
+          else if (resStatus === 'cancelled' || resStatus === 'expired') mappedStatus = 'cancelled'
+
+          return {
+            id: typeof r.id === 'number' ? r.id : idx,
+            date: r.start_time || r.end_time || new Date().toISOString().split('T')[0],
+            type: 'reservation' as const,
+            value: 0,
+            status: mappedStatus,
+            location: `Point ${r.pointid}`,
+          } as Activity
+        })
+
+        // Only show reservations in activity history
+        setAllActivities(reservationActivities)
       } catch (err) {
         setLoadError(err instanceof Error ? err.message : 'Failed to load data')
         setAllActivities([])
@@ -89,69 +127,15 @@ export default function Profile() {
      
   
 
-  const [datePreset, setDatePreset] = useState<DatePreset>('lastMonth')
-  const [customStartDate, setCustomStartDate] = useState('')
-  const [customEndDate, setCustomEndDate] = useState('')
   const [expandedId, setExpandedId] = useState<number | null>(null)
-  const [dateError, setDateError] = useState('')
 
-  const range = () => {
-    const today = new Date()
-    const end = new Date(today)
-
-    switch (datePreset) {
-      case 'lastMonth':
-        return { start: new Date(today.getFullYear(), today.getMonth() - 1, today.getDate()), end }
-      case 'last3Months':
-        return { start: new Date(today.getFullYear(), today.getMonth() - 3, today.getDate()), end }
-      case 'currentYear':
-        return { start: new Date(today.getFullYear(), 0, 1), end }
-      case 'custom':
-        return {
-          start: customStartDate ? new Date(customStartDate) : new Date(0),
-          end: customEndDate ? new Date(customEndDate) : today,
-        }
-      case 'all':
-      default:
-        return { start: new Date(2020, 0, 1), end }
-    }
-  }
-
-  const computed = useMemo(() => {
-    const { start, end } = range()
-
-    if (datePreset === 'custom' && customStartDate && customEndDate) {
-      if (new Date(customStartDate) > new Date(customEndDate)) {
-        setDateError('Start date cannot be after end date.')
-        return { items: [], stats: null as any, hasError: true }
-      }
-    }
-    setDateError('')
-
-    const items = allActivities
-      .filter(a => {
-        const d = new Date(a.date)
-        return d >= start && d <= end
-      })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-    const charges = items.filter(a => a.type === 'charge')
-    const totalCost = charges.reduce((s, a) => s + a.value, 0)
-    const totalKwh = charges.reduce((s, a) => s + (a.energyKwh ?? 0), 0)
-    const avgCostPerKwh = totalKwh > 0 ? totalCost / totalKwh : 0
-
-    return {
-      items,
-      hasError: false,
-      stats: {
-        totalActivities: items.length,
-        sessions: charges.length,
-        totalCost,
-        totalKwh,
-        avgCostPerKwh,
-      },
-    }
-  }, [datePreset, customStartDate, customEndDate])
+  const activities = useMemo(
+    () =>
+      [...allActivities].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      ),
+    [allActivities]
+  )
 
   return (
     <div className="wa-shell">
@@ -226,9 +210,9 @@ export default function Profile() {
 
           {!isLoading && (
           <>
-          {/* Row: account + stats */}
+          {/* Row: account */}
           <section className="wa-grid wa-grid-12">
-            <div className="wa-card span-5">
+            <div className="wa-card span-12">
               <div className="wa-card-head">
                 <div>
                   <div className="wa-card-title">Account</div>
@@ -254,76 +238,6 @@ export default function Profile() {
                 </div>
               </div>
             </div>
-
-            <div className="wa-card span-7">
-              <div className="wa-card-head">
-                <div>
-                  <div className="wa-card-title">History & Statistics</div>
-                  <div className="wa-card-sub">Filter by time period</div>
-                </div>
-              </div>
-
-              <div className="wa-section">
-                <div className="wa-section-title">Time period</div>
-                <div className="wa-pills">
-                  <button className={`wa-pill ${datePreset === 'lastMonth' ? 'active' : ''}`} onClick={() => setDatePreset('lastMonth')} type="button">
-                    Last Month
-                  </button>
-                  <button className={`wa-pill ${datePreset === 'last3Months' ? 'active' : ''}`} onClick={() => setDatePreset('last3Months')} type="button">
-                    Last 3 Months
-                  </button>
-                  <button className={`wa-pill ${datePreset === 'currentYear' ? 'active' : ''}`} onClick={() => setDatePreset('currentYear')} type="button">
-                    This Year
-                  </button>
-                  <button className={`wa-pill ${datePreset === 'all' ? 'active' : ''}`} onClick={() => setDatePreset('all')} type="button">
-                    All Time
-                  </button>
-                  <button className={`wa-pill ${datePreset === 'custom' ? 'active' : ''}`} onClick={() => setDatePreset('custom')} type="button">
-                    Custom
-                  </button>
-                </div>
-
-                {datePreset === 'custom' && (
-                  <div className="wa-dates">
-                    <label className="wa-date">
-                      <span>Start</span>
-                      <input type="date" value={customStartDate} onChange={e => setCustomStartDate(e.target.value)} />
-                    </label>
-                    <label className="wa-date">
-                      <span>End</span>
-                      <input type="date" value={customEndDate} onChange={e => setCustomEndDate(e.target.value)} />
-                    </label>
-                  </div>
-                )}
-
-                {dateError && <div className="wa-error">⚠ {dateError}</div>}
-              </div>
-
-              <div className="wa-divider" />
-
-              {computed.hasError ? (
-                <div className="wa-error">❌ Invalid date range.</div>
-              ) : (
-                <div className="wa-stats">
-                  <div className="wa-stat">
-                    <div className="wa-stat-label">Total Activities</div>
-                    <div className="wa-stat-value">{computed.stats.totalActivities}</div>
-                  </div>
-                  <div className="wa-stat">
-                    <div className="wa-stat-label">Total Energy</div>
-                    <div className="wa-stat-value">{computed.stats.totalKwh.toFixed(1)} kWh</div>
-                  </div>
-                  <div className="wa-stat">
-                    <div className="wa-stat-label">Total Cost</div>
-                    <div className="wa-stat-value">{money(computed.stats.totalCost)}</div>
-                  </div>
-                  <div className="wa-stat">
-                    <div className="wa-stat-label">Avg Cost / kWh</div>
-                    <div className="wa-stat-value">{money(computed.stats.avgCostPerKwh)}</div>
-                  </div>
-                </div>
-              )}
-            </div>
           </section>
 
           {/* Activity table */}
@@ -336,8 +250,8 @@ export default function Profile() {
                 </div>
               </div>
 
-              {computed.items.length === 0 ? (
-                <div className="wa-empty">No activity found for this period.</div>
+              {activities.length === 0 ? (
+                <div className="wa-empty">No reservations found.</div>
               ) : (
                 <div className="wa-table">
                   <div className="wa-thead">
@@ -348,7 +262,7 @@ export default function Profile() {
                     <div className="right">Status</div>
                   </div>
 
-                  {computed.items.map(a => {
+                  {activities.map(a => {
                     const open = expandedId === a.id
                     return (
                       <div key={a.id} className={`wa-row ${open ? 'open' : ''}`}>

@@ -225,10 +225,16 @@ useEffect(() => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` }),
+            ...(token && { 'X-OBSERVATORY-AUTH': token }),
           },
         }
       )
+
+      const body = await res
+        .json()
+        .catch(() => null as any)
+
+      console.log('Reserve response:', res.status, body)
 
       if (res.ok) {
         setReserveStatus('success')
@@ -238,7 +244,13 @@ useEffect(() => {
 
       if (res.status === 400) {
         setReserveStatus('error')
-        setReserveMessage('Point is not available for reservation.')
+        setReserveMessage(body?.error || 'Point is not available for reservation.')
+        return
+      }
+
+      if (res.status === 401) {
+        setReserveStatus('error')
+        setReserveMessage('You must be logged in to reserve a spot. Please log in again.')
         return
       }
 
@@ -248,8 +260,14 @@ useEffect(() => {
         return
       }
 
+      if (res.status === 409) {
+        setReserveStatus('error')
+        setReserveMessage(body?.error || 'You already have an active reservation.')
+        return
+      }
+
       setReserveStatus('error')
-      setReserveMessage('Unexpected error. Please try again.')
+      setReserveMessage(body?.error || 'Unexpected error. Please try again.')
     } catch (e) {
       setReserveStatus('error')
       setReserveMessage('Network error. Please try again.')

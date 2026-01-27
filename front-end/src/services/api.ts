@@ -48,6 +48,11 @@ export const apiCall = async (
     headers,
   })
 
+  // 204 No Content: successful but nothing to parse
+  if (res.status === 204) {
+    return null
+  }
+
   if (!res.ok) {
     let errorMessage = `API error ${res.status}`
     try {
@@ -143,6 +148,11 @@ export const getPointsInfo = async () => {
 // Sessions endpoints
 export const getSessions = async () => {
   return apiCall('/sessions')
+}
+
+// Reservations for current user
+export const getMyReservations = async () => {
+  return apiCall('/myreservations')
 }
 
 // Point status endpoints

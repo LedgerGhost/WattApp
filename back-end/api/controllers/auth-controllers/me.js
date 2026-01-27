@@ -1,5 +1,4 @@
 // FILE: back-end/api/controllers/auth-controllers/me.js
-const User = require('../../../../models/User');
 const AuthSession = require('../../../../models/AuthSession');
 
 exports.me = async (req, res) => {
@@ -17,10 +16,10 @@ exports.me = async (req, res) => {
             });
         }
 
-        // Find session by token
-        const session = await AuthSession.findOne({ token });
-        
-        if (!session) {
+        // Validate session by token using AuthSession helper
+        const session = await AuthSession.validateToken(token);
+
+        if (!session || !session.user_id) {
             return res.status(401).json({
                 call: req.originalUrl,
                 timeref: new Date().toISOString(),
@@ -30,20 +29,10 @@ exports.me = async (req, res) => {
             });
         }
 
-        // Find user by session
-        const user = await User.findById(session.userId);
-        
-        if (!user) {
-            return res.status(404).json({
-                call: req.originalUrl,
-                timeref: new Date().toISOString(),
-                originator: req.ip,
-                return_code: 404,
-                error: 'User not found',
-            });
-        }
+        // session.user_id is already populated in validateToken()
+        const user = session.user_id;
 
-        // Return user (toJSON method hides password_hash)
+        // Return user (User.toJSON hides password_hash)
         return res.status(200).json({
             status: "OK",
             ...user.toJSON()
