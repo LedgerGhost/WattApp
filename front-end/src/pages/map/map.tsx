@@ -7,6 +7,13 @@ import './map.css'
 import { useEffect } from 'react'
 import { getPointsInfo, getAuthToken } from '../../services/api'
 
+// Charger type images
+import acType2Img from '../../assets/images/actyp2.jpg'
+import ccsImg from '../../assets/images/ccs2.jpg'
+import chademoImg from '../../assets/images/chademo.jpg'
+import gbtAcImg from '../../assets/images/gb-t_ac.jpg'
+import gbtDcImg from '../../assets/images/gb-t_dc.jpg'
+
 interface BackendPoint {
   pointid: string
   lat: number
@@ -82,9 +89,9 @@ export default function Map() {
   const [showChargerTypeSuggestions, setShowChargerTypeSuggestions] = useState(false)
   const [isLeftSidebarMinimized, setIsLeftSidebarMinimized] = useState(false)
   const [isFiltersMinimized, setIsFiltersMinimized] = useState(false)
-  
 
-    const [filters, setFilters] = useState({
+
+  const [filters, setFilters] = useState({
     maxPrice: 1 as number,
     availabilityFilter: 'All' as 'All' | AvailabilityStatus,
     chargerTypeFilter: '' as string,
@@ -93,7 +100,7 @@ export default function Map() {
 
 
   //reserve hooks 
-   const [showReserveModal, setShowReserveModal] = useState(false)
+  const [showReserveModal, setShowReserveModal] = useState(false)
   const [reserveMinutes, setReserveMinutes] = useState(30)
   const [reserveStatus, setReserveStatus] = useState<
     'idle' | 'loading' | 'success' | 'error'
@@ -102,83 +109,84 @@ export default function Map() {
 
 
 
-useEffect(() => {
-  const fetchChargers = async () => {
-    try {
-      setIsLoadingChargers(true)
-      setChargersError(null)
+  useEffect(() => {
+    const fetchChargers = async () => {
+      try {
+        setIsLoadingChargers(true)
+        setChargersError(null)
 
-      const raw = await getPointsInfo()
+        const raw = await getPointsInfo()
 
-      console.log('RAW /pointsinfo response:', raw)
+        console.log('RAW /pointsinfo response:', raw)
 
-      // The backend might return either an array OR an object with an array inside.
-      const points: BackendPointInfo[] = Array.isArray(raw)
-        ? raw
-        : Array.isArray(raw.points)
-          ? raw.points
-          : Array.isArray(raw.pointsinfo)
-            ? raw.pointsinfo
-            : []
+        // The backend might return either an array OR an object with an array inside.
+        const points: BackendPointInfo[] = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw.points)
+            ? raw.points
+            : Array.isArray(raw.pointsinfo)
+              ? raw.pointsinfo
+              : []
 
-      if (points.length === 0) {
-        throw new Error('No points array found in response')
+        if (points.length === 0) {
+          throw new Error('No points array found in response')
+        }
+
+
+        const mapped: Charger[] = points.map(p => ({
+          id: p.pointid, // ✅ keep as string (recommended)
+          name: p.station_name || p.providerName || 'Unknown Station',
+          address: p.address || 'Unknown location',
+          price: p.kwhprice ?? 0,
+          available: p.status === 'available' ? 1 : 0,
+          distance: 0,
+          latitude: p.lat,
+          longitude: p.lon,
+          chargerType: (p.connector_type as ChargerType),
+          status: mapStatus(p.status),
+          power: p.cap ?? 0,
+        }))
+
+        setChargers(mapped)
+      } catch (err) {
+        setChargersError('Could not load charging points')
+      } finally {
+        setIsLoadingChargers(false)
       }
-
-
-      const mapped: Charger[] = points.map(p => ({
-        id: p.pointid, // ✅ keep as string (recommended)
-        name: p.station_name || p.providerName || 'Unknown Station',
-        address: p.address || 'Unknown location',
-        price: p.kwhprice ?? 0,
-        available: p.status === 'available' ? 1 : 0,
-        distance: 0,
-        latitude: p.lat,
-        longitude: p.lon,
-        chargerType: (p.connector_type as ChargerType) ,
-        status: mapStatus(p.status),
-        power: p.cap ?? 0,
-      }))
-
-      setChargers(mapped)
-    } catch (err) {
-      setChargersError('Could not load charging points')
-    } finally {
-      setIsLoadingChargers(false)
     }
+
+    fetchChargers()
+  }, [])
+
+
+  if (isLoadingChargers) {
+    return <div className="map-container">Loading chargers…</div>
   }
 
-  fetchChargers()
-}, [])
+  if (chargersError) {
+    return <div className="map-container">{chargersError}</div>
+  }
 
 
-    if (isLoadingChargers) {
-  return <div className="map-container">Loading chargers…</div>
-}
 
-    if (chargersError) {
-  return <div className="map-container">{chargersError}</div>
-}
-
-
- 
   const API_BASE = 'http://localhost:9876/api' // change if needed
 
   // =========================
   // HELPERS
   // =========================
- 
- /* const getChargerIcon = (chargerType: ChargerType): string => {
-    const iconMap: Record<ChargerType, string> = {
-      AC_Type2: '/src/assets/images/actyp2.jpg',
-      'AC_GB/T': '/src/assets/images/gb-t_ac.jpg',
-      DC_Fast_CCS: '/src/assets/images/ccs2.jpg',
-      DC_Fast_CHAdeMO: '/src/assets/images/chademo.jpg',
-    //  'DC_Fast_GB/T': '/src/assets/images/gb-t_dc.jpg',
-    }
-    return iconMap[chargerType]
+
+  // Get charger type icon based on connector type
+  const getChargerIcon = (chargerType: string | undefined): string => {
+    if (!chargerType) return acType2Img
+    const type = chargerType.toLowerCase()
+    if (type.includes('ccs')) return ccsImg
+    if (type.includes('chademo')) return chademoImg
+    if (type.includes('gb') && type.includes('dc')) return gbtDcImg
+    if (type.includes('gb')) return gbtAcImg
+    if (type.includes('type2') || type.includes('type 2')) return acType2Img
+    return acType2Img // default
   }
-*/
+
   const getMapPinColor = (status: AvailabilityStatus): string => {
     switch (status) {
       case 'Available':
@@ -274,9 +282,18 @@ useEffect(() => {
     }
   }
 
+  // Handle closing the success modal
+  const closeSuccessModal = () => {
+    setShowReserveModal(false)
+    setReserveStatus('idle')
+    setReserveMessage('')
+    // Optionally refresh chargers to update status
+    window.location.reload()
+  }
+
   //take chargers from dummy api 
- // const chargers: Charger[] = [];
-  
+  // const chargers: Charger[] = [];
+
   // Get unique charger types from all chargers
   const uniqueChargerTypes = Array.from(
     new Set(chargers.map(c => c.chargerType).filter(Boolean))
@@ -286,7 +303,7 @@ useEffect(() => {
   const chargerTypeSuggestions = uniqueChargerTypes.filter(type =>
     type.toLowerCase().includes(chargerTypeSearch.toLowerCase())
   )
-  
+
   const filteredChargers = chargers.filter(charger => {
     const priceMatch = charger.price <= filters.maxPrice
 
@@ -476,9 +493,9 @@ useEffect(() => {
       {/* Map area */}
       <div className="map-area">
         <MapContainer
-          center={[37.9761, 23.7348]}
-          zoom={6}
-          scrollWheelZoom={false}
+          center={[37.9838, 23.7275]}
+          zoom={12}
+          scrollWheelZoom={true}
           className="leaflet-container"
         >
           <TileLayer
@@ -532,47 +549,47 @@ useEffect(() => {
           <>
             {console.log('Selected charger:', selectedCharger)}
             <div className="selected-charger-info">
-            <div className="charger-icon-header">
-              <img
-                //src={getChargerIcon(selectedCharger.chargerType)}  //need fixing 
-                alt={selectedCharger.chargerType}
-                className="charger-type-icon"
-              />
+              <div className="charger-icon-header">
+                <img
+                  src={getChargerIcon(selectedCharger.chargerType)}
+                  alt={selectedCharger.chargerType || 'Charger'}
+                  className="charger-type-icon"
+                />
+              </div>
+
+              <h4>{selectedCharger.name}</h4>
+              <p>{selectedCharger.address}</p>
+
+              <div className="charger-details">
+                <div className="detail-item">
+                  <span className="label">Type:</span>
+                  <span className="value">{selectedCharger.chargerType}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="label">Power:</span>
+                  <span className="value">{selectedCharger.power} kW</span>
+                </div>
+                <div className="detail-item">
+                  <span className="label">Price:</span>
+                  <span className="value">${selectedCharger.price.toFixed(2)}/kWh</span>
+                </div>
+                <div className="detail-item">
+                  <span className="label">Status:</span>
+                  <span className={`value status ${selectedCharger.status.toLowerCase()}`}>
+                    {selectedCharger.status}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                className="reserve-btn"
+                onClick={openReserveModal}
+                disabled={selectedCharger.status !== 'Available'}
+                title={selectedCharger.status !== 'Available' ? 'Can only reserve available chargers' : 'Reserve this charger'}
+              >
+                Reserve Spot
+              </button>
             </div>
-
-            <h4>{selectedCharger.name}</h4>
-            <p>{selectedCharger.address}</p>
-
-            <div className="charger-details">
-              <div className="detail-item">
-                <span className="label">Type:</span>
-                <span className="value">{selectedCharger.chargerType}</span>
-              </div>
-              <div className="detail-item">
-                <span className="label">Power:</span>
-                <span className="value">{selectedCharger.power} kW</span>
-              </div>
-              <div className="detail-item">
-                <span className="label">Price:</span>
-                <span className="value">${selectedCharger.price.toFixed(2)}/kWh</span>
-              </div>
-              <div className="detail-item">
-                <span className="label">Status:</span>
-                <span className={`value status ${selectedCharger.status.toLowerCase()}`}>
-                  {selectedCharger.status}
-                </span>
-              </div>
-            </div>
-
-            <button 
-              className="reserve-btn" 
-              onClick={openReserveModal}
-              disabled={selectedCharger.status !== 'Available'}
-              title={selectedCharger.status !== 'Available' ? 'Can only reserve available chargers' : 'Reserve this charger'}
-            >
-              Reserve Spot
-            </button>
-          </div>
           </>
         )}
 
@@ -580,49 +597,79 @@ useEffect(() => {
         {showReserveModal && selectedCharger && (
           <div className="modal-overlay" onClick={closeReserveModal}>
             <div className="modal" onClick={e => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3>Reserve: {selectedCharger.name}</h3>
-                <button className="modal-close" onClick={closeReserveModal}>
-                  ✕
-                </button>
-              </div>
+              {reserveStatus === 'success' ? (
+                /* Success confirmation screen */
+                <>
+                  <div className="modal-header">
+                    <h3>Reservation Confirmed</h3>
+                    <button className="modal-close" onClick={closeSuccessModal}>
+                      ✕
+                    </button>
+                  </div>
+                  <div className="modal-body success-body">
+                    <div className="success-icon">✓</div>
+                    <div className="success-message">
+                      {reserveMessage}
+                    </div>
+                    <p className="success-sub">Your spot has been reserved at {selectedCharger.name}</p>
+                  </div>
+                  <div className="modal-footer">
+                    <button
+                      className="modal-btn primary"
+                      onClick={closeSuccessModal}
+                    >
+                      Close Window
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* Normal reservation form */
+                <>
+                  <div className="modal-header">
+                    <h3>Reserve: {selectedCharger.name}</h3>
+                    <button className="modal-close" onClick={closeReserveModal}>
+                      ✕
+                    </button>
+                  </div>
 
-              <div className="modal-body">
-                <label className="modal-label">Duration (minutes)</label>
+                  <div className="modal-body">
+                    <label className="modal-label">Duration (minutes)</label>
 
-                <div className="modal-row">
-                  <input
-                    type="range"
-                    min={1}
-                    max={60}
-                    value={reserveMinutes}
-                    onChange={e => setReserveMinutes(parseInt(e.target.value, 10))}
-                  />
-                  <span className="minutes-pill">{reserveMinutes} min</span>
-                </div>
+                    <div className="modal-row">
+                      <input
+                        type="range"
+                        min={1}
+                        max={60}
+                        value={reserveMinutes}
+                        onChange={e => setReserveMinutes(parseInt(e.target.value, 10))}
+                      />
+                      <span className="minutes-pill">{reserveMinutes} min</span>
+                    </div>
 
-                {reserveMessage && (
-                  <div className={`modal-alert ${reserveStatus}`}>{reserveMessage}</div>
-                )}
-              </div>
+                    {reserveMessage && (
+                      <div className={`modal-alert ${reserveStatus}`}>{reserveMessage}</div>
+                    )}
+                  </div>
 
-              <div className="modal-footer">
-                <button
-                  className="modal-btn secondary"
-                  onClick={closeReserveModal}
-                  disabled={reserveStatus === 'loading'}
-                >
-                  Cancel
-                </button>
+                  <div className="modal-footer">
+                    <button
+                      className="modal-btn secondary"
+                      onClick={closeReserveModal}
+                      disabled={reserveStatus === 'loading'}
+                    >
+                      Cancel
+                    </button>
 
-                <button
-                  className="modal-btn primary"
-                  onClick={confirmReservation}
-                  disabled={reserveStatus === 'loading'}
-                >
-                  {reserveStatus === 'loading' ? 'Reserving...' : 'Confirm Reservation'}
-                </button>
-              </div>
+                    <button
+                      className="modal-btn primary"
+                      onClick={confirmReservation}
+                      disabled={reserveStatus === 'loading'}
+                    >
+                      {reserveStatus === 'loading' ? 'Reserving...' : 'Confirm Reservation'}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

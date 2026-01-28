@@ -1,5 +1,6 @@
 const AuthSession = require("../../../models/AuthSession");
 const Reservation = require("../../../models/Reservation");
+const Point = require("../../../models/Point");
 const { buildErrorLog } = require("../utils/errorLog");
 
 // GET /api/myreservations
@@ -34,6 +35,11 @@ exports.getMyReservations = async (req, res) => {
       return res.status(204).send();
     }
 
+    // Fetch point details for all pointids
+    const pointids = [...new Set(reservations.map(r => r.pointid))];
+    const points = await Point.find({ pointid: { $in: pointids } }).lean();
+    const pointMap = Object.fromEntries(points.map(p => [p.pointid, p]));
+
     return res.status(200).json(
       reservations.map(r => ({
         id: r._id,
@@ -42,6 +48,11 @@ exports.getMyReservations = async (req, res) => {
         start_time: r.start_time,
         end_time: r.end_time,
         duration_minutes: r.duration_minutes,
+        // Point details
+        station_name: pointMap[r.pointid]?.station_name || null,
+        address: pointMap[r.pointid]?.address || null,
+        connector_type: pointMap[r.pointid]?.connector_type || null,
+        power_kw: pointMap[r.pointid]?.cap || null,
       }))
     );
   } catch (err) {
