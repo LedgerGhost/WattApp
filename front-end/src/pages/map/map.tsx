@@ -101,6 +101,7 @@ export default function Map() {
 
   //reserve hooks 
   const [showReserveModal, setShowReserveModal] = useState(false)
+  const [showGuestModal, setShowGuestModal] = useState(false)
   const [reserveMinutes, setReserveMinutes] = useState(30)
   const [reserveStatus, setReserveStatus] = useState<
     'idle' | 'loading' | 'success' | 'error'
@@ -210,12 +211,7 @@ export default function Map() {
 
     // Check if user is a guest
     if (isGuest()) {
-      const shouldLogin = window.confirm(
-        '🔐 Account Required\n\nYou need to login or create an account to reserve a charging spot.\n\nWould you like to go to the login page?'
-      )
-      if (shouldLogin) {
-        navigate('/login')
-      }
+      setShowGuestModal(true)
       return
     }
 
@@ -353,7 +349,13 @@ export default function Map() {
           <button
             type="button"
             className="profile-btn"
-            onClick={() => navigate('/profile')}
+            onClick={() => {
+              if (isGuest()) {
+                setShowGuestModal(true)
+              } else {
+                navigate('/profile')
+              }
+            }}
           >
             Profile
           </button>
@@ -603,6 +605,48 @@ export default function Map() {
               </button>
             </div>
           </>
+        )}
+
+        {/* Guest Warning Modal */}
+        {showGuestModal && (
+          <div className="modal-overlay" onClick={() => setShowGuestModal(false)}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Account Required</h3>
+                <button className="modal-close" onClick={() => setShowGuestModal(false)}>
+                  ✕
+                </button>
+              </div>
+              <div className="modal-body success-body">
+                <div
+                  className="success-icon"
+                  style={{
+                    background: 'linear-gradient(135deg, #f6ad55 0%, #ed8936 100%)',
+                    boxShadow: '0 8px 24px rgba(237, 137, 54, 0.35)'
+                  }}
+                >
+                  🔒
+                </div>
+                <div className="success-message" style={{ color: '#c05621' }}>Login Required</div>
+                <p className="success-sub">You need to log in to access this feature.</p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  className="modal-btn secondary"
+                  onClick={() => setShowGuestModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="modal-btn primary"
+                  onClick={() => navigate('/login')}
+                  style={{ background: 'linear-gradient(135deg, #f6ad55 0%, #ed8936 100%)' }}
+                >
+                  Go to Login
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Reserve modal */}
