@@ -1,18 +1,15 @@
 import { useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import MarkerClusterGroup from 'react-leaflet-cluster'
 import { useNavigate } from 'react-router-dom'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import './map.css'
 import { useEffect } from 'react'
 import { getPointsInfo, getAuthToken, isGuest } from '../../services/api'
+import { getChargerImage } from '../../utils/chargerImages'
 
-// Charger type images
-import acType2Img from '../../assets/images/actyp2.jpg'
-import ccsImg from '../../assets/images/ccs2.jpg'
-import chademoImg from '../../assets/images/chademo.jpg'
-import gbtAcImg from '../../assets/images/gb-t_ac.jpg'
-import gbtDcImg from '../../assets/images/gb-t_dc.jpg'
+// Charger type images are now handled in utils/chargerImages.ts
 
 interface BackendPoint {
   pointid: string
@@ -176,17 +173,7 @@ export default function Map() {
   // HELPERS
   // =========================
 
-  // Get charger type icon based on connector type
-  const getChargerIcon = (chargerType: string | undefined): string => {
-    if (!chargerType) return acType2Img
-    const type = chargerType.toLowerCase()
-    if (type.includes('ccs')) return ccsImg
-    if (type.includes('chademo')) return chademoImg
-    if (type.includes('gb') && type.includes('dc')) return gbtDcImg
-    if (type.includes('gb')) return gbtAcImg
-    if (type.includes('type2') || type.includes('type 2')) return acType2Img
-    return acType2Img // default
-  }
+  // Helper for map pin color based on status
 
   const getMapPinColor = (status: AvailabilityStatus): string => {
     switch (status) {
@@ -565,7 +552,7 @@ export default function Map() {
             <div className="selected-charger-info">
               <div className="charger-icon-header">
                 <img
-                  src={getChargerIcon(selectedCharger.chargerType)}
+                  src={getChargerImage(selectedCharger.chargerType)}
                   alt={selectedCharger.chargerType || 'Charger'}
                   className="charger-type-icon"
                 />
