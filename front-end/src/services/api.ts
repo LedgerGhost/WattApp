@@ -25,6 +25,19 @@ export const clearUserData = () => {
   localStorage.removeItem('userData')
 }
 
+// Guest mode functions
+export const setGuestMode = () => {
+  localStorage.setItem('guestMode', 'true')
+}
+
+export const clearGuestMode = () => {
+  localStorage.removeItem('guestMode')
+}
+
+export const isGuest = (): boolean => {
+  return localStorage.getItem('guestMode') === 'true'
+}
+
 interface FetchOptions extends RequestInit {
   headers?: Record<string, string>
 }
@@ -76,6 +89,9 @@ export const login = async (email: string, password: string) => {
   if (!data.token) {
     throw new Error('Login failed: No session token received from server')
   }
+
+  // Clear guest mode when logging in
+  clearGuestMode()
 
   setAuthToken(data.token)
   setUserData({

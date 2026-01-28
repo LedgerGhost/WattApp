@@ -37,9 +37,12 @@
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(20px);
   }
@@ -71,9 +74,12 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.1);
   }
@@ -196,7 +202,7 @@
   box-shadow: 0 0 0 3px rgba(25, 233, 171, 0.15);
 }
 
-.phone-input-wrapper input[type='tel']:focus + .phone-prefix,
+.phone-input-wrapper input[type='tel']:focus+.phone-prefix,
 .phone-input-wrapper:focus-within .phone-prefix {
   border-color: #19e9ab;
   background: #d4f0e7;
@@ -317,6 +323,52 @@
 .signin-link:hover {
   color: #19e9ab;
   text-decoration: underline;
+}
+
+/* Guest Mode */
+.guest-divider {
+  display: flex;
+  align-items: center;
+  margin: 16px 0 12px;
+}
+
+.guest-divider::before,
+.guest-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.guest-divider span {
+  padding: 0 12px;
+  color: #718096;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.guest-button {
+  width: 100%;
+  padding: 12px 20px;
+  border: 2px solid #c8e6d7;
+  border-radius: 12px;
+  background: transparent;
+  color: #0d7d5a;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.guest-button:hover {
+  background: #f0faf7;
+  border-color: #19e9ab;
+}
+
+.guest-note {
+  margin: 8px 0 0 !important;
+  font-size: 12px !important;
+  color: #a0aec0 !important;
 }
 
 /* Responsive design */

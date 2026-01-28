@@ -5,7 +5,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import './map.css'
 import { useEffect } from 'react'
-import { getPointsInfo, getAuthToken } from '../../services/api'
+import { getPointsInfo, getAuthToken, isGuest } from '../../services/api'
 
 // Charger type images
 import acType2Img from '../../assets/images/actyp2.jpg'
@@ -207,6 +207,18 @@ export default function Map() {
   // =========================
   const openReserveModal = () => {
     if (!selectedCharger) return
+
+    // Check if user is a guest
+    if (isGuest()) {
+      const shouldLogin = window.confirm(
+        '🔐 Account Required\n\nYou need to login or create an account to reserve a charging spot.\n\nWould you like to go to the login page?'
+      )
+      if (shouldLogin) {
+        navigate('/login')
+      }
+      return
+    }
+
     setReserveMinutes(30)
     setReserveStatus('idle')
     setReserveMessage('')

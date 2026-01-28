@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './login.css'
-import { login } from '../../services/api'
+import { login, setGuestMode, clearGuestMode } from '../../services/api'
 
 interface LoginFormData {
   email: string
@@ -49,6 +49,12 @@ export default function Login() {
   }
 
   const isFormValid = formData.email && formData.password
+
+  const handleGuestMode = () => {
+    clearGuestMode() // Clear any existing guest state first
+    setGuestMode()   // Set guest mode
+    navigate('/map') // Go to map page
+  }
 
   return (
     <div className="login-container">
@@ -142,6 +148,17 @@ export default function Login() {
               Sign up
             </Link>
           </p>
+          <div className="guest-divider">
+            <span>or</span>
+          </div>
+          <button
+            type="button"
+            className="guest-button"
+            onClick={handleGuestMode}
+          >
+            👁️ Continue as Guest
+          </button>
+          <p className="guest-note">Browse chargers without an account</p>
         </div>
       </div>
 

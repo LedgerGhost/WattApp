@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './register.css'
-import { signup } from '../../services/api'
+import { signup, setGuestMode, clearGuestMode } from '../../services/api'
 
 
 interface RegisterFormData {
@@ -112,6 +112,12 @@ export default function Register() {
     formData.password &&
     formData.confirmPassword &&
     formData.agreeTerms
+
+  const handleGuestMode = () => {
+    clearGuestMode() // Clear any existing guest state first
+    setGuestMode()   // Set guest mode
+    navigate('/map') // Go to map page
+  }
 
   return (
     <div className="register-container">
@@ -263,7 +269,7 @@ export default function Register() {
             {isLoading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
-            
+
         {/* Footer */}
         <div className="register-footer">
           <p>
@@ -272,6 +278,17 @@ export default function Register() {
               Sign in
             </Link>
           </p>
+          <div className="guest-divider">
+            <span>or</span>
+          </div>
+          <button
+            type="button"
+            className="guest-button"
+            onClick={handleGuestMode}
+          >
+            👁️ Continue as Guest
+          </button>
+          <p className="guest-note">Browse chargers without an account</p>
         </div>
       </div>
 

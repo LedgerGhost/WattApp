@@ -429,6 +429,9 @@ export default function Profile() {
                         <button className="wa-admin-btn" onClick={handleHealthCheck}>
                           🔍 Run Health Check
                         </button>
+                        <button className="wa-admin-btn wa-admin-btn-secondary" onClick={() => setAdminActionStatus('To add points, use the CLI: se2537 addpoints --source /path/to/points.csv')}>
+                          ➕ Add Points
+                        </button>
                         <button className="wa-admin-btn wa-admin-btn-danger" onClick={handleResetPoints}>
                           🔄 Reset All Points
                         </button>
