@@ -72,11 +72,11 @@ export const login = async (email: string, password: string) => {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   })
-  
+
   if (!data.token) {
     throw new Error('Login failed: No session token received from server')
   }
-  
+
   setAuthToken(data.token)
   setUserData({
     token: data.token,
@@ -115,7 +115,7 @@ export const logout = async () => {
   try {
     const token = getAuthToken()
     if (token) {
-      const response = await apiCall('/auth/logout', { 
+      const response = await apiCall('/auth/logout', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -184,4 +184,26 @@ export const addpoints = async () => {
   return apiCall('/admin/addpoints', { method: 'POST' })
 }
 
+// Get all points for admin management
+export const getAdminPoints = async () => {
+  return apiCall('/points')
+}
 
+// Update a specific point (admin action)
+export const updatePoint = async (id: string, data: { status?: string; kwhprice?: number }) => {
+  return apiCall(`/updpoint/${id}`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+// Get user role from stored data
+export const getUserRole = (): string | null => {
+  const userData = getUserData()
+  return userData?.role || null
+}
+
+// Check if current user is admin
+export const isAdmin = (): boolean => {
+  return getUserRole() === 'admin'
+}

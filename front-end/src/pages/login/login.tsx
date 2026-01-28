@@ -33,8 +33,15 @@ export default function Login() {
     setError(null)
 
     try {
-      await login(formData.email, formData.password)
-      navigate('/map')
+      const result = await login(formData.email, formData.password)
+      // Check user role and redirect accordingly
+      if (result.role === 'admin') {
+        // Admins go to profile which shows admin dashboard
+        navigate('/profile')
+      } else {
+        // Regular users go to the map
+        navigate('/map')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
       setIsLoading(false)
@@ -56,9 +63,9 @@ export default function Login() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="login-form">
           {error && (
-            <div style={{ 
-              color: '#d32f2f', 
-              fontSize: '14px', 
+            <div style={{
+              color: '#d32f2f',
+              fontSize: '14px',
               marginBottom: '16px',
               padding: '8px',
               backgroundColor: '#ffebee',
