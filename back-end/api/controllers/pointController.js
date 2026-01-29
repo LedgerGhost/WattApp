@@ -23,14 +23,7 @@ exports.getPointById = async (req, res) => {
     }
 
     if (!point) {
-      return res.status(404).json(
-        buildErrorLog(
-          req,
-          404,
-          `Point with id ${idStr} not found`,
-          "Point exists in DB?"
-        )
-      );
+      return res.status(204).send();
     }
 
     // reservationendtime rule (εκφώνηση):

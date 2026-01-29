@@ -3,20 +3,6 @@ const { parse } = require('csv-parse/sync'); // Synchronous CSV parser
 
 exports.addPoints = async (req, res) => {
     try {
-        // VALIDATE FORMAT (400 Bad Request) - (default: json)
-        const normalizedFormat = (req.query.format || 'json').toLowerCase();
-        const allowedFormats = ['json', 'csv'];
-        if (!allowedFormats.includes(normalizedFormat)) {
-            return res.status(400).json({
-                call: req.originalUrl,
-                timeref: new Date().toISOString(),
-                originator: req.ip,
-                return_code: 400,
-                error: `Invalid format '${req.query.format}'. Allowed values: json, csv`,
-                debuginfo: `format: ${req.query.format}`
-            });
-        }
-
         // CHECK IF FILE EXISTS
         // Multer puts the file in req.file.buffer
         if (!req.file) {
@@ -25,7 +11,8 @@ exports.addPoints = async (req, res) => {
                 timeref: new Date().toISOString(),
                 originator: req.ip,
                 return_code: 400,
-                error: "No file uploaded. Expected multipart/form-data with field 'file'."
+                error: "No file uploaded. Expected multipart/form-data with mime type: 'text/csv'.",
+                debuginfo: "Pls provide a CSV file in the 'file' field"
             });
         }
 
@@ -41,7 +28,14 @@ exports.addPoints = async (req, res) => {
                 bom: true // Handles invisible BOM characters
             });
         } catch (parseError) {
-            throw new Error("Failed to parse CSV file. Ensure standard formatting.");
+            return res.status(400).json({
+                call: req.originalUrl,
+                timeref: new Date().toISOString(),
+                originator: req.ip,
+                return_code: 400,
+                error: "Failed to parse CSV file.",
+                debuginfo: parseError.message
+            });
         }
 
         // VALIDATION LOOP
@@ -51,11 +45,11 @@ exports.addPoints = async (req, res) => {
             const lineNumber = i + 2; // +1 for 0-index, +1 for Header row = +2
             const validationResult = Point.validateImportRow(row, lineNumber);
             if (validationResult) {
-                return res.status(500).json({ // or 400
+                return res.status(400).json({ // or 400
                     call: req.originalUrl,
                     timeref: new Date().toISOString(),
                     originator: req.ip,
-                    return_code: 500,
+                    return_code: 400,
                     error: validationResult.error,
                     debuginfo: validationResult.debuginfo
                 });
@@ -64,21 +58,19 @@ exports.addPoints = async (req, res) => {
 
         // TRANSFORM & MAP DATA TO SCHEMA
         const newPoints = parsedData.map(p => ({
-            pointid: parseInt((p.pointid), 10),
-            
+            pointid: parseInt((p.pointid), 10),   
             // Map CSV headers to Schema fields
-            external_stastion_id: p.external_stastion_id,
             station_name: p.station_name,
             lon: String(p.lon),
             lat: String(p.lat),
             status: p.status, 
             cap: parseInt(p.cap),
-            connector_type: p.connector_type,
+            connector_type: p.connector_type ? p.connector_type.trim() : undefined,
             kwhprice: parseFloat(p.kwhprice),
             reservationendtime: null,
-            address: p.address,                
-            providerName: p.providerName
-
+            external_station_id: p.external_station_id ? p.external_station_id.trim() : undefined,
+            address: p.address ? p.address.trim() : undefined,       
+            providerName: p.providerName ? p.providerName.trim() : undefined
         }));
 
         // INSERT INTO DATABASE

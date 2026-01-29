@@ -16,13 +16,6 @@ function formatLocalTimestamp(date = new Date()) {
 
 exports.reservePoint = async (req, res) => {
   try {
-    const userId = req.user?._id;
-    if (!userId) {
-      return res
-        .status(500)
-        .json(buildErrorLog(req, 500, "Auth user missing on request", "req.user._id missing"));
-    }
-
     const idStr = String(req.params.id).trim();
     const idNum = Number(idStr);
     if (!Number.isFinite(idNum)) {

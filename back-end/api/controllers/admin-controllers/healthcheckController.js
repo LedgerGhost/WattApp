@@ -3,22 +3,6 @@ const Point = require('../../../../models/Point');
 
 exports.healthcheck = async (req, res) => {
     try {
-        // VALIDATE FORMAT (400 Bad Request) - (default: json)
-        const normalizedFormat = (req.query.format || 'json').toLowerCase();
-
-        // VALIDATE FORMAT (400 Bad Request)
-        const allowedFormats = ['json', 'csv'];
-        if (!allowedFormats.includes(normalizedFormat)) {
-            return res.status(400).json({
-                call: req.originalUrl,
-                timeref: new Date().toISOString(),
-                originator: req.ip,
-                return_code: 400,
-                error: `Invalid format '${req.query.format}'. Allowed values: json, csv`,
-                debuginfo: `format: ${req.query.format}`
-            });
-        }
-
         // DB CONNECTION CHECK 
         // readyState: 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
         if (mongoose.connection.readyState !== 1) {
