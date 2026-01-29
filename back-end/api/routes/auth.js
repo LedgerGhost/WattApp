@@ -7,7 +7,7 @@ const router = express.Router();
 const { login }  = require('../controllers/auth-controllers/login');
 const { signup } = require('../controllers/auth-controllers/signup'); 
 const { logout } = require('../controllers/auth-controllers/logout');
-
+const { me } = require('../controllers/auth-controllers/me');
 ///const { login } = require('../controllers/auth-controllers/login');
 ///const { signup } = require('../controllers/auth-controllers/signup'); //maybe this works?
 
@@ -20,5 +20,8 @@ router.post('/login', login);
 
 // Matches: POST /api/auth/logout
 router.post('/logout', logout);
+
+// Matches: GET /api/auth/me
+router.get('/me', me);
 
 module.exports = router;
