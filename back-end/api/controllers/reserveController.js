@@ -1,0 +1,104 @@
+//c) POST /reserve/:id(/:minutes)
+// api/controllers/reserveController.js
+const Point = require("../../../models/Point");
+const Reservation = require("../../../models/Reservation");
+const { buildErrorLog } = require("../utils/errorLog");
+
+function formatLocalTimestamp(date = new Date()) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+}
+
+exports.reservePoint = async (req, res) => {
+  try {
+    const idStr = String(req.params.id).trim();
+    const idNum = Number(idStr);
+    if (!Number.isFinite(idNum)) {
+      return res
+        .status(400)
+        .json(buildErrorLog(req, 400, "Invalid point id", `id must be numeric, got: ${idStr}`));
+    }
+
+    let minutes = req.params.minutes !== undefined ? Number(req.params.minutes) : 30;
+    if (!Number.isFinite(minutes) || minutes <= 0) minutes = 30;
+    minutes = Math.min(minutes, 60);
+
+    const point = await Point.findOne({ pointid: idNum }).lean();
+    if (!point) {
+      return res
+        .status(404)
+        .json(buildErrorLog(req, 404, `Point with id ${idStr} not found`, "Check if pointid exists"));
+    }
+
+    const pointidNum = point.pointid;
+
+    const activeForPoint = await Reservation.findActiveByPoint(pointidNum);
+    if (activeForPoint) {
+      return res.status(200).json({
+        pointid: point.pointid,
+        status: point.status,
+        reservationendtime: "1970-01-01 00:00",
+      });
+    }
+
+    const now = new Date();
+    const endDate = new Date(now.getTime() + minutes * 60 * 1000);
+
+    const upd = await Point.updateOne(
+      { pointid: idNum, status: "available" },
+      {
+        $set: {
+          status: "reserved",
+          reservationendtime: endDate,
+          reservedBy: userId,
+          lastStatusChange: now,
+        },
+      }
+    );
+
+    if (upd.modifiedCount !== 1) {
+      return res.status(200).json({
+        pointid: point.pointid,
+        status: point.status,
+        reservationendtime: "1970-01-01 00:00",
+      });
+    }
+
+    try {
+      await Reservation.createReservation(pointidNum, userId, minutes);
+    } catch (e) {
+      await Point.updateOne(
+        { pointid: idNum, status: "reserved", reservedBy: userId },
+        {
+          $set: {
+            status: "available",
+            reservationendtime: null,
+            reservedBy: null,
+            lastStatusChange: new Date(),
+          },
+        }
+      );
+
+      if (e.code === "ACTIVE_RESERVATION_EXISTS") {
+        return res
+          .status(409)
+          .json(buildErrorLog(req, 409, "Active reservation exists", e.message));
+      }
+
+      return res.status(500).json(buildErrorLog(req, 500, "Failed to create reservation", e.message));
+    }
+
+    return res.status(200).json({
+      pointid: point.pointid,
+      status: "reserved",
+      reservationendtime: formatLocalTimestamp(endDate),
+    });
+  } catch (err) {
+    return res.status(500).json(buildErrorLog(req, 500, "Internal server error", err.message));
+  }
+};

@@ -1,0 +1,522 @@
+openapi: 3.0.0
+info:
+  title: WattApp EV Charging API
+  version: 1.0.0
+  description: API for managing Electric Vehicle Charging Points, Reservations, Sessions, and Admin operations.
+
+servers:
+  - url: http://localhost:9876/api
+    description: Local Development Server
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-OBSERVATORY-AUTH
+
+  schemas:
+    Point:
+      type: object
+      properties:
+        pointid:
+          type: string
+        providerName:
+          type: string
+        lon:
+          type: number
+        lat:
+          type: number
+        status:
+          type: string
+          enum: [available, charging, reserved, malfunction, offline]
+        cap:
+          type: number
+        kwhprice:
+          type: number
+
+    PointInfo:
+      allOf:
+        - $ref: '#/components/schemas/Point'
+        - type: object
+          properties:
+            station_name:
+              type: string
+              nullable: true
+            connector_type:
+              type: string
+              nullable: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        call:
+          type: string
+        timeref:
+          type: string
+        originator:
+          type: string
+        return_code:
+          type: integer
+        error:
+          type: string
+        debuginfo:
+          type: string
+
+paths:
+
+  # ==============================
+  # AUTHENTICATION
+  # ==============================
+  /auth/signup:
+    post:
+      summary: Register a new user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fullName, email, password]
+              properties:
+                fullName:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: User created successfully
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+  /auth/login:
+    post:
+      summary: Login and receive an authentication token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+        '400':
+          description: Invalid credentials
+        '500':
+          description: Internal server error
+
+  /auth/logout:
+    post:
+      summary: Logout user
+      tags: [Auth]
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+        '400':
+          description: Missing token
+        '500':
+          description: Internal server error
+
+  # ==============================
+  # ADMIN
+  # ==============================
+  /admin/healthcheck:
+    get:
+      summary: Check system health
+      tags: [Admin]
+      parameters:
+        - in: query
+          name: format
+          schema:
+            type: string
+            default: json
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Invalid format or healthcheck failed
+
+  /admin/resetpoints:
+    post:
+      summary: Reset points database
+      tags: [Admin]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: query
+          name: format
+          schema:
+            type: string
+            default: json
+      responses:
+        '200':
+          description: Reset completed
+        '400':
+          description: Invalid format
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Admin access required
+        '500':
+          description: Reset failed
+
+  /admin/addpoints:
+    post:
+      summary: Import points from CSV
+      tags: [Admin]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: query
+          name: format
+          schema:
+            type: string
+            default: json
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                source:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Points imported
+        '400':
+          description: Invalid format or no file uploaded
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Admin access required
+        '500':
+          description: Import failed
+
+  # ==============================
+  # POINTS
+  # ==============================
+  /points:
+    get:
+      summary: Get list of points
+      tags: [Points]
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: format
+          schema:
+            type: string
+            default: json
+      responses:
+        '200':
+          description: Points list
+        '204':
+          description: No content
+        '400':
+          description: Invalid status or format
+        '500':
+          description: Internal server error
+
+  /pointsinfo:
+    get:
+      summary: Get list of points with extra info
+      tags: [Points]
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: format
+          schema:
+            type: string
+            default: json
+      responses:
+        '200':
+          description: Points info list
+        '204':
+          description: No content
+        '400':
+          description: Invalid format or status
+        '500':
+          description: Internal server error
+
+  /point/{id}:
+    get:
+      summary: Get point details
+      tags: [Points]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Point details
+        '404':
+          description: Point not found
+        '500':
+          description: Internal server error
+
+  /updpoint/{id}:
+    post:
+      summary: Update point
+      tags: [Points]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [available, charging, reserved, malfunction, offline]
+                kwhprice:
+                  type: number
+      responses:
+        '200':
+          description: Updated
+        '400':
+          description: Invalid body or values
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: Point not found
+        '500':
+          description: Internal server error
+
+  /pointstatus/{pointid}/{from}/{to}:
+    get:
+      summary: Get point status history
+      tags: [Points]
+      parameters:
+        - in: path
+          name: pointid
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: from
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: to
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: format
+          schema:
+            type: string
+            default: json
+      responses:
+        '200':
+          description: Status history
+        '204':
+          description: No content
+        '400':
+          description: Invalid format or dates
+        '500':
+          description: Internal server error
+
+  # ==============================
+  # RESERVATIONS
+  # ==============================
+  /reserve/{id}:
+    post:
+      summary: Reserve a charging point (default 30 minutes)
+      tags:
+        - Reservations
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Reservation result (success OR point not available)
+        '400':
+          description: Invalid point id
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: Point not found
+        '409':
+          description: User already has an active reservation
+        '500':
+          description: Internal server error
+
+  /reserve/{id}/{minutes}:
+    post:
+      summary: Reserve a charging point for a specific duration
+      tags:
+        - Reservations
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: minutes
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            default: 30
+            maximum: 60
+      responses:
+        '200':
+          description: Reservation result (success OR point not available)
+        '400':
+          description: Invalid point id
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: Point not found
+        '409':
+          description: User already has an active reservation
+        '500':
+          description: Internal server error
+
+  # ==============================
+  # SESSIONS
+  # ==============================
+  /newsession:
+    post:
+      summary: Record a new charging session
+      tags: [Sessions]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pointid, starttime, endtime, startsoc, endsoc, totalkwh, kwhprice, amount]
+              properties:
+                pointid:
+                  type: integer
+                starttime:
+                  type: string
+                endtime:
+                  type: string
+                startsoc:
+                  type: number
+                endsoc:
+                  type: number
+                totalkwh:
+                  type: number
+                kwhprice:
+                  type: number
+                amount:
+                  type: number
+      responses:
+        '200':
+          description: Session recorded
+        '400':
+          description: Invalid body or values
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: Point not found
+        '500':
+          description: Internal server error
+
+  /sessions/{id}/{from}/{to}:
+    get:
+      summary: Get sessions for a point
+      tags: [Sessions]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: from
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: to
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: format
+          schema:
+            type: string
+            default: json
+      responses:
+        '200':
+          description: Sessions list
+        '204':
+          description: No content
+        '400':
+          description: Invalid format or dates
+        '404':
+          description: Point not found
+        '500':
+          description: Internal server error
+
+  # ==============================
+  # NAVIGATION
+  # ==============================
+  /navigate/{pointId}:
+    get:
+      summary: Navigate to charging point
+      tags: [Navigation]
+      parameters:
+        - in: path
+          name: pointId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '302':
+          description: Redirect
+        '400':
+          description: Invalid pointId
+        '404':
+          description: Point not found
+        '500':
+          description: Internal server error

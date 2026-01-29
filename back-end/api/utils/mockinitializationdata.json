@@ -1,0 +1,38 @@
+[
+  {
+    "pointid": "4704813",
+    "providerName": "GIAGKAS - loop global",
+    "lon": "23.86992919657907",
+    "lat": "37.87398984775248",
+    "status": "available",
+    "cap": 0,
+    "kwhprice": 0.30
+  },
+  {
+    "pointid": "3508687",
+    "providerName": "DEI blue - Lavrio Port",
+    "lon": "24.056047755142657",
+    "lat": "37.71138688202372",
+    "status": "offline",
+    "cap": 0,
+    "kwhprice": 0.30
+  },
+  {
+    "pointid": "3508688",
+    "providerName": "DEI blue - Lavrio Port",
+    "lon": "24.056047755142657",
+    "lat": "37.71138688202372",
+    "status": "offline",
+    "cap": 0,
+    "kwhprice": 0.30
+  },
+  {
+    "pointid": "3596",
+    "providerName": "DEI blue - Lavrio Port",
+    "lon": "24.056047755142657",
+    "lat": "37.71138688202372",
+    "status": "offline",
+    "cap": 0,
+    "kwhprice": 0.30
+  }
+]
