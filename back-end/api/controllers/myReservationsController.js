@@ -1,32 +1,15 @@
-const AuthSession = require("../../../models/AuthSession");
 const Reservation = require("../../../models/Reservation");
 const Point = require("../../../models/Point");
 const { buildErrorLog } = require("../utils/errorLog");
 
 // GET /api/myreservations
 // Returns all reservations for the authenticated user (active + past)
+// Auth is handled by checkAuth middleware which sets req.user
 exports.getMyReservations = async (req, res) => {
   try {
-    const authHeader = req.headers.authorization || "";
-    const token = authHeader.startsWith("Bearer ")
-      ? authHeader.split(" ")[1]
-      : null;
+    const userId = req.user._id || req.user;
 
-    if (!token) {
-      return res
-        .status(401)
-        .json(buildErrorLog(req, 401, "No authentication token provided"));
-    }
-
-    const user = await AuthSession.getUserFromToken(token);
-
-    if (!user) {
-      return res
-        .status(401)
-        .json(buildErrorLog(req, 401, "Invalid or expired token"));
-    }
-
-    const reservations = await Reservation.find({ user_id: user._id })
+    const reservations = await Reservation.find({ user_id: userId })
       .sort({ start_time: -1 })
       .lean();
 

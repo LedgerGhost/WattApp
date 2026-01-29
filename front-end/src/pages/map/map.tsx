@@ -1,11 +1,10 @@
-import { useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { useState, useEffect } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import { useNavigate } from 'react-router-dom'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import './map.css'
-import { useEffect } from 'react'
 import { getPointsInfo, getAuthToken, isGuest } from '../../services/api'
 import { getChargerImage } from '../../utils/chargerImages'
 
@@ -73,12 +72,32 @@ interface Charger {
   power: number // kW
 }
 
+// Default location (Athens) as fallback
+const DEFAULT_CENTER: [number, number] = [37.9838, 23.7275]
+const DEFAULT_ZOOM = 12
+// Zoom level 15 gives approximately a 1km radius view
+const LOCATION_ZOOM = 15
+
+// Component to recenter the map when user location is obtained
+function RecenterMap({ center, zoom }: { center: [number, number]; zoom: number }) {
+  const map = useMap()
+  useEffect(() => {
+    map.setView(center, zoom)
+  }, [center, zoom, map])
+  return null
+}
+
 export default function Map() {
   console.log('✅ Map component mounted')
 
   const [chargers, setChargers] = useState<Charger[]>([])
   const [isLoadingChargers, setIsLoadingChargers] = useState(true)
   const [chargersError, setChargersError] = useState<string | null>(null)
+
+  // User location state
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
+  const [locationError, setLocationError] = useState<string | null>(null)
+  const [isLoadingLocation, setIsLoadingLocation] = useState(true)
 
   const navigate = useNavigate()
   const [selectedCharger, setSelectedCharger] = useState<Charger | null>(null)
@@ -154,6 +173,34 @@ export default function Map() {
     }
 
     fetchChargers()
+  }, [])
+
+  // Get user's location from browser
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser')
+      setIsLoadingLocation(false)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        setUserLocation([latitude, longitude])
+        setIsLoadingLocation(false)
+        console.log('📍 User location:', latitude, longitude)
+      },
+      (error) => {
+        console.warn('Geolocation error:', error.message)
+        setLocationError(error.message)
+        setIsLoadingLocation(false)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000, // Cache location for 5 minutes
+      }
+    )
   }, [])
 
 
@@ -494,15 +541,41 @@ export default function Map() {
       {/* Map area */}
       <div className="map-area">
         <MapContainer
-          center={[37.9838, 23.7275]}
-          zoom={12}
+          center={userLocation || DEFAULT_CENTER}
+          zoom={userLocation ? LOCATION_ZOOM : DEFAULT_ZOOM}
           scrollWheelZoom={true}
           className="leaflet-container"
         >
+          {/* Recenter map when user location is obtained */}
+          {userLocation && (
+            <RecenterMap center={userLocation} zoom={LOCATION_ZOOM} />
+          )}
+
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+
+          {/* User location marker */}
+          {userLocation && (
+            <Marker
+              position={userLocation}
+              icon={L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41],
+              })}
+            >
+              <Popup>
+                <div className="popup-content">
+                  <h4>📍 Your Location</h4>
+                </div>
+              </Popup>
+            </Marker>
+          )}
 
           {filteredChargers.map(charger => (
             <Marker

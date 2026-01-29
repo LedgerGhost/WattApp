@@ -122,6 +122,7 @@
   padding: 0;
   border-bottom: none;
   gap: 0;
+  overflow: hidden;
 }
 
 .toggle-filters-btn {

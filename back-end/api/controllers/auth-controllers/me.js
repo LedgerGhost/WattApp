@@ -4,7 +4,7 @@ const AuthSession = require('../../../../models/AuthSession');
 exports.me = async (req, res) => {
     try {
         // Get token from header
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers['x-observatory-auth'];
         
         if (!token) {
             return res.status(401).json({
