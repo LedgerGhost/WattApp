@@ -63,7 +63,7 @@ const pointSchema = new mongoose.Schema(
           message:
               'Status must be one of: available, charging, reserved, malfunction, offline'
         },
-        default: 'available'
+        default: 'offline'
       },
       cap: {
         type: Number,
@@ -83,6 +83,7 @@ const pointSchema = new mongoose.Schema(
       reservedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
+        default: null
       },
       lastStatusChange: {
         type: Date,
@@ -237,60 +238,7 @@ pointSchema.methods.toPointsList = function () {
     cap: this.cap
   };
 };
-pointSchema.statics.validateImportRow = function (row, lineNumber) {
-    // Check Missing Point ID
-    if (!row.pointid || String(row.pointid).trim() === '') {
-        return {
-            isValid: false,
-            error: `Validation Error on Line ${lineNumber}`,
-            debuginfo: `Row ${lineNumber} is missing 'pointid'. No points were added.`
-        };
-    }
 
-    // Check Valid Point ID (Number check)
-    const pID = Number(row.pointid);
-    if (isNaN(pID)) {
-        return {
-            isValid: false,
-            error: `Validation Error on Line ${lineNumber}`,
-            debuginfo: `Row ${lineNumber} has invalid pointid '${row.pointid}'. It must be a valid number.`
-        };
-    }
-
-    // Check Missing Coordinates
-    if (!row.lon || !row.lat || String(row.lon).trim() === '' || String(row.lat).trim() === '') {
-        return {
-            isValid: false,
-            error: `Validation Error on Line ${lineNumber}`,
-            debuginfo: `Row ${lineNumber} (Point ID: ${row.pointid}) is missing longitude or latitude. No points were added.`
-        };
-    }
-
-    const lon = Number(row.lon);
-    const lat = Number(row.lat);
-
-    // Check Coordinates are Numbers
-    if (isNaN(lon) || isNaN(lat)) {
-        return {
-            isValid: false,
-            error: `Validation Error on Line ${lineNumber}`,
-            debuginfo: `Row ${lineNumber} contains non-numeric coordinates (Lon: '${row.lon}', Lat: '${row.lat}').`
-        };
-    }
-
-    // Check Range (Using the STRICT limits defined in your Schema)
-    // Lon: -180 to 180, Lat: -90 to 90
-    if (lon < -180 || lon > 180 || lat < -90 || lat > 90) {
-        return {
-            isValid: false,
-            error: `Validation Error on Line ${lineNumber}`,
-            debuginfo: `Row ${lineNumber} coordinates out of bounds. Lon must be ±180, Lat ±90. (Got Lon: ${lon}, Lat: ${lat})`
-        };
-    }
-
-    // Return null if everything is valid
-    return null; 
-};
 
 pointSchema.methods.toPointDetails = function () {
   return {
@@ -328,9 +276,28 @@ pointSchema.statics.getPointCounts = async function () {
 };
 
 pointSchema.statics.validateImportRow = function (row, lineNumber) {
+    const requiredColumns = ['pointid' , 'lon'           , 'lat', 'providerName', 
+                             'status'  , 'connector_type', 'cap', 
+                             'kwhprice', 'address'       , 'station_name', 
+                             'external_station_id'];
+
     const pID = Number(row.pointid);
     const lon = Number(row.lon);
     const lat = Number(row.lat);
+    const kwhprice = Number(row.kwhprice);
+    const cap = Number(row.cap);
+
+    // Check Required Columns
+    const rowKeys = Object.keys(row);
+    const missingCols = requiredColumns.filter(col => !rowKeys.includes(col));
+
+    if (missingCols.length > 0) {
+        return {
+            isValid: false,
+            error: "Invalid File Format",
+            debuginfo: `Missing required columns: ${missingCols.join(', ')}. The file format must strictly match the /resetpoints structure.`
+        };
+    }
 
     // Check Missing Point ID
     if (!row.pointid || String(row.pointid).trim() === '') {
@@ -374,6 +341,22 @@ pointSchema.statics.validateImportRow = function (row, lineNumber) {
             isValid: false,
             error: `Validation Error on Line ${lineNumber}`,
             debuginfo: `Row ${lineNumber} coordinates out of bounds. Lon must be ±180, Lat ±90. (Got Lon: ${lon}, Lat: ${lat})`
+        };
+    }
+
+    if(isNaN(cap) || cap < 0) {
+        return {
+            isValid: false,
+            error: `Validation Error on Line ${lineNumber}`,
+            debuginfo: `Row ${lineNumber} has invalid capacity 'cap' value '${row.cap}'. It must be a non-negative number.`
+        };
+    }
+
+    if(isNaN(kwhprice) || kwhprice < 0) {
+        return {
+            isValid: false,
+            error: `Validation Error on Line ${lineNumber}`,
+            debuginfo: `Row ${lineNumber} has invalid kwhprice value '${row.kwhprice}'. It must be a non-negative number.`
         };
     }
 
