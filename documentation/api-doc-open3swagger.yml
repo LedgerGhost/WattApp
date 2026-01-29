@@ -134,6 +134,20 @@ paths:
         '500':
           description: Internal server error
 
+  /auth/me:
+    get:
+      summary: Get current user from auth token
+      tags: [Auth]
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Current user info
+        '401':
+          description: Missing or invalid token
+        '500':
+          description: Internal server error
+
   # ==============================
   # ADMIN
   # ==============================
@@ -275,8 +289,8 @@ paths:
       responses:
         '200':
           description: Point details
-        '404':
-          description: Point not found
+        '204':
+          description: No content
         '500':
           description: Internal server error
 
@@ -495,6 +509,22 @@ paths:
           description: Invalid format or dates
         '404':
           description: Point not found
+        '500':
+          description: Internal server error
+
+  /myreservations:
+    get:
+      summary: Get reservations for the authenticated user
+      tags: [Reservations]
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Reservations list
+        '204':
+          description: No content
+        '401':
+          description: Missing or invalid token
         '500':
           description: Internal server error
 
