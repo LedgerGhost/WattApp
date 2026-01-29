@@ -76,7 +76,7 @@ exports.resetPoints = async (req, res) => {
             status: "OK",
             timeref: new Date().toISOString(),
             action: "Database reset successfully",
-            source_file: "resetpointsdata.json",
+            source_file: path.basename(filePath),
             total_points_imported: result.length
         });
 
