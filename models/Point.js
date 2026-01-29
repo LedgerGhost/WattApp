@@ -238,7 +238,7 @@ pointSchema.methods.toPointsList = function () {
   };
 };
 pointSchema.statics.validateImportRow = function (row, lineNumber) {
-    // 1. Check Missing Point ID
+    // Check Missing Point ID
     if (!row.pointid || String(row.pointid).trim() === '') {
         return {
             isValid: false,
@@ -247,7 +247,7 @@ pointSchema.statics.validateImportRow = function (row, lineNumber) {
         };
     }
 
-    // 2. Check Valid Point ID (Number check)
+    // Check Valid Point ID (Number check)
     const pID = Number(row.pointid);
     if (isNaN(pID)) {
         return {
@@ -257,7 +257,7 @@ pointSchema.statics.validateImportRow = function (row, lineNumber) {
         };
     }
 
-    // 3. Check Missing Coordinates
+    // Check Missing Coordinates
     if (!row.lon || !row.lat || String(row.lon).trim() === '' || String(row.lat).trim() === '') {
         return {
             isValid: false,
@@ -269,7 +269,7 @@ pointSchema.statics.validateImportRow = function (row, lineNumber) {
     const lon = Number(row.lon);
     const lat = Number(row.lat);
 
-    // 4. Check Coordinates are Numbers
+    // Check Coordinates are Numbers
     if (isNaN(lon) || isNaN(lat)) {
         return {
             isValid: false,
@@ -278,7 +278,7 @@ pointSchema.statics.validateImportRow = function (row, lineNumber) {
         };
     }
 
-    // 5. Check Range (Using the STRICT limits defined in your Schema)
+    // Check Range (Using the STRICT limits defined in your Schema)
     // Lon: -180 to 180, Lat: -90 to 90
     if (lon < -180 || lon > 180 || lat < -90 || lat > 90) {
         return {

@@ -43,7 +43,7 @@ exports.getPoints = async (req, res) => {
 
     // Query DB
     const query = status ? { status } : {};
-    let result = await Point.find(query).lean();
+    let result = await Point.find(query).lean().sort({ pointid: -1 });
 
     // 204: success but empty response
     if (!result || result.length === 0) {

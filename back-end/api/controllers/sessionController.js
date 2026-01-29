@@ -216,7 +216,7 @@ exports.getSessions = async (req, res) => {
     const sessDocs = await ChargingSession.find({
       pointid: point.pointid,
       start_time: { $gte: fromStart, $lte: toEnd }
-    }).lean();
+    }).lean().sort({ start_time: -1 });
 
     if (!sessDocs || sessDocs.length === 0) {
       return res.status(204).send();

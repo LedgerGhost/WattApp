@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 
+
 /* Import routes */
 
 const app = express();
@@ -13,8 +14,11 @@ const { buildErrorLog } = require("./utils/errorLog");
 
 
 /* Routes used */
-app.use("/api/auth",require("./routes/auth")); //for signup/login
 app.use("/api/admin",require("./routes/admin"));
+// Middleware to check DB connection before proceeding to other routes from now on
+const checkDbConnection = require('./middlewares/dbcheck');
+app.use('/api', checkDbConnection);
+app.use("/api/auth",require("./routes/auth")); //for signup/login
 app.use("/api",require("./routes/points")); //a
 app.use("/api",require("./routes/sessions")); //e
 app.use("/api", require("./routes/point")); //b

@@ -12,20 +12,6 @@ const cleanDate = (dateValue) => {
 
 exports.resetPoints = async (req, res) => {
     try {
-        const normalizedFormat = (req.query.format || 'json').toLowerCase();
-
-        // VALIDATE FORMAT (400 Bad Request)
-        const allowedFormats = ['json', 'csv'];
-        if (!allowedFormats.includes(normalizedFormat)) {
-            return res.status(400).json({
-                call: req.originalUrl,
-                timeref: new Date().toISOString(),
-                originator: req.ip,
-                return_code: 400,
-                error: `Invalid format '${req.query.format}'. Allowed values: json, csv`
-            });
-        }
-
         // READ THE FILE
         const filePath = path.join(__dirname, '../../utils/resetpointsdata.json');
 
@@ -76,7 +62,7 @@ exports.resetPoints = async (req, res) => {
             status: "OK",
             timeref: new Date().toISOString(),
             action: "Database reset successfully",
-            source_file: "resetpointsdata.json",
+            source_file: path.basename(filePath),
             total_points_imported: result.length
         });
 
