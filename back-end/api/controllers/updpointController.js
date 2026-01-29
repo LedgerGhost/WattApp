@@ -66,10 +66,10 @@ exports.updatePoint = async (req, res) => {
     if (Number.isFinite(idNum)) point = await Point.collection.findOne({ pointid: idNum });
     if (!point) point = await Point.collection.findOne({ pointid: idStr });
 
-    // 404: point not found
+    // 400: point not found
     if (!point) {
-      return res.status(404).json(
-        buildErrorLog(req, 404, `Point with id ${idStr} not found`, "Check if pointid exists")
+      return res.status(400).json(
+        buildErrorLog(req, 400, `Point with id ${idStr} not found`, "Check if pointid exists")
       );
     }
 
