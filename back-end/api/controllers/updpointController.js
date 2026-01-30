@@ -2,6 +2,7 @@
 
 const Point = require("../../../models/Point");
 const Reservation = require("../../../models/Reservation");
+const PointStatusHistory = require("../../../models/PointStatusHistory");
 const { buildErrorLog } = require("../utils/errorLog");
 
 const ALLOWED_STATUS = [
@@ -75,9 +76,20 @@ exports.updatePoint = async (req, res) => {
     // Build update
     const $set = {};
     if (status !== undefined) {
+      // LOG HISTORY: Only if status is provided AND different from current
+      if (point.status !== status) {
+        await PointStatusHistory.logStatusChange(
+          point.pointid,                 // Point ID
+          point.status,                  // Old State
+          status,                        // New State
+          req.user ? req.user._id : null, // Triggered By (if auth middleware exists)
+          "API Update"                   // Reason
+        );
+      }
+      
       $set.status = status;
 
-      // optional but nice: keep data clean
+      // Update reservation fields if status is changed from 'reserved' to something else
       if (status !== "reserved") {
         $set.reservationendtime = null;
         $set.reservedBy = null;

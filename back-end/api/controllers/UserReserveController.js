@@ -2,6 +2,7 @@
 // api/controllers/reserveController.js
 const Point = require("../../../models/Point");
 const Reservation = require("../../../models/Reservation");
+const PointStatusHistory = require("../../../models/PointStatusHistory");
 const { buildErrorLog } = require("../utils/errorLog");
 
 function formatLocalTimestamp(date = new Date()) {
@@ -109,6 +110,16 @@ exports.reservePoint = async (req, res) => {
       return res.status(500).json(buildErrorLog(req, 500, "Failed to create reservation", e.message));
     }
 
+    // LOG HISTORY: Only log if reservation creation succeeded
+    // We know old state was 'available' because the updateOne query required it.
+    await PointStatusHistory.logStatusChange(
+      pointidNum,          // Point ID
+      "available",         // Old State
+      "reserved",          // New State
+      userId,              // Triggered By
+      "API User Reservation"   // Reason
+    );
+    
     point.status = "reserved";
     point.reservationendtime = endDate;
     point.reservedBy = userId;
