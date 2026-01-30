@@ -60,7 +60,7 @@ exports.addPoints = async (req, res) => {
         const newPoints = parsedData.map(p => ({
             pointid: parseInt((p.pointid), 10),   
             // Map CSV headers to Schema fields
-            station_name: p.station_name,
+            station_name: p.station_name ? p.station_name.trim() : undefined,
             lon: String(p.lon),
             lat: String(p.lat),
             status: p.status, 
