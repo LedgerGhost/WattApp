@@ -220,3 +220,24 @@ export const getUserRole = (): string | null => {
 export const isAdmin = (): boolean => {
   return getUserRole() === 'admin'
 }
+
+// Reserve a charging point for the user
+export const reservePoint = async (pointId: string, minutes: number = 30) => {
+  return apiCall(`/USERreserve/${pointId}/${minutes}`, {
+    method: 'POST',
+  })
+}
+
+// Cancel the user's active reservation
+export const cancelReservation = async (
+    pointId: string
+) => {
+  const data = {
+  "status": "available"
+}
+
+  return apiCall(`/updpoint/${pointId}`, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  })
+}

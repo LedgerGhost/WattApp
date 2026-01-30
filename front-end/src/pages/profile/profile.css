@@ -528,7 +528,7 @@ body {
 
 .wa-details {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   padding: 12px 14px;
   background: #fbfffd;
@@ -553,6 +553,31 @@ body {
   display: block;
   margin-top: 4px;
   font-weight: 950;
+}
+
+.wa-location-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #0d7d5a 0%, #19e9ab 100%);
+  color: white;
+  text-decoration: none;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(25, 233, 171, 0.2);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.wa-location-btn:hover {
+  box-shadow: 0 4px 12px rgba(25, 233, 171, 0.35);
+  transform: translateY(-1px);
+  opacity: 0.95;
 }
 
 .wa-empty {
@@ -591,7 +616,7 @@ body {
   }
 
   .wa-details {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 }
 

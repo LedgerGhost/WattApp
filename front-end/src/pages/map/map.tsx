@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
-import MarkerClusterGroup from 'react-leaflet-cluster'
-import { useNavigate } from 'react-router-dom'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import { useNavigate, useLocation } from 'react-router-dom'
 import './map.css'
-import { getPointsInfo, getAuthToken, isGuest } from '../../services/api'
+import { getPointsInfo, isGuest, reservePoint, cancelReservation, getMyReservations } from '../../services/api'
 import { getChargerImage } from '../../utils/chargerImages'
+
+// Use Leaflet from CDN (loaded globally in index.html)
+declare const L: typeof import('leaflet')
 
 // Charger type images are now handled in utils/chargerImages.ts
 
@@ -78,6 +78,19 @@ const DEFAULT_ZOOM = 12
 // Zoom level 15 gives approximately a 1km radius view
 const LOCATION_ZOOM = 15
 
+// Calculate distance between two coordinates using Haversine formula (returns km)
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371 // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
 // Component to recenter the map when user location is obtained
 function RecenterMap({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap()
@@ -85,6 +98,59 @@ function RecenterMap({ center, zoom }: { center: [number, number]; zoom: number 
     map.setView(center, zoom)
   }, [center, zoom, map])
   return null
+}
+
+// Component to fit bounds when charger is selected
+function FitBoundsOnSelect({
+  userLocation,
+  selectedCharger
+}: {
+  userLocation: [number, number] | null
+  selectedCharger: Charger | null
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (selectedCharger && userLocation) {
+      const bounds = L.latLngBounds(
+        [userLocation[0], userLocation[1]],
+        [selectedCharger.latitude, selectedCharger.longitude]
+      )
+      map.fitBounds(bounds, { padding: [100, 100], maxZoom: 15 })
+    }
+  }, [selectedCharger, userLocation, map])
+
+  return null
+}
+
+// Component to handle recenter button
+function RecenterButton({
+  userLocation,
+  onRecenter
+}: {
+  userLocation: [number, number] | null
+  onRecenter: () => void
+}) {
+  const map = useMap()
+
+  const handleRecenter = () => {
+    if (userLocation) {
+      map.setView(userLocation, LOCATION_ZOOM, { animate: true })
+      onRecenter()
+    }
+  }
+
+  if (!userLocation) return null
+
+  return (
+    <button
+      className="recenter-button"
+      onClick={handleRecenter}
+      title="Center map on my location"
+    >
+      📍
+    </button>
+  )
 }
 
 export default function Map() {
@@ -100,6 +166,7 @@ export default function Map() {
   const [isLoadingLocation, setIsLoadingLocation] = useState(true)
 
   const navigate = useNavigate()
+  const location = useLocation()
   const [selectedCharger, setSelectedCharger] = useState<Charger | null>(null)
   const [chargerTypeSearch, setChargerTypeSearch] = useState('')
   const [showChargerTypeSuggestions, setShowChargerTypeSuggestions] = useState(false)
@@ -115,7 +182,7 @@ export default function Map() {
 
 
 
-  //reserve hooks 
+  //reserve hooks
   const [showReserveModal, setShowReserveModal] = useState(false)
   const [showGuestModal, setShowGuestModal] = useState(false)
   const [reserveMinutes, setReserveMinutes] = useState(30)
@@ -123,6 +190,15 @@ export default function Map() {
     'idle' | 'loading' | 'success' | 'error'
   >('idle')
   const [reserveMessage, setReserveMessage] = useState('')
+  const [cancelStatus, setCancelStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [cancelMessage, setCancelMessage] = useState('')
+
+  // Active reservation state - persists until cancelled or expired
+  const [activeReservation, setActiveReservation] = useState<{
+    charger: Charger
+    endTime: string
+    minutes: number
+  } | null>(null)
 
 
 
@@ -165,6 +241,17 @@ export default function Map() {
         }))
 
         setChargers(mapped)
+
+        // Check if we navigated here with a specific point to show
+        const state = location.state as { pointId?: string; lat?: number; lon?: number } | null
+        if (state?.pointId) {
+          const targetCharger = mapped.find(c => c.id === state.pointId)
+          if (targetCharger) {
+            setSelectedCharger(targetCharger)
+          }
+          // Clear the state after using it
+          navigate(location.pathname, { replace: true, state: {} })
+        }
       } catch (err) {
         setChargersError('Could not load charging points')
       } finally {
@@ -174,6 +261,53 @@ export default function Map() {
 
     fetchChargers()
   }, [])
+
+  // Check for active reservations on load
+  useEffect(() => {
+    const checkActiveReservation = async () => {
+      // Don't check if user is a guest or chargers haven't loaded yet
+      if (isGuest() || isLoadingChargers || chargers.length === 0) return
+
+      try {
+        const reservations = await getMyReservations()
+
+        // API returns 204 (null) if no reservations
+        if (!reservations || !Array.isArray(reservations)) return
+
+        // Find active reservation
+        const active = reservations.find((r: any) => r.status === 'active')
+        if (!active) return
+
+        // Find matching charger from loaded chargers
+        const matchingCharger = chargers.find(c => c.id === active.pointid)
+
+        // Build charger object from reservation data (fallback if not found in chargers)
+        const chargerData: Charger = matchingCharger || {
+          id: active.pointid,
+          name: active.station_name || 'Unknown Station',
+          address: active.address || 'Unknown location',
+          price: 0,
+          available: 0,
+          distance: 0,
+          latitude: 0,
+          longitude: 0,
+          chargerType: active.connector_type || 'Unknown',
+          status: 'Reserved' as AvailabilityStatus,
+          power: active.power_kw || 0,
+        }
+
+        setActiveReservation({
+          charger: chargerData,
+          endTime: active.end_time,
+          minutes: active.duration_minutes,
+        })
+      } catch (err) {
+        console.warn('Failed to check active reservations:', err)
+      }
+    }
+
+    checkActiveReservation()
+  }, [isLoadingChargers, chargers])
 
   // Get user's location from browser
   useEffect(() => {
@@ -213,8 +347,6 @@ export default function Map() {
   }
 
 
-
-  const API_BASE = '/api' // proxied through vite
 
   // =========================
   // HELPERS
@@ -263,64 +395,68 @@ export default function Map() {
     if (!selectedCharger) return
 
     const minutes = Math.max(1, Math.min(60, reserveMinutes))
-    const token = getAuthToken()
 
     try {
       setReserveStatus('loading')
       setReserveMessage('')
 
-      const res = await fetch(
-        `${API_BASE}/reserve/${selectedCharger.id}/${minutes}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token && { 'X-OBSERVATORY-AUTH': token }),
-          },
-        }
-      )
+      const data = await reservePoint(selectedCharger.id, minutes)
+      console.log('Reserve response:', data)
 
-      const body = await res
-        .json()
-        .catch(() => null as any)
-
-      console.log('Reserve response:', res.status, body)
-
-      if (res.ok) {
-        setReserveStatus('success')
-        setReserveMessage(`Reserved for ${minutes} minutes `)
+      // Check if reservation was unsuccessful (point not available)
+      if (data.reservationendtime === '1970-01-01 00:00') {
+        setReserveStatus('error')
+        setReserveMessage('Point is not available for reservation.')
         return
       }
 
-      if (res.status === 400) {
-        setReserveStatus('error')
-        setReserveMessage(body?.error || 'Point is not available for reservation.')
-        return
-      }
-
-      if (res.status === 401) {
-        setReserveStatus('error')
+      // Store active reservation and close modal
+      setActiveReservation({
+        charger: selectedCharger,
+        endTime: data.reservationendtime,
+        minutes: minutes
+      })
+      setShowReserveModal(false)
+      setReserveStatus('idle')
+      setReserveMessage('')
+    } catch (e: any) {
+      setReserveStatus('error')
+      const errorMsg = e?.message || 'Unexpected error. Please try again.'
+      if (errorMsg.includes('401') || errorMsg.toLowerCase().includes('auth')) {
         setReserveMessage('You must be logged in to reserve a spot. Please log in again.')
-        return
-      }
-
-      if (res.status === 404) {
-        setReserveStatus('error')
+      } else if (errorMsg.includes('404')) {
         setReserveMessage('Point not found.')
-        return
+      } else if (errorMsg.includes('active reservation') || errorMsg.includes('409')) {
+        setReserveMessage('You already have an active reservation.')
+      } else {
+        setReserveMessage(errorMsg)
       }
+    }
+  }
 
-      if (res.status === 409) {
-        setReserveStatus('error')
-        setReserveMessage(body?.error || 'You already have an active reservation.')
-        return
+  const handleCancelReservation = async () => {
+    if (!activeReservation) return
+
+    try {
+      setCancelStatus('loading')
+      setCancelMessage('')
+
+      await cancelReservation(activeReservation.charger.id)
+
+      setCancelStatus('idle')
+      setCancelMessage('')
+      setActiveReservation(null)
+      // Refresh chargers to update statuses
+      window.location.reload()
+    } catch (e: any) {
+      setCancelStatus('error')
+      const errorMsg = e?.message || 'Failed to cancel reservation.'
+      if (errorMsg.includes('404') || errorMsg.toLowerCase().includes('not found')) {
+        setCancelMessage('No active reservation found.')
+        setActiveReservation(null)
+      } else {
+        setCancelMessage(errorMsg)
       }
-
-      setReserveStatus('error')
-      setReserveMessage(body?.error || 'Unexpected error. Please try again.')
-    } catch (e) {
-      setReserveStatus('error')
-      setReserveMessage('Network error. Please try again.')
     }
   }
 
@@ -346,19 +482,35 @@ export default function Map() {
     type.toLowerCase().includes(chargerTypeSearch.toLowerCase())
   )
 
-  const filteredChargers = chargers.filter(charger => {
-    const priceMatch = charger.price <= filters.maxPrice
-
-    const availabilityMatch =
-      filters.availabilityFilter === 'All' ||
-      charger.status === filters.availabilityFilter
-
-    const chargerTypeMatch =
-      !filters.chargerTypeFilter ||
-      charger.chargerType === filters.chargerTypeFilter
-
-    return priceMatch && availabilityMatch && chargerTypeMatch
+  // Calculate distances and sort by proximity
+  const chargersWithDistance = chargers.map(charger => {
+    if (userLocation) {
+      const distance = calculateDistance(
+        userLocation[0],
+        userLocation[1],
+        charger.latitude,
+        charger.longitude
+      )
+      return { ...charger, distance: parseFloat(distance.toFixed(1)) }
+    }
+    return charger
   })
+
+  const filteredChargers = chargersWithDistance
+    .filter(charger => {
+      const priceMatch = charger.price <= filters.maxPrice
+
+      const availabilityMatch =
+        filters.availabilityFilter === 'All' ||
+        charger.status === filters.availabilityFilter
+
+      const chargerTypeMatch =
+        !filters.chargerTypeFilter ||
+        charger.chargerType === filters.chargerTypeFilter
+
+      return priceMatch && availabilityMatch && chargerTypeMatch
+    })
+    .sort((a, b) => a.distance - b.distance)
 
   // =========================
   // RENDER
@@ -546,27 +698,33 @@ export default function Map() {
           scrollWheelZoom={true}
           className="leaflet-container"
         >
-          {/* Recenter map when user location is obtained */}
-          {userLocation && (
-            <RecenterMap center={userLocation} zoom={LOCATION_ZOOM} />
-          )}
+          {/* Fit bounds to show both user and selected charger */}
+          <FitBoundsOnSelect
+            userLocation={userLocation}
+            selectedCharger={selectedCharger}
+          />
+
+          {/* Recenter button */}
+          <RecenterButton
+            userLocation={userLocation}
+            onRecenter={() => setSelectedCharger(null)}
+          />
 
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url="https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png"
+            maxZoom={19}
           />
 
           {/* User location marker */}
           {userLocation && (
             <Marker
               position={userLocation}
-              icon={L.icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41],
+              icon={L.divIcon({
+                className: 'user-location-marker',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10],
+                popupAnchor: [0, -10],
               })}
             >
               <Popup>
@@ -577,45 +735,49 @@ export default function Map() {
             </Marker>
           )}
 
-          {filteredChargers.map(charger => (
-            <Marker
-              key={charger.id}
-              position={[charger.latitude, charger.longitude]}
-              icon={L.icon({
-                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${getMapPinColor(
-                  charger.status
-                )}.png`,
-                shadowUrl:
-                  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41],
-              })}
-              eventHandlers={{
-                click: () => setSelectedCharger(charger),
-              }}
-            >
-              <Popup>
-                <div className="popup-content">
-                  <h4>{charger.name}</h4>
-                  <p>{charger.address}</p>
-                  <p>
-                    <strong>${charger.price.toFixed(2)}</strong>/kWh
-                  </p>
+          {filteredChargers.map(charger => {
+            const isSelected = selectedCharger?.id === charger.id
+            return (
+              <Marker
+                key={charger.id}
+                position={[charger.latitude, charger.longitude]}
+                icon={L.icon({
+                  iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${getMapPinColor(
+                    charger.status
+                  )}.png`,
+                  // shadowUrl:
+                  //   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                  iconSize: isSelected ? [35, 57] : [25, 41],
+                  iconAnchor: isSelected ? [17, 57] : [12, 41],
+                  popupAnchor: [1, -34],
+                  // shadowSize: [41, 41],
+                  className: isSelected ? 'selected-marker' : '',
+                })}
+                eventHandlers={{
+                  click: () => setSelectedCharger(charger),
+                }}
+              >
+                <Popup>
+                  <div className="popup-content">
+                    <h4>{charger.name}</h4>
+                    <p>{charger.address}</p>
+                    <p>
+                      <strong>${charger.price.toFixed(2)}</strong>/kWh
+                    </p>
 
-                  <a
-                    href={`https://www.google.com/maps?q=${charger.latitude},${charger.longitude}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="gmaps-link"
-                  >
-                    See location ↗
-                  </a>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+                    <a
+                      href={`https://www.google.com/maps?q=${charger.latitude},${charger.longitude}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="gmaps-link"
+                    >
+                      See location ↗
+                    </a>
+                  </div>
+                </Popup>
+              </Marker>
+            )
+          })}
         </MapContainer>
 
         {/* Selected charger panel */}
@@ -709,6 +871,45 @@ export default function Map() {
           </div>
         )}
 
+        {/* Active Reservation Overlay - persistent until cancelled */}
+        {activeReservation && (
+          <div className="active-reservation-overlay">
+            <div className="reservation-header">
+              <span className="reservation-badge">Active Reservation</span>
+            </div>
+            <div className="reservation-charger-info">
+              <img
+                src={getChargerImage(activeReservation.charger.chargerType)}
+                alt={activeReservation.charger.chargerType || 'Charger'}
+                className="charger-type-icon-small"
+              />
+              <div className="reservation-details">
+                <h4>{activeReservation.charger.name}</h4>
+                <p>{activeReservation.charger.address}</p>
+                <div className="reservation-specs">
+                  <span>{activeReservation.charger.chargerType}</span>
+                  <span>{activeReservation.charger.power} kW</span>
+                  <span>${activeReservation.charger.price.toFixed(2)}/kWh</span>
+                </div>
+                <div className="reservation-time">
+                  <span className="time-label">Reserved until:</span>
+                  <span className="time-value">{activeReservation.endTime}</span>
+                </div>
+              </div>
+            </div>
+            {cancelStatus === 'error' && (
+              <div className="reservation-error">{cancelMessage}</div>
+            )}
+            <button
+              className="cancel-reservation-btn"
+              onClick={handleCancelReservation}
+              disabled={cancelStatus === 'loading'}
+            >
+              {cancelStatus === 'loading' ? 'Cancelling...' : 'Cancel Reservation'}
+            </button>
+          </div>
+        )}
+
         {/* Reserve modal */}
         {showReserveModal && selectedCharger && (
           <div className="modal-overlay" onClick={closeReserveModal}>
@@ -723,13 +924,38 @@ export default function Map() {
                     </button>
                   </div>
                   <div className="modal-body success-body">
-                    <div className="success-icon">✓</div>
-                    <div className="success-message">
-                      {reserveMessage}
-                    </div>
-                    <p className="success-sub">Your spot has been reserved at {selectedCharger.name}</p>
+                    {cancelStatus === 'success' ? (
+                      <>
+                        <div className="success-icon" style={{ background: 'linear-gradient(135deg, #f6ad55 0%, #ed8936 100%)' }}>✓</div>
+                        <div className="success-message" style={{ color: '#c05621' }}>
+                          {cancelMessage}
+                        </div>
+                        <p className="success-sub">Your reservation has been cancelled.</p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="success-icon">✓</div>
+                        <div className="success-message">
+                          {reserveMessage}
+                        </div>
+                        <p className="success-sub">Your spot has been reserved at {selectedCharger.name}</p>
+                        {cancelStatus === 'error' && (
+                          <div className="modal-alert error" style={{ marginTop: '1rem' }}>{cancelMessage}</div>
+                        )}
+                      </>
+                    )}
                   </div>
                   <div className="modal-footer">
+                    {cancelStatus !== 'success' && (
+                      <button
+                        className="modal-btn secondary"
+                        onClick={handleCancelReservation}
+                        disabled={cancelStatus === 'loading'}
+                        style={{ marginRight: 'auto' }}
+                      >
+                        {cancelStatus === 'loading' ? 'Cancelling...' : 'Cancel Reservation'}
+                      </button>
+                    )}
                     <button
                       className="modal-btn primary"
                       onClick={closeSuccessModal}

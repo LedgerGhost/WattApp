@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './profile.css'
-import { getMyReservations, logout, getCurrentUser, getPointsInfo, getHealthCheck, resetpoints, updatePoint, isAdmin as checkIsAdmin } from '../../services/api'
+import { getMyReservations, logout, getCurrentUser, getPointsInfo, getHealthCheck, resetpoints, updatePoint, isAdmin as checkIsAdmin, getAuthToken } from '../../services/api'
 import profileAvatarImg from '../../assets/images/profile-avatar.jpg'
 
 interface User {
@@ -28,13 +28,15 @@ interface Activity {
   date: string
   type: 'charge' | 'reservation' | 'payment'
   value: number
-  energyKwh?: number
   durationMin?: number
   status: 'completed' | 'pending' | 'cancelled' | 'expired' | 'active'
   location?: string
   chargerType?: string
   powerKw?: number
   endTime?: string
+  lat?: number
+  lon?: number
+  pointId?: string
 }
 
 type DatePreset = 'lastMonth' | 'last3Months' | 'currentYear' | 'all' | 'custom'
@@ -67,6 +69,13 @@ export default function Profile() {
   })
   const [adminActionStatus, setAdminActionStatus] = useState<string | null>(null)
   const [healthCheckData, setHealthCheckData] = useState<any>(null)
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (getAuthToken() === null) {
+      navigate('/login')
+    }
+  }, [navigate])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -136,6 +145,21 @@ export default function Profile() {
           }
         }
 
+        // Fetch points data to get coordinates
+        let pointsMap: Record<string, { lat: number; lon: number }> = {}
+        try {
+          const pointsData = await getPointsInfo()
+          const points = Array.isArray(pointsData) ? pointsData : (pointsData.points || [])
+          pointsMap = points.reduce((acc: any, point: any) => {
+            if (point.pointid && point.lat && point.lon) {
+              acc[point.pointid] = { lat: point.lat, lon: point.lon }
+            }
+            return acc
+          }, {})
+        } catch (err) {
+          console.warn('Failed to fetch points data for coordinates:', err)
+        }
+
         // Fetch reservations for current user (both admin and regular users)
         let reservations: any[] = []
         try {
@@ -190,6 +214,9 @@ export default function Profile() {
           // Use station_name or address from API, fallback to Point ID
           const locationDisplay = r.station_name || r.address || `Point ${r.pointid}`
 
+          // Get coordinates from points map
+          const coords = pointsMap[r.pointid]
+
           return {
             id: typeof r.id === 'number' ? r.id : idx,
             date: r.start_time || r.end_time || new Date().toISOString().split('T')[0],
@@ -201,6 +228,9 @@ export default function Profile() {
             powerKw: r.power_kw,
             chargerType: r.connector_type,
             endTime: r.end_time,
+            lat: coords?.lat || r.lat,
+            lon: coords?.lon || r.lon,
+            pointId: r.pointid,
           } as Activity
         })
 
@@ -581,13 +611,23 @@ export default function Profile() {
                                   <span className="v">{a.powerKw ? `${a.powerKw} kW` : '—'}</span>
                                 </div>
                                 <div className="wa-detail">
-                                  <span className="k">Energy</span>
-                                  <span className="v">{a.energyKwh ? `${a.energyKwh.toFixed(1)} kWh` : '—'}</span>
-                                </div>
-                                <div className="wa-detail">
                                   <span className="k">Duration</span>
                                   <span className="v">{a.durationMin ? `${a.durationMin} min` : '—'}</span>
                                 </div>
+                                {a.lat && a.lon && a.pointId && (
+                                  <div className="wa-detail" style={{ gridColumn: '1 / -1' }}>
+                                    <button
+                                      type="button"
+                                      className="wa-location-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        navigate('/map', { state: { pointId: a.pointId, lat: a.lat, lon: a.lon } })
+                                      }}
+                                    >
+                                      📍 Go to Location
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
