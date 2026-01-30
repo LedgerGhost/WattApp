@@ -1,6 +1,7 @@
 // d) POST /updpoint/:id
 
 const Point = require("../../../models/Point");
+const Reservation = require("../../../models/Reservation");
 const { buildErrorLog } = require("../utils/errorLog");
 
 const ALLOWED_STATUS = [
@@ -10,8 +11,6 @@ const ALLOWED_STATUS = [
   "malfunction",
   "offline"
 ];
-
-
 
 exports.updatePoint = async (req, res) => {
   try {
@@ -82,7 +81,19 @@ exports.updatePoint = async (req, res) => {
       if (status !== "reserved") {
         $set.reservationendtime = null;
         $set.reservedBy = null;
+        // Cancel the reservation record of the user who reserved this point
+        await Reservation.updateOne(
+          { 
+            user_id: point.reservedBy, // Find reservation by this user...
+            pointid: point.pointid,    // ... on this point...
+            status: 'active'           // ... that is currently active.
+          },
+          { 
+            $set: { status: 'cancelled' } // Just mark it cancelled.
+          }
+        );
       }
+
       $set.lastStatusChange = new Date();
     }
     if (kwhprice !== undefined) {

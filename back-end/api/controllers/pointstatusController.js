@@ -20,13 +20,6 @@ exports.getPointStatusHistory = async (req, res) => {
             });
         }
 
-        // VALIDATE POINT EXISTS (204 No Content)
-        // We use the Point model to check if this ID exists
-        // const pointExists = await Point.findOne({ pointid: pointid });
-        // if (!pointExists) {
-        //     return res.status(205).send();
-        // }
-
         // FETCH DATA (Using Model's Static Method)
         // The model handles date parsing, validation, sorting, and formatting internally.
         let historyData;

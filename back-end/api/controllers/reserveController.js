@@ -14,14 +14,14 @@ function formatLocalTimestamp(date = new Date()) {
   return `${year}-${month}-${day} ${hours}:${minutes}`;
 }
 
+const MAX_RESERVATION_MINUTES = 60;
 exports.reservePoint = async (req, res) => {
   try {
     const userId = req.user?._id;
-      if (!userId) {
-        return res
-        .status(400)
-        .json(buildErrorLog(req, 400, "Auth user missing on request", "req.user._id missing"));
+    if (!userId) {
+        return res.status(400).json(buildErrorLog(req, 400, "Auth user missing on request", "req.user._id missing"));
     }
+
     const idStr = String(req.params.id).trim();
     const idNum = Number(idStr);
     if (!Number.isFinite(idNum)) {
@@ -32,23 +32,33 @@ exports.reservePoint = async (req, res) => {
 
     let minutes = req.params.minutes !== undefined ? Number(req.params.minutes) : 30;
     if (!Number.isFinite(minutes) || minutes <= 0) minutes = 30;
-    minutes = Math.min(minutes, 60);
+    minutes = Math.min(minutes, MAX_RESERVATION_MINUTES);
 
     const point = await Point.findOne({ pointid: idNum }).lean();
     if (!point) {
       return res
-        .status(404)
-        .json(buildErrorLog(req, 404, `Point with id ${idStr} not found`, "Check if pointid exists"));
+        .status(400)
+        .json(buildErrorLog(req, 400, `Point with id ${idStr} not found`, "Check if pointid exists"));
     }
 
     const pointidNum = point.pointid;
 
-    const activeForPoint = await Reservation.findActiveByPoint(pointidNum);
-    if (activeForPoint) {
+    // const activeForPoint = await Reservation.findActiveByPoint(pointidNum);
+    // if (activeForPoint) {
+    //   return res.status(200).json({
+    //     pointid: point.pointid,
+    //     status: point.status,
+    //     reservationendtime: "1970-01-01 00:00",
+    //   });
+    // }
+
+    // --- CHANGED LOGIC START ---
+    // Instead of querying the Reservation table, we just check the status directly
+    if (point.status !== "available") {
       return res.status(200).json({
         pointid: point.pointid,
-        status: point.status,
-        reservationendtime: "1970-01-01 00:00",
+        status: point.status, // This returns 'occupied', 'reserved', or 'offline'
+        reservationendtime: "1970-01-01 00:00", // The flag for "Unavailable"
       });
     }
 
@@ -65,7 +75,7 @@ exports.reservePoint = async (req, res) => {
           lastStatusChange: now,
         },
       }
-    );
+    )
 
     if (upd.modifiedCount !== 1) {
       return res.status(200).json({
@@ -76,7 +86,7 @@ exports.reservePoint = async (req, res) => {
     }
 
     try {
-      await Reservation.createReservation(pointidNum, userId, minutes);
+      await Reservation.createReservation(pointidNum, userId, minutes, uniquePerUser = false);
     } catch (e) {
       await Point.updateOne(
         { pointid: idNum, status: "reserved", reservedBy: userId },
@@ -90,14 +100,12 @@ exports.reservePoint = async (req, res) => {
         }
       );
 
-      if (e.code === "ACTIVE_RESERVATION_EXISTS") {
-        return res
-          .status(409)
-          .json(buildErrorLog(req, 409, "Active reservation exists", e.message));
-      }
-
       return res.status(500).json(buildErrorLog(req, 500, "Failed to create reservation", e.message));
     }
+
+    point.status = "reserved";
+    point.reservationendtime = endDate;
+    point.reservedBy = userId;
 
     return res.status(200).json({
       pointid: point.pointid,

@@ -92,7 +92,7 @@ exports.newSession = async (req, res) => {
   try {
     const { pointid, starttime, endtime, startsoc, endsoc, totalkwh, kwhprice, amount } = req.body;
 
-    // All fields mandatory (όπως το είχες)
+    // All fields mandatory 
     if (
       pointid === undefined ||
       !starttime ||
@@ -145,12 +145,12 @@ exports.newSession = async (req, res) => {
     if (!point) point = await Point.collection.findOne({ pointid: pidStr });
 
     if (!point) {
-      return res.status(404).json(
-        buildErrorLog(req, 404, `Point with id ${pidStr} not found`, "Invalid pointid")
+      return res.status(400).json(
+        buildErrorLog(req, 400, `Point with id ${pidStr} not found`, "Invalid pointid")
       );
     }
 
-    // ✅ Canonical DB write
+    // Canonical DB write
     const dbDoc = apiToDbSession(req.body, point, startDate, endDate);
     await ChargingSession.create(dbDoc);
 
@@ -202,19 +202,25 @@ exports.getSessions = async (req, res) => {
     const idStr = String(id).trim();
     const idNum = Number(idStr);
 
-    let point = null;
-    if (Number.isFinite(idNum)) point = await Point.collection.findOne({ pointid: idNum });
-    if (!point) point = await Point.collection.findOne({ pointid: idStr });
+    // let point = null;
+    // if (Number.isFinite(idNum)) point = await Point.collection.findOne({ pointid: idNum });
+    // if (!point) point = await Point.collection.findOne({ pointid: idStr });
 
-    if (!point) {
-      return res.status(404).json(
-        buildErrorLog(req, 404, `Point with id ${idStr} not found`, "Invalid pointid")
-      );
-    }
+    // if (!point) {
+    //   return res.status(204).json(
+    //     buildErrorLog(req, 204, `Point with id ${idStr} not found`, "Invalid pointid")
+    //   );
+    // }
 
-    // ✅ Canonical DB query (start_time)
+    // // Canonical DB query (start_time)
+    // const sessDocs = await ChargingSession.find({
+    //   pointid: point.pointid,
+    //   start_time: { $gte: fromStart, $lte: toEnd }
+    // }).lean().sort({ start_time: -1 });
+
+    // Canonical DB query (start_time)
     const sessDocs = await ChargingSession.find({
-      pointid: point.pointid,
+      pointid: idNum,
       start_time: { $gte: fromStart, $lte: toEnd }
     }).lean().sort({ start_time: -1 });
 
@@ -222,7 +228,7 @@ exports.getSessions = async (req, res) => {
       return res.status(204).send();
     }
 
-    // ✅ Spec response (old names)
+    //  Spec response (old names)
     const result = sessDocs.map(dbToApiSession);
 
     if (format === "csv") {
