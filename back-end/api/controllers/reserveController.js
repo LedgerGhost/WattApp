@@ -76,7 +76,7 @@ exports.reservePoint = async (req, res) => {
           lastStatusChange: now,
         },
       }
-    )
+    );
 
     if (upd.modifiedCount !== 1) {
       return res.status(200).json({
