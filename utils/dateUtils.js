@@ -9,7 +9,7 @@ function parseDateYYYYMMDD(dateStr, endOfDay = false) {
 
   if (monthNum < 1 || monthNum > 12) return null;
   if (dayNum < 1 || dayNum > 31) return null;
-  if (yearNum < 1970 || yearNum > 2100) return null;
+  if (yearNum < 1970 /*|| yearNum > 2100*/) return null;
 
   if (endOfDay) {
     return new Date(yearNum, monthNum - 1, dayNum, 23, 59, 59, 999);
