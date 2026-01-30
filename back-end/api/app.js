@@ -1,12 +1,26 @@
 const express = require('express');
 const cors = require('cors');
+const cron = require('node-cron');
+const Reservation = require('../../models/Reservation');
+const PointStatusHistory = require('../../models/PointStatusHistory');
 
+// Schedule: Run every minute
+// Syntax: * * * * * (Minute Hour Day Month Weekday)
+cron.schedule('* * * * *', async () => {
+  try {
+    const count = await Reservation.expireOverdue(PointStatusHistory);
+    if (count > 0) {
+      console.log(`🧹 Cleanup: Expired ${count} overdue reservations.`);
+    }
+  } catch (err) {
+    console.error("❌ Auto-expiration failed:", err.message);
+  }
+});
 
 /* Import routes */
 
 const app = express();
 app.use(cors());
-
 app.use(express.json());
 
 
