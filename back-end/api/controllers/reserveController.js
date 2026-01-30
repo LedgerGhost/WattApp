@@ -76,7 +76,7 @@ exports.reservePoint = async (req, res) => {
           lastStatusChange: now,
         },
       }
-    )
+    );
 
     if (upd.modifiedCount !== 1) {
       return res.status(200).json({
@@ -106,13 +106,13 @@ exports.reservePoint = async (req, res) => {
 
     // LOG HISTORY: Only log if reservation creation succeeded
     // We know old state was 'available' because the updateOne query required it.
-    // await PointStatusHistory.logStatusChange(
-    //   pointidNum,          // Point ID
-    //   "available",         // Old State
-    //   "reserved",          // New State
-    //   userId,              // Triggered By
-    //   "API Reservation"   // Reason
-    // );
+     await PointStatusHistory.logStatusChange(
+       pointidNum,          // Point ID
+       "available",         // Old State
+       "reserved",          // New State
+       userId,              // Triggered By
+       "API Reservation"   // Reason
+     );
 
     point.status = "reserved";
     point.reservationendtime = endDate;
