@@ -2,85 +2,30 @@ import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import { useNavigate, useLocation } from 'react-router-dom'
 import './map.css'
-import { getPointsInfo, isGuest, reservePoint, cancelReservation, getMyReservations } from '../../services/api'
+import { getPointsInfo, getMyReservations, reservePoint, cancelReservation } from '../../services/chargers'
+import { isGuest } from '../../services/auth'
 import { getChargerImage } from '../../utils/chargerImages'
+import { DEFAULT_CENTER, DEFAULT_ZOOM, LOCATION_ZOOM, EARTH_RADIUS_KM, mapStatus } from '../../utils/constants'
+import type { Charger, ChargerType, AvailabilityStatus, BackendPointInfo } from '../../types'
 
 // Use Leaflet from CDN (loaded globally in index.html)
 declare const L: typeof import('leaflet')
 
 // Charger type images are now handled in utils/chargerImages.ts
 
-interface BackendPoint {
-  pointid: string
-  lat: number
-  lon: number
-  status: 'available' | 'charging' | 'reserved' | 'malfunction' | 'offline'
-  cap: number
-  kwhprice: number
-}
-
-interface BackendPointInfo extends BackendPoint {
-  station_name?: string
-  connector_type?: string
-  address?: string
-  providerName?: string
-}
 
 
 
 
 
 
-const mapStatus = (status: BackendPoint['status']): AvailabilityStatus => {
-  switch (status) {
-    case 'available':
-      return 'Available'
-    case 'charging':
-      return 'Charging'
-    case 'reserved':
-      return 'Reserved'
-    case 'malfunction':
-      return 'Malfunction'
-    case 'offline':
-      return 'Offline'
-    default:
-      return 'Offline'
-  }
-}
 
 
-type ChargerType =
-  | 'Type2'
-  | 'AC_GB/T'
-  | 'CCS'
-  | 'CHAdeMO'
-  | string
 
-type AvailabilityStatus = 'Available' | 'Charging' | 'Reserved' | 'Offline' | 'Malfunction'
-
-interface Charger {
-  id: string
-  name: string
-  address: string
-  price: number
-  available: number
-  distance: number
-  latitude: number
-  longitude: number
-  chargerType: ChargerType
-  status: AvailabilityStatus
-  power: number // kW
-}
-
-// Default location (Athens) as fallback
-const DEFAULT_CENTER: [number, number] = [37.9838, 23.7275]
-const DEFAULT_ZOOM = 12
-// Zoom level 15 gives approximately a 1km radius view
-const LOCATION_ZOOM = 15
 
 // Calculate distance between two coordinates using Haversine formula (returns km)
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371 // Earth's radius in kilometers
+  const R = EARTH_RADIUS_KM // Earth's radius in kilometers
   const dLat = (lat2 - lat1) * Math.PI / 180
   const dLon = (lon2 - lon1) * Math.PI / 180
   const a =
@@ -89,15 +34,6 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
     Math.sin(dLon / 2) * Math.sin(dLon / 2)
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   return R * c
-}
-
-// Component to recenter the map when user location is obtained
-function RecenterMap({ center, zoom }: { center: [number, number]; zoom: number }) {
-  const map = useMap()
-  useEffect(() => {
-    map.setView(center, zoom)
-  }, [center, zoom, map])
-  return null
 }
 
 // Component to fit bounds when charger is selected
@@ -162,8 +98,8 @@ export default function Map() {
 
   // User location state
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
-  const [locationError, setLocationError] = useState<string | null>(null)
-  const [isLoadingLocation, setIsLoadingLocation] = useState(true)
+  const [_locationError, setLocationError] = useState<string | null>(null)
+  const [_isLoadingLocation, setIsLoadingLocation] = useState(true)
 
   const navigate = useNavigate()
   const location = useLocation()
@@ -468,9 +404,6 @@ export default function Map() {
     // Optionally refresh chargers to update status
     window.location.reload()
   }
-
-  //take chargers from dummy api 
-  // const chargers: Charger[] = [];
 
   // Get unique charger types from all chargers
   const uniqueChargerTypes = Array.from(
@@ -783,7 +716,6 @@ export default function Map() {
         {/* Selected charger panel */}
         {selectedCharger && (
           <>
-            {console.log('Selected charger:', selectedCharger)}
             <div className="selected-charger-info">
               <div className="charger-icon-header">
                 <img

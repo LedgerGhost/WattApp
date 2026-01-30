@@ -1,45 +1,12 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './profile.css'
-import { getMyReservations, logout, getCurrentUser, getPointsInfo, getHealthCheck, resetpoints, updatePoint, isAdmin as checkIsAdmin, getAuthToken } from '../../services/api'
+import { logout, getCurrentUser } from '../../services/auth'
+import { getMyReservations, getPointsInfo } from '../../services/chargers'
+import { getHealthCheck, resetpoints } from '../../services/admin'
+import { getAuthToken } from '../../services/api'
+import type { User, Activity, Point } from '../../types'
 import profileAvatarImg from '../../assets/images/profile-avatar.jpg'
-
-interface User {
-  _id?: string
-  first_name?: string
-  last_name?: string
-  email?: string
-  created_at?: string
-  role?: string
-}
-
-interface Point {
-  pointid: string
-  station_name?: string
-  address?: string
-  status: string
-  cap: number
-  kwhprice: number
-  connector_type?: string
-}
-
-interface Activity {
-  id: number
-  date: string
-  type: 'charge' | 'reservation' | 'payment'
-  value: number
-  durationMin?: number
-  status: 'completed' | 'pending' | 'cancelled' | 'expired' | 'active'
-  location?: string
-  chargerType?: string
-  powerKw?: number
-  endTime?: string
-  lat?: number
-  lon?: number
-  pointId?: string
-}
-
-type DatePreset = 'lastMonth' | 'last3Months' | 'currentYear' | 'all' | 'custom'
 
 function money(v: number) {
   return `$${v.toFixed(2)}`

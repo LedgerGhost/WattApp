@@ -1,0 +1,110 @@
+/* Charger Card */
+.charger-card {
+  padding: 16px;
+  background: #f9f9f9;
+  border: 2px solid #c8e6d7;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.charger-card:hover {
+  border-color: #19e9ab;
+  background: #f0faf7;
+}
+
+.charger-card.active {
+  border-color: #0d7d5a;
+  background: #e8f5f1;
+  box-shadow: 0 4px 12px rgba(25, 233, 171, 0.2);
+}
+
+.charger-card-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border: none;
+  color: #4a5568;
+  font-size: 20px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.charger-card-close:hover {
+  background: rgba(0, 0, 0, 0.2);
+  color: #2d3748;
+}
+
+.charger-name {
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.charger-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.price {
+  color: #0d7d5a;
+  font-weight: 600;
+}
+
+.distance {
+  color: #718096;
+}
+
+.charger-specs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.type,
+.power {
+  padding: 4px 8px;
+  background: #f0faf7;
+  border-radius: 4px;
+  color: #0d7d5a;
+  font-weight: 500;
+}
+
+.charger-status {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.status {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.status.available {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.status.inuse {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+.status.offline {
+  background: #e2e8f0;
+  color: #4a5568;
+}

@@ -1,12 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './login.css'
-import { login, setGuestMode, clearGuestMode } from '../../services/api'
-
-interface LoginFormData {
-  email: string
-  password: string
-}
+import { login, setGuestMode, clearGuestMode } from '../../services/auth'
+import type { LoginFormData } from '../../types'
 
 export default function Login() {
   const [formData, setFormData] = useState<LoginFormData>({

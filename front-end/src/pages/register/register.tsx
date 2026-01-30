@@ -1,25 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './register.css'
-import { signup, setGuestMode, clearGuestMode } from '../../services/api'
-
-
-interface RegisterFormData {
-  fullName: string
-  email: string
-  phone: string
-  password: string
-  confirmPassword: string
-  agreeTerms: boolean
-}
-
-interface FormErrors {
-  fullName?: string
-  email?: string
-  password?: string
-  confirmPassword?: string
-  agreeTerms?: string
-}
+import { signup, setGuestMode, clearGuestMode } from '../../services/auth'
+import type { RegisterFormData, FormErrors } from '../../types'
+import { DEFAULT_PHONE_PREFIX } from '../../utils/constants'
 
 export default function Register() {
   const [formData, setFormData] = useState<RegisterFormData>({
@@ -94,7 +78,7 @@ export default function Register() {
     setIsLoading(true)
 
     try {
-      const phone = formData.phone ? `+30${formData.phone}` : undefined
+      const phone = formData.phone ? `${DEFAULT_PHONE_PREFIX}${formData.phone}` : undefined
       await signup(formData.fullName, formData.email, formData.password, phone)
       alert('Account created successfully! Please sign in.')
       navigate('/login')
@@ -169,7 +153,7 @@ export default function Register() {
           <div className="form-group">
             <label htmlFor="phone">Phone (Optional)</label>
             <div className="phone-input-wrapper">
-              <span className="phone-prefix">+30</span>
+              <span className="phone-prefix">{DEFAULT_PHONE_PREFIX}</span>
               <input
                 id="phone"
                 type="tel"
