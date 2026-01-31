@@ -8,7 +8,6 @@ exports.getPointsByRadius = async (req, res) => {
     // Validate Inputs
     const userLat = parseFloat(lat);
     const userLon = parseFloat(lon);
-    const maxDistMeters = radius ? parseFloat(radius) : 20000; // Default 1km
 
     if (isNaN(userLat) || isNaN(userLon)) {
       return res.status(400).json(
@@ -16,33 +15,38 @@ exports.getPointsByRadius = async (req, res) => {
       );
     }
 
-    if (maxDistMeters <= 0) {
-      return res.status(400).json(
-        buildErrorLog(req, 400, "Invalid radius", "radius must be a positive number")
-      );
+    // Setup GeoNear Options
+    const geoNearOptions = {
+      near: { type: "Point", coordinates: [userLon, userLat] },
+      distanceField: "dist.calculated",
+      spherical: true,
+      key: "location" // Explicitly use the 'location' index
+    };
+
+    let usedRadius = -1; // "Infinite" indicator for the response
+    if (radius !== undefined && radius !== null) {
+        const r = parseFloat(radius);
+        if (!isNaN(r) && r > 0) {
+            geoNearOptions.maxDistance = r;
+            usedRadius = r;
+        }
     }
 
     // Aggregation Pipeline
     const groupedPoints = await Point.aggregate([
       {
-        $geoNear: {
-          near: { type: "Point", coordinates: [userLon, userLat] },
-          distanceField: "dist.calculated", // Required field
-          maxDistance: maxDistMeters,
-          spherical: true,
-          key: "location"
-        }
+        $geoNear: geoNearOptions
       },
       {
-            $group: {
-                _id: { 
-                    name: { $ifNull: ["$station_name", "Unknown Station"] }, 
-                    coords: "$location.coordinates" 
-                },
+        $group: {
+            _id: { 
+                name: { $ifNull: ["$station_name", "Unknown Station"] }, 
+                coords: "$location.coordinates" 
+            },
 
-                points: { $push: "$pointid" },
-                distance: { $min: "$dist.calculated" }
-            }
+            points: { $push: "$pointid" },
+            distance: { $min: "$dist.calculated" }
+        }
       },
       {
         $sort: { distance: 1 } // Sort groups by nearest first
@@ -64,7 +68,7 @@ exports.getPointsByRadius = async (req, res) => {
 
     return res.status(200).json({
       cnt: groupedPoints.length, // Count of unique locations found
-      radius: maxDistMeters,
+      radius: usedRadius, // Returns -1 if unlimited
       results: results
     });
 
