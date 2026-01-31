@@ -1,0 +1,3877 @@
+{
+  "info": {
+    "_postman_id": "6442f42c-ced0-48f3-bb34-5a0b9319e7f9",
+    "name": "WattApp EV Charging API Copy",
+    "description": "Generated from provided OpenAPI 3.0 spec. Uses {{baseUrl}} and X-OBSERVATORY-AUTH: {{token}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "51291133",
+    "_collection_link": "https://go.postman.co/collection/51291133-6442f42c-ced0-48f3-bb34-5a0b9319e7f9?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Signup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Signup returns 200\", () => {",
+                  "  pm.expect([200]).to.include(pm.response.code);",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const email = `test_${Date.now()}_${Math.random().toString(16).slice(2)}@example.com`;",
+                  "pm.collectionVariables.set(\"email\", email);",
+                  "pm.collectionVariables.set(\"password\", \"StrongP@ssw0rd!\");",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Test User\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"phone\": \"+30123456789\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ],
+              "query": [
+                {
+                  "key": "",
+                  "value": null,
+                  "type": "text"
+                }
+              ]
+            },
+            "description": "Register a new user."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Login status is 200\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const j = pm.response.json();",
+                  "",
+                  "pm.test(\"Token exists\", () => {",
+                  "  pm.expect(j).to.have.property(\"token\");",
+                  "  pm.expect(j.token).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"token\", j.token);",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login. If the response JSON contains token/accessToken, it will be saved to {{token}}."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Healthcheck [200-OK]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Admin returns documented status\", () => {",
+                  "  pm.expect([200]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "pm.test(\"Confirm DB string\", function () {",
+                  "     pm.expect(pm.response.text()).to.include(\".zce0zok.mongodb.net:27017/wattapp\");",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{admintoken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/healthcheck",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "healthcheck"
+              ]
+            },
+            "description": "Check system health."
+          },
+          "response": []
+        },
+        {
+          "name": "Reset points [200-OK]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Admin returns documented status\", () => {",
+                  "  pm.expect([200]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "pm.test(\"Verify file integrity\", function () {",
+                  "    var reply = pm.response.json();",
+                  "    pm.expect(reply.total_points_imported).to.eql(2465);",
+                  "    pm.expect(reply.source_file).to.eql(\"resetpointsdata.json\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "/*\r",
+                  "pm.request.addHeader({\r",
+                  "    key: \"X-OBSERVATORY-AUTH\",\r",
+                  "    value: pm.collectionVariables.get(\"admintoken\")\r",
+                  "});\r",
+                  "*/\r",
+                  "\r",
+                  "\r",
+                  "\r",
+                  "\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{admintoken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/resetpoints",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "resetpoints"
+              ]
+            },
+            "description": "Reset points database (requires auth, admin role)."
+          },
+          "response": []
+        },
+        {
+          "name": "Reset points [401-Invalid Token]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Admin returns documented status\", () => {",
+                  "  pm.expect([401]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "pm.test(\"Expected error text\", function () {",
+                  "    pm.expect(pm.response.text()).to.match(/Authentication required|Token not found or session expired/);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "\"random-token\""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/resetpoints?format={{format}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "resetpoints"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "{{format}}"
+                }
+              ]
+            },
+            "description": "Reset points database (requires auth, admin role)."
+          },
+          "response": []
+        },
+        {
+          "name": "Reset points [403-Unauthorized]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Admin returns documented status\", () => {",
+                  "  pm.expect([403]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "pm.test(\"Expected error text\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"Access Denied\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/resetpoints?format={{format}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "resetpoints"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "{{format}}"
+                }
+              ]
+            },
+            "description": "Reset points database (requires auth, admin role)."
+          },
+          "response": []
+        },
+        {
+          "name": "Add points [200-OK]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code == 200) {",
+                  "    var data = pm.response.json();",
+                  "",
+                  "    //  RESPONSE STRUCTURE & VALUES",
+                  "    pm.test(\"Status is 'OK'\", function () {",
+                  "        pm.expect(data.status).to.include(\"OK\");",
+                  "    });",
+                  "",
+                  "    pm.test(\"Info message confirms success\", function () {",
+                  "        pm.expect(data.info).to.be.a('string');",
+                  "        pm.expect(data.info).to.include(\"successfully\"); // Loose check",
+                  "    });",
+                  "",
+                  "    pm.test(\"Imported count matches CSV data (4)\", function () {",
+                  "        // We know we uploaded 4 new points (this test follows the resetpoint test) in the file above",
+                  "        pm.expect(data.points_imported).to.equal(4);",
+                  "    });",
+                  "",
+                  "    pm.test(\"Timeref is valid ISO 8601 date\", function () {",
+                  "        pm.expect(data).to.have.property(\"timeref\");",
+                  "        ",
+                  "        // Strict ISO Regex (e.g., 2026-01-29T16:17:55.292Z)",
+                  "        var isoDateRegex = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$/;",
+                  "        pm.expect(data.timeref).to.match(isoDateRegex);",
+                  "    });",
+                  "    const moment = require('moment');",
+                  "    pm.test(\"Timeref is current\", function () {",
+                  "        var serverTime = moment(data.timeref);",
+                  "        var now = moment();",
+                  "        pm.expect(Math.abs(now.diff(serverTime, 'seconds'))).to.be.below(60);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{admintoken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "source",
+                  "type": "file",
+                  "src": "addpoints.csv"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/addpoints",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "addpoints"
+              ]
+            },
+            "description": "Import points from CSV (multipart/form-data). Select a CSV file for 'source'. Requires auth/admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Add points [200- Duplicate PointsIDs]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// TEST 1: STATUS CODE",
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code == 200) {",
+                  "    var data = pm.response.json();",
+                  "",
+                  "    //  RESPONSE STRUCTURE & VALUES",
+                  "    pm.test(\"Status is 'OK'\", function () {",
+                  "        pm.expect(data.status).to.include(\"OK\");",
+                  "    });",
+                  "",
+                  "    pm.test(\"Info message confirms process completed successfully\", function () {",
+                  "        pm.expect(data.info).to.be.a('string');",
+                  "        pm.expect(data.info).to.include(\"Process completed, but some points were skipped\"); ",
+                  "    });",
+                  "",
+                  "    pm.test(\"Debug info message confirms Duplicate IDs\", function () {",
+                  "        pm.expect(data.debuginfo).to.be.a('string');",
+                  "        pm.expect(data.debuginfo).to.include(\"Duplicate\"); // Loose check",
+                  "    });",
+                  "",
+                  "    pm.test(\"Timeref is valid ISO 8601 date\", function () {",
+                  "        pm.expect(data).to.have.property(\"timeref\");",
+                  "        ",
+                  "        // Strict ISO Regex (e.g., 2026-01-29T16:17:55.292Z)",
+                  "        var isoDateRegex = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$/;",
+                  "        pm.expect(data.timeref).to.match(isoDateRegex);",
+                  "    });",
+                  "    const moment = require('moment');",
+                  "    pm.test(\"Timeref is current\", function () {",
+                  "        var serverTime = moment(data.timeref);",
+                  "        var now = moment();",
+                  "        pm.expect(Math.abs(now.diff(serverTime, 'seconds'))).to.be.below(60);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{admintoken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "source",
+                  "type": "file",
+                  "src": "addpoints.csv"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/addpoints",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "addpoints"
+              ]
+            },
+            "description": "Import points from CSV (multipart/form-data). Select a CSV file for 'source'. Requires auth/admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Add points [400-No file provided]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 400) {",
+                  "    var data = pm.response.json();",
+                  "",
+                  "    // Verify Error Response Structure",
+                  "    const schema = JSON.parse(pm.collectionVariables.get(\"GlobalErrorSchema\"));",
+                  "    console.log(schema); // Debugging line to print the schema in the console",
+                  "    pm.test(\"Response matches standard Error Schema\", function () {",
+                  "        pm.expect(pm.response.json()).to.have.jsonSchema(schema);",
+                  "    });",
+                  "    ",
+                  "    // Check 'return_code' matches HTTP status",
+                  "    pm.test(\"return_code is 400\", function () {",
+                  "        pm.expect(data.return_code).to.equal(400);",
+                  "    });",
+                  "",
+                  "    // Check 'call' field matches the endpoint",
+                  "    pm.test(\"Call field matches endpoint\", function () {",
+                  "        pm.expect(data.call).to.include(\"/api/admin/addpoints\");",
+                  "    });",
+                  "",
+                  "    // Check the exact error message",
+                  "    pm.test(\"Error message explains missing file\", function () {",
+                  "        pm.expect(data.error).to.include(\"No file uploaded\");",
+                  "        pm.expect(data.error).to.include(\"Expected multipart/form-data\");",
+                  "    });",
+                  "",
+                  "    pm.test(\"Debuf info contains expected information\", function () {",
+                  "        pm.expect(data.debuginfo).to.include(\"provide a CSV file\");    ",
+                  "    });",
+                  "",
+                  "    // Check Timestamp Format (ISO 8601)",
+                  "    pm.test(\"Timeref is valid ISO 8601 date\", function () {",
+                  "        // Matches \"2026-01-29T16:43:31.363Z\"",
+                  "        pm.expect(data.timeref).to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$/);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{admintoken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "source",
+                  "type": "file",
+                  "value": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/addpoints",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "addpoints"
+              ]
+            },
+            "description": "Import points from CSV (multipart/form-data). Select a CSV file for 'source'. Requires auth/admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Add points [400-Wrong file type provided]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 400) {",
+                  "    var data = pm.response.json();",
+                  "",
+                  "    // Verify Error Response Structure",
+                  "    const schema = JSON.parse(pm.collectionVariables.get(\"GlobalErrorSchema\"));",
+                  "    console.log(schema); // Debugging line to print the schema in the console",
+                  "    pm.test(\"Response matches standard Error Schema\", function () {",
+                  "        pm.expect(pm.response.json()).to.have.jsonSchema(schema);",
+                  "    });",
+                  "",
+                  "        // Check 'return_code' matches HTTP status",
+                  "    pm.test(\"return_code is 400\", function () {",
+                  "        pm.expect(data.return_code).to.equal(400);",
+                  "    });",
+                  "",
+                  "    // Check 'call' field matches the endpoint",
+                  "    pm.test(\"Call field matches endpoint\", function () {",
+                  "        pm.expect(data.call).to.include(\"/api/admin/addpoints\");",
+                  "    });",
+                  "    ",
+                  "    // Check main error message",
+                  "    pm.test(\"Error indicates CSV parsing failure\", function () {",
+                  "        pm.expect(data.error).to.include(\"Failed to parse CSV file\");",
+                  "    });",
+                  "",
+                  "    // Check Timestamp Format (ISO 8601)",
+                  "    pm.test(\"Timeref is valid ISO 8601 date\", function () {",
+                  "        // Matches \"2026-01-29T16:43:31.363Z\"",
+                  "        pm.expect(data.timeref).to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$/);",
+                  "    });",
+                  "",
+                  "    // Check debug info exists (it explains WHY it failed)",
+                  "    pm.test(\"Debug info provided for parsing error\", function () {",
+                  "        pm.expect(data.debuginfo).to.be.a(\"string\");",
+                  "        // This confirms the backend actually tried to read the file and choked on the format",
+                  "        pm.expect(data.debuginfo).to.not.be.empty; ",
+                  "    });",
+                  "",
+                  "    // STRUCTURE VALIDATION",
+                  "    pm.test(\"Response structure is valid\", function () {",
+                  "        pm.expect(data.return_code).to.equal(400);",
+                  "        pm.expect(data.call).to.include(\"/api/admin/addpoints\");",
+                  "        pm.expect(data.timeref).to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$/);",
+                  "    });",
+                  "    ",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{admintoken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "source",
+                  "type": "file",
+                  "src": "addpointswrongtestfile.docx"    
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/addpoints",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "addpoints"
+              ]
+            },
+            "description": "Import points from CSV (multipart/form-data). Select a CSV file for 'source'. Requires auth/admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Add points [400-Missing Columns]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "",
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 400) {",
+                  "    var data = pm.response.json();",
+                  "    var fullErrorText = (data.error + \" \" + data.debuginfo).toLowerCase();",
+                  "",
+                  "    pm.test(\"Error indicates missing required columns\", function () {",
+                  "        // Matches logic: \"Missing required columns: pointid...\"",
+                  "        pm.expect(fullErrorText).to.include(\"missing required columns\");",
+                  "    });",
+                  "    pm.test(\"Error mentions the specific format requirement\", function () {",
+                  "        pm.expect(fullErrorText).to.include(\"format must strictly match\");",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{admintoken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "source",
+                  "type": "file",
+                  "src": "addpointsmissingcolumns.csv"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/addpoints",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "addpoints"
+              ]
+            },
+            "description": "Import points from CSV (multipart/form-data). Select a CSV file for 'source'. Requires auth/admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Add points [400-Missing PointID]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "",
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 400) {",
+                  "    var data = pm.response.json();",
+                  "    var fullErrorText = (data.error + \" \" + data.debuginfo).toLowerCase();",
+                  "",
+                  "    // Verify Error Response Structure",
+                  "    const schema = JSON.parse(pm.collectionVariables.get(\"GlobalErrorSchema\"));",
+                  "    console.log(schema); // Debugging line to print the schema in the console",
+                  "    pm.test(\"Response matches standard Error Schema\", function () {",
+                  "        pm.expect(pm.response.json()).to.have.jsonSchema(schema);",
+                  "    });",
+                  "",
+                  "    pm.test(\"Error indicates missing 'pointid' in a row\", function () {",
+                  "        // Matches logic: \"Row ... is missing 'pointid'\"",
+                  "        pm.expect(fullErrorText).to.include(\"missing 'pointid'\");",
+                  "    });",
+                  "    pm.test(\"Error specifies validation failure\", function () {",
+                  "        pm.expect(fullErrorText).to.include(\"validation error\");",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{admintoken}}"
+              },
+              {
+                "key": "source",
+                "value": "{{currentFileName}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "source",
+                  "type": "file",
+                  "src": "addpointsmissingpointid.csv"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/addpoints",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "addpoints"
+              ]
+            },
+            "description": "Import points from CSV (multipart/form-data). Select a CSV file for 'source'. Requires auth/admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Add points [400-Wrong Lat]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "",
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 400) {",
+                  "    var data = pm.response.json();",
+                  "    var fullErrorText = (data.error + \" \" + data.debuginfo).toLowerCase();",
+                  "",
+                  "    // Verify Error Response Structure",
+                  "    const schema = JSON.parse(pm.collectionVariables.get(\"GlobalErrorSchema\"));",
+                  "    console.log(schema); // Debugging line to print the schema in the console",
+                  "    pm.test(\"Response matches standard Error Schema\", function () {",
+                  "        pm.expect(pm.response.json()).to.have.jsonSchema(schema);",
+                  "    });",
+                  "",
+                  "    pm.test(\"Error indicates coordinates out of bounds\", function () {",
+                  "        // Matches logic: \"coordinates out of bounds\" or \"Lat out of bounds\"",
+                  "        pm.expect(fullErrorText).to.include(\"coordinates out of bounds\");",
+                  "    });",
+                  "",
+                  "    pm.test(\"Debug info contains the invalid value\", function () {",
+                  "        // This ensures the error actually mentions the bad number (e.g. 91 or 100)",
+                  "        // Adjust this if your error message format is slightly different",
+                  "        pm.expect(fullErrorText).to.match(/lat|lon|bounds/); ",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{admintoken}}"
+              },
+              {
+                "key": "source",
+                "value": "{{currentFileName}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "source",
+                  "type": "file",
+                  "src": "addpointswronglat.csv"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/addpoints",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "addpoints"
+              ]
+            },
+            "description": "Import points from CSV (multipart/form-data). Select a CSV file for 'source'. Requires auth/admin."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Points",
+      "item": [
+        {
+          "name": "points [200/204-JSON-CSV]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "eval(pm.collectionVariables.get(\"sharedUtils\"));\r",
+                  "\r",
+                  "// TEST JSON RESPONSE\r",
+                  "\r",
+                  "pm.test(\"JSON Response : Status is 200 or 204\", () => { \r",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]); \r",
+                  "});\r",
+                  "\r",
+                  "var jsonCounts = {};\r",
+                  "var jsonData = [];\r",
+                  "\r",
+                  "if (pm.response.code === 200) {\r",
+                  "    jsonData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.test(\"JSON Body: Structure is Valid Array\", function () {\r",
+                  "        pm.expect(jsonData).to.be.an(\"array\");\r",
+                  "        pm.expect(jsonData.length).to.be.above(0);\r",
+                  "    });\r",
+                  "    \r",
+                  "    pm.test(\"JSON Body: All points valid\", function () {\r",
+                  "        jsonData.forEach(p => validatePoint(p, false)); // false = NOT CSV\r",
+                  "    });\r",
+                  "\r",
+                  "    jsonCounts = calculateCounts(jsonData);\r",
+                  "    \r",
+                  "    // Fetch first point id for later use in other tests\r",
+                  "    var FirstNonReservedPointId = jsonData.filter((point) => point.status != \"reserved\");\r",
+                  "    console.log(FirstNonReservedPointId[0].pointid);\r",
+                  "    pm.collectionVariables.set(\"FirstNonReservedPointId\", FirstNonReservedPointId[0].pointid); // Store for later use in other tests\r",
+                  "\r",
+                  "} else {\r",
+                  "    // 204 case\r",
+                  "    jsonCounts = calculateCounts([]); \r",
+                  "}\r",
+                  "\r",
+                  "// FETCH CSV & TEST IT (Background)\r",
+                  "\r",
+                  "// Convert current URL to CSV format\r",
+                  "var csvUrl = pm.request.url.toString();\r",
+                  "if (csvUrl.includes(\"format=json\")) {\r",
+                  "    csvUrl = csvUrl.replace(\"format=json\", \"format=csv\");\r",
+                  "} else if (csvUrl.includes(\"?\")) {\r",
+                  "    csvUrl += \"&format=csv\";\r",
+                  "} else {\r",
+                  "    csvUrl += \"?format=csv\";\r",
+                  "}\r",
+                  "\r",
+                  "console.log(\"Checking CSV Consistency at: \" + csvUrl);\r",
+                  "\r",
+                  "pm.sendRequest({\r",
+                  "    url: csvUrl,\r",
+                  "    method: 'GET',\r",
+                  "    header: pm.request.headers\r",
+                  "}, function (err, res) {\r",
+                  "    \r",
+                  "    pm.test(\"CSV Response: Status matches JSON\", function() {\r",
+                  "        pm.expect(err).to.be.null;\r",
+                  "        pm.expect(res.code).to.equal(pm.response.code);\r",
+                  "    });\r",
+                  "\r",
+                  "    var csvCounts = {};\r",
+                  "\r",
+                  "    if (res.code === 200) {\r",
+                  "        var csvData = parseCSV(res.text());\r",
+                  "\r",
+                  "        pm.test(\"CSV Body: Structure is Valid Array\", function() {\r",
+                  "            pm.expect(csvData).to.be.an(\"array\");\r",
+                  "            pm.expect(csvData.length).to.equal(jsonData.length); \r",
+                  "        });\r",
+                  "\r",
+                  "        pm.test(\"CSV Body: All points valid\", function() {\r",
+                  "            csvData.forEach(p => validatePoint(p, isCsv=true)); \r",
+                  "        });\r",
+                  "\r",
+                  "        csvCounts = calculateCounts(csvData);\r",
+                  "        \r",
+                  "    } else {\r",
+                  "        csvCounts = calculateCounts([]);\r",
+                  "    }\r",
+                  "\r",
+                  "    // FINAL CONSISTENCY CHECK & SAVE\r",
+                  "\r",
+                  "    pm.test(\"Consistency Check: JSON vs CSV Counts\", function () {\r",
+                  "        pm.expect(jsonCounts).to.eql(csvCounts);\r",
+                  "    });\r",
+                  "\r",
+                  "    // Save variables only if everything passed\r",
+                  "    for (var status in jsonCounts) {\r",
+                  "        var varName = \"count_\" + status;\r",
+                  "        pm.collectionVariables.set(varName, jsonCounts[status]);\r",
+                  "    }\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set(\"currentFormat\", \"json\"); \r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "format",
+                "value": "{{currentFormat}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/points?format={{currentFormat}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "points"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "format",
+                  "value": "{{currentFormat}}"
+                }
+              ]
+            },
+            "description": "Get list of points. Optional query param 'status'."
+          },
+          "response": []
+        },
+        {
+          "name": "points [200/204-JSON/CSV SPECIFIC Format]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "eval(pm.collectionVariables.get(\"sharedUtils\"));\r",
+                  "var currentStatus = pm.collectionVariables.get(\"currentFilter\");\r",
+                  "var expectedCount = Number(pm.collectionVariables.get(\"expectedCountForLoop\"));\r",
+                  "\r",
+                  "console.log(`Testing Status: ${currentStatus} | Stored Expectation: ${expectedCount}`);\r",
+                  "\r",
+                  "// TEST JSON RESPONSE \r",
+                  "\r",
+                  "pm.test(`Status '${currentStatus}': Returns 200 or 204`, () => {\r",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);\r",
+                  "});\r",
+                  "\r",
+                  "var jsonCount = 0;\r",
+                  "var jsonData = [];\r",
+                  "\r",
+                  "if (pm.response.code === 200) {\r",
+                  "    jsonData = pm.response.json();\r",
+                  "    jsonCount = jsonData.length;\r",
+                  "\r",
+                  "    pm.test(\"JSON: Structure Valid\", () => {\r",
+                  "        pm.expect(jsonData).to.be.an(\"array\");\r",
+                  "    });\r",
+                  "    // Validate every point using the helper\r",
+                  "    pm.test(\"JSON: All points valid\", () => {\r",
+                  "        jsonData.forEach(p => validatePoint(p, false));\r",
+                  "    });\r",
+                  "\r",
+                  "} else {\r",
+                  "    // If 204, count is 0\r",
+                  "    jsonCount = 0;\r",
+                  "}\r",
+                  "\r",
+                  "// JSON vs STORED VARIABLE\r",
+                  "pm.test(`JSON Count matches stored variable (${expectedCount})`, function () {\r",
+                  "    pm.expect(jsonCount).to.equal(expectedCount);\r",
+                  "});\r",
+                  "\r",
+                  "\r",
+                  "// FETCH CSV & COMPARE\r",
+                  "// Construct CSV URL\r",
+                  "var csvUrl = pm.request.url.toString();\r",
+                  "if (csvUrl.includes(\"format=json\")) {\r",
+                  "    csvUrl = csvUrl.replace(\"format=json\", \"format=csv\");\r",
+                  "} else if (csvUrl.includes(\"?\")) {\r",
+                  "    csvUrl += \"&format=csv\";\r",
+                  "} else {\r",
+                  "    csvUrl += \"?format=csv\";\r",
+                  "}\r",
+                  "\r",
+                  "pm.sendRequest({\r",
+                  "    url: csvUrl,\r",
+                  "    method: 'GET',\r",
+                  "    header: pm.request.headers\r",
+                  "}, function (err, res) {\r",
+                  "\r",
+                  "    pm.test(\"CSV: Status matches JSON\", () => {\r",
+                  "        pm.expect(err).to.be.null;\r",
+                  "        pm.expect(res.code).to.equal(pm.response.code);\r",
+                  "    });\r",
+                  "\r",
+                  "    var csvCount = 0;\r",
+                  "    var csvData = [];\r",
+                  "\r",
+                  "    if (res.code === 200) {\r",
+                  "        csvData = parseCSV(res.text());\r",
+                  "        csvCount = csvData.length;\r",
+                  "\r",
+                  "        // Validate CSV points strictly\r",
+                  "        pm.test(\"CSV: All points valid\", () => {\r",
+                  "            csvData.forEach(p => validatePoint(p, true));\r",
+                  "        });\r",
+                  "    }\r",
+                  "\r",
+                  "    // CSV vs JSON (Consistency)\r",
+                  "    pm.test(\"Consistency: CSV Count matches JSON Count\", function () {\r",
+                  "        pm.expect(csvCount).to.equal(jsonCount);\r",
+                  "    });\r",
+                  "\r",
+                  "    // LOOP CONTROL (Move to next status)\r",
+                  "    var statusesToTest = [\"available\", \"charging\", \"reserved\", \"malfunction\", \"offline\"];\r",
+                  "    var currentIndex = Number(pm.collectionVariables.get(\"loopIndex\")) || 0;\r",
+                  "    currentIndex++; // Move to next\r",
+                  "    if (currentIndex < statusesToTest.length) {\r",
+                  "        // Continue Looping\r",
+                  "        pm.collectionVariables.set(\"loopIndex\", currentIndex);\r",
+                  "        postman.setNextRequest(pm.info.requestName); // Call SELF again\r",
+                  "        console.log(\"Looping to next status...\");\r",
+                  "    } else {\r",
+                  "        // Stop Looping & Clean Up\r",
+                  "        pm.collectionVariables.set(\"loopIndex\", 0);\r",
+                  "        pm.collectionVariables.set(\"currentFilter\", \"\");\r",
+                  "        console.log(\"All 5 statuses tested. Done.\");\r",
+                  "    }\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Define the statuses wee are about to test\r",
+                  "// (Make sure these match API values exactly)\r",
+                  "var statusesToTest = [\"available\", \"charging\", \"reserved\", \"malfunction\", \"offline\"];\r",
+                  "\r",
+                  "// Get the current index (starts at 0 if missing)\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"loopIndex\")) || 0;\r",
+                  "// Pick the status for THIS specific run\r",
+                  "var currentStatus = statusesToTest[currentIndex];\r",
+                  "// Retrieve the counter we computed in the previous request\r",
+                  "var countVarName = \"count_\" + currentStatus;\r",
+                  "var expectedCount = Number(pm.collectionVariables.get(countVarName)) || 0;\r",
+                  "// Save these so the Test Script and URL can use them\r",
+                  "pm.collectionVariables.set(\"currentFilter\", currentStatus);\r",
+                  "pm.collectionVariables.set(\"currentFormat\", \"json\"); \r",
+                  "pm.collectionVariables.set(\"expectedCountForLoop\", expectedCount);\r",
+                  "\r",
+                  "// Logs for debugging\r",
+                  "console.log(`Loop ${currentIndex + 1}/5: Testing '${currentStatus}'. Expecting ${expectedCount} items.`);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/points?status={{currentFilter}}&format={{currentFormat}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "points"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "{{currentFilter}}"
+                },
+                {
+                  "key": "format",
+                  "value": "{{currentFormat}}"
+                }
+              ]
+            },
+            "description": "Get list of points. Optional query param 'status'."
+          },
+          "response": []
+        },
+        {
+          "name": "points [400-Invalid Status/Format]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var currentIndex = Number(pm.collectionVariables.get(\"errorLoopIndex\")) || 0;\r",
+                  "var testTitle = pm.collectionVariables.get(\"currentErrorDescription\");\r",
+                  "var currentFilter = pm.collectionVariables.get(\"currentFilter\");\r",
+                  "var currentFormat = pm.collectionVariables.get(\"currentFormat\");\r",
+                  "var loopIndex = Number(pm.collectionVariables.get(\"errorLoopIndex\")) || 0;\r",
+                  "\r",
+                  "\r",
+                  "pm.test(`${testTitle} - Returns 400`, function () {\r",
+                  "    pm.expect(pm.response.code).to.equal(400);\r",
+                  "})\r",
+                  "\r",
+                  "pm.test(`${testTitle} - Error Body is Valid`, function () {\r",
+                  "    var json = pm.response.json();\r",
+                  "\r",
+                  "    // Check 'return_code' inside BODY matches HTTP code\r",
+                  "    pm.expect(json.return_code).to.equal(400);\r",
+                  "    // Check 'timeref' format (YYYY-MM-DD HH:MM) (Regex logic: 4 digits - 2 digits - 2 digits (space) 2 digits : 2 digits)\r",
+                  "    pm.expect(json.timeref).to.match(/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$/);\r",
+                  "    // Check 'originator' (e.g., \"::1\" or IP address)\r",
+                  "    pm.expect(json.originator).to.be.a('string');\r",
+                  "    pm.expect(json.originator).to.not.be.empty;\r",
+                  "    // Check 'call' (Should contain the URL with the right endpoint path)\r",
+                  "    pm.expect(json.call).to.be.a('string');\r",
+                  "    pm.expect(json.call).to.include(\"/api/points\");\r",
+                  "    // Check 'debuginfo' exists (even if generic)\r",
+                  "    pm.expect(json.debuginfo).to.be.a('string');\r",
+                  "    // Check error message (dynamicly)\r",
+                  "    var badInput = \"\";\r",
+                  "    if (loopIndex === 0) {\r",
+                  "        // We are testing Bad Status\r",
+                  "        badInput = currentFilter; \r",
+                  "    } else {\r",
+                  "        // We are testing Bad Format\r",
+                  "        badInput = currentFormat;\r",
+                  "    }\r",
+                  "    pm.expect(json.error).to.be.a('string');\r",
+                  "    var errorMsgLower = json.error.toLowerCase();\r",
+                  "    var badInputLower = badInput.toLowerCase();\r",
+                  "    pm.expect(errorMsgLower).to.include(badInputLower, \"Error message should mention the invalid input (case-insensitive)\");\r",
+                  "});\r",
+                  "\r",
+                  "// Increment index\r",
+                  "currentIndex++;\r",
+                  "\r",
+                  "if (currentIndex < 2) {\r",
+                  "    // CONTINUE LOOPING\r",
+                  "    pm.collectionVariables.set(\"errorLoopIndex\", currentIndex);\r",
+                  "    postman.setNextRequest(pm.info.requestName); \r",
+                  "    console.log(\"Looping to next error scenario...\");\r",
+                  "\r",
+                  "} else {\r",
+                  "    // STOP & RESET\r",
+                  "    pm.collectionVariables.set(\"errorLoopIndex\", 0);\r",
+                  "    pm.collectionVariables.set(\"currentFilter\", \"\"); \r",
+                  "    pm.collectionVariables.set(\"currentFormat\", \"json\"); // Reset to safe default\r",
+                  "    \r",
+                  "    console.log(\"Both error tests passed. Loop finished.\");\r",
+                  "    // postman.setNextRequest(null); \r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Testing the following 2 scenarios: \r",
+                  "// Scenario 0: Invalid Status (Format is valid)\r",
+                  "// Scenario 1: Invalid Format (Status is valid)\r",
+                  "var errorScenarios = [\r",
+                  "    { \r",
+                  "        filter: \"randomStatus123\", \r",
+                  "        format: \"json\", \r",
+                  "        description: \"POINTS' SCENARIO 1: Invalid Status\" \r",
+                  "    },\r",
+                  "    { \r",
+                  "        filter: \"available\",      // Use a known valid status...\r",
+                  "        format: \"randomFormat123\", // ...but a bad format\r",
+                  "        description: \"POINTS' SCENARIO 2: Invalid Format\" \r",
+                  "    }\r",
+                  "];\r",
+                  "\r",
+                  "// current index (0 or 1) / Pick the scenario\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"errorLoopIndex\")) || 0;\r",
+                  "var currentTest = errorScenarios[currentIndex];\r",
+                  "// Save the description to a variable for dynamic titles\r",
+                  "pm.collectionVariables.set(\"currentErrorDescription\", currentTest.description);\r",
+                  "// Set variables for the URL\r",
+                  "pm.collectionVariables.set(\"currentFilter\", currentTest.filter);\r",
+                  "pm.collectionVariables.set(\"currentFormat\", currentTest.format);\r",
+                  "\r",
+                  "// Logs for debugging\r",
+                  "console.log(`[Error Loop ${currentIndex + 1}/2] ${currentTest.description}`);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/points?status={{currentFilter}}&format={{currentFormat}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "points"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "{{currentFilter}}"
+                },
+                {
+                  "key": "format",
+                  "value": "{{currentFormat}}"
+                }
+              ]
+            },
+            "description": "Get list of points. Optional query param 'status'."
+          },
+          "response": []
+        },
+        {
+          "name": "point [200-Non Reserved Point]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const moment = require('moment');\r",
+                  "\r",
+                  "eval(pm.collectionVariables.get(\"sharedUtils\"));\r",
+                  "var requestedId = Number(pm.collectionVariables.get(\"FirstNonReservedPointId\"));\r",
+                  "\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.expect(pm.response.code).to.equal(200);\r",
+                  "});\r",
+                  "\r",
+                  "if (pm.response.code === 200) {\r",
+                  "    var data = pm.response.json();\r",
+                  "\r",
+                  "    // Data Integrity\r",
+                  "    pm.test(\"Returned PointID matches requested ID\", function () {\r",
+                  "        pm.expect(data.pointid).to.equal(Number(requestedId));\r",
+                  "    });\r",
+                  "    // Structure Validation\r",
+                  "    pm.test(\"Point structure is valid\", function () {\r",
+                  "        validatePoint(data, isCsv=false, isproviderName=false);\r",
+                  "    });\r",
+                  "    // Reservation Timestamp Logic\r",
+                  "    pm.test(\"Reservation Field exists\", function () {\r",
+                  "        pm.expect(data).to.have.property(\"reservationendtime\");\r",
+                  "    });\r",
+                  "    // Valid Date Format \"YYYY-MM-DD HH:MM\"\r",
+                  "    var dateFormatRegex = /^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$/;\r",
+                  "\r",
+                  "    pm.test(\"Valid Date Format (YYYY-MM-DD HH:MM)\", function () {\r",
+                  "        pm.expect(data.reservationendtime).to.match(dateFormatRegex);\r",
+                  "    });\r",
+                  "\r",
+                  "    // For non-reserved points check if the returned time is close to the current time\r",
+                  "    if (data.status !== \"reserved\") {\r",
+                  "        pm.test(\"For non-reserved points, the returned time is close to the current time\", function () {\r",
+                  "            var serverTime = moment(data.reservationendtime);\r",
+                  "            var now = moment();\r",
+                  "            \r",
+                  "            var diffMinutes = Math.abs(now.diff(serverTime, 'minutes'));\r",
+                  "            \r",
+                  "            // We allow a small margin of error (1 minute) for the time difference\r",
+                  "            pm.expect(diffMinutes).to.be.below(1, \"The returned time is not close to the current time\");\r",
+                  "        });\r",
+                  "        \r",
+                  "    } else {\r",
+                  "        // For reserved points check if the returned time is in the future\r",
+                  "        pm.test(\"Valid Reservation Timestamp\", function () {\r",
+                  "             var expiryTime = moment(data.reservationendtime, \"YYYY-MM-DD HH:MM\");\r",
+                  "             pm.expect(expiryTime.isValid()).to.be.true;\r",
+                  "        });\r",
+                  "    }\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/point/{{FirstNonReservedPointId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "point",
+                "{{FirstNonReservedPointId}}"
+              ]
+            },
+            "description": "Get point details by id."
+          },
+          "response": []
+        },
+        {
+          "name": "point [204-Empty Result]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content\", function () {\r",
+                  "    pm.expect(pm.response.code).to.equal(204);\r",
+                  "});\r",
+                  "\r",
+                  "// EMPTY BODY CHECK \r",
+                  "pm.test(\"Response body is strictly empty\", function () {\r",
+                  "    pm.expect(pm.response.text()).to.equal(\"\");\r",
+                  "    pm.expect(pm.response.text()).to.be.empty;\r",
+                  "});\r",
+                  "\r",
+                  "// TEST 3: HEADER CHECKS (Best Practice)\r",
+                  "pm.test(\"Content-Length is 0 (if present)\", function () {\r",
+                  "    // If the server sends a Content-Length header, it MUST be 0\r",
+                  "    if (pm.response.headers.has(\"Content-Length\")) {\r",
+                  "        var contentLength = Number(pm.response.headers.get(\"Content-Length\"));\r",
+                  "        pm.expect(contentLength).to.equal(0);\r",
+                  "    }\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Content-Type is not present\", function () {\r",
+                  "    // A 204 response usually shouldn't say \"application/json\" because there is no JSON.\r",
+                  "    // It's good practice to ensure the server isn't confusing the client.\r",
+                  "    pm.expect(pm.response.headers.has(\"Content-Type\")).to.be.false;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/point/{{badPointId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "point",
+                "{{badPointId}}"
+              ]
+            },
+            "description": "Get point details by id."
+          },
+          "response": []
+        },
+        {
+          "name": "Update point [200-OK]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is the documented 200 code\", () => { ",
+                  "    pm.expect([200]).to.include(pm.response.code); ",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "  const j = pm.response.json();",
+                  "  pm.test(\"Has pointid/status/kwhprice\", () => {",
+                  "    pm.expect(j).to.have.property(\"pointid\");",
+                  "    pm.expect(j).to.have.property(\"status\");",
+                  "    pm.expect(j).to.have.property(\"kwhprice\");",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"available\",\n  \"kwhprice\": 0.25\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/updpoint/{{FirstNonReservedPointId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "updpoint",
+                "{{FirstNonReservedPointId}}"
+              ]
+            },
+            "description": "Update a point. Allowed fields in body: status, kwhprice. Requires auth header X-OBSERVATORY-AUTH."
+          },
+          "response": []
+        },
+        {
+          "name": "Update point [400-Wrong Data]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Get expected values from Pre-request",
+                  "var expectedError = pm.collectionVariables.get(\"currentExpectedError\");",
+                  "var testDescription = pm.collectionVariables.get(\"currentTestDesc\");",
+                  "",
+                  "pm.test(`[${testDescription}] Status is 400`, function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 400) {",
+                  "    // Verify Error Response Structure",
+                  "    const schema = JSON.parse(pm.collectionVariables.get(\"GlobalErrorSchema\"));",
+                  "    console.log(schema); // Debugging line to print the schema in the console",
+                  "    pm.test(`[${testDescription}] Response matches standard Error Schema`, function () {",
+                  "        pm.expect(pm.response.json()).to.have.jsonSchema(schema);",
+                  "    });",
+                  "    var data = pm.response.json();",
+                  "    var fullErrorText = (data.error + \" \" + data.debuginfo).toLowerCase();",
+                  "",
+                  "    // Check if error message contains expected error text.",
+                  "    pm.test(`[${testDescription}] Error message contains: '${expectedError}'`, function () {",
+                  "        pm.expect(fullErrorText).to.include(expectedError.toLowerCase());",
+                  "    });",
+                  "",
+                  "    // LOOP LOGIC ",
+                  "    var currentIndex = Number(pm.collectionVariables.get(\"updLoopIndex\")) || 0;",
+                  "    currentIndex++; // Move to next scenario",
+                  "",
+                  "    if (currentIndex < 3) {",
+                  "        // Continue Loop: Set index and call this request again",
+                  "        pm.collectionVariables.set(\"updLoopIndex\", currentIndex);",
+                  "        postman.setNextRequest(pm.info.requestName);",
+                  "    } else {",
+                  "        // Stop Loop: Reset index for next time",
+                  "        pm.collectionVariables.set(\"updLoopIndex\", 0);",
+                  "        console.log(\"All 3 Update Scenarios Completed.\");",
+                  "        // postman.setNextRequest(null);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// 1. Define the 3 Scenarios\r",
+                  "var scenarios = [\r",
+                  "    {\r",
+                  "        // Scenario 1: Empty Body\r",
+                  "        // We use a \"valid\" ID (1) to ensure the error is about the Body, not the ID.\r",
+                  "        testId: pm.collectionVariables.get(\"FirstNonReservedPointId\"),\r",
+                  "        bodyPayload: {},\r",
+                  "        description: \"Empty Body\",\r",
+                  "        expectedError: \"Empty body\"\r",
+                  "    },\r",
+                  "    {\r",
+                  "        // Scenario 2: Invalid kwhprice\r",
+                  "        // We use a \"valid\" ID (1) so the validation fails on the price.\r",
+                  "        testId: pm.collectionVariables.get(\"FirstNonReservedPointId\"),\r",
+                  "        bodyPayload: { \"kwhprice\": -5, \"status\": \"available\" },\r",
+                  "        description: \"Invalid kwhprice\",\r",
+                  "        expectedError: \"Invalid kwhprice\"\r",
+                  "    },\r",
+                  "    {\r",
+                  "        // Scenario 3: Point Not Found\r",
+                  "        // We use a \"Non-existent\" ID (999999) and a VALID body.\r",
+                  "        testId: pm.collectionVariables.get(\"badPointId\"),\r",
+                  "        bodyPayload: { \"kwhprice\": 0.5, \"status\": \"available\" },\r",
+                  "        description: \"Point Not Found\",\r",
+                  "        expectedError: \"not found\"\r",
+                  "    }\r",
+                  "];\r",
+                  "\r",
+                  "// 2. Get Current Loop Index (starts at 0)\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"updLoopIndex\")) || 0;\r",
+                  "var currentScenario = scenarios[currentIndex];\r",
+                  "\r",
+                  "// 3. Set Variables for the Request\r",
+                  "// These populate {{badPointId}} in the URL and {{dynamicRequestBody}} in the Body\r",
+                  "pm.collectionVariables.set(\"PointId\", currentScenario.testId);\r",
+                  "pm.collectionVariables.set(\"dynamicRequestBody\", JSON.stringify(currentScenario.bodyPayload));\r",
+                  "\r",
+                  "// 4. Set Variables for the Test Verification\r",
+                  "pm.collectionVariables.set(\"currentExpectedError\", currentScenario.expectedError);\r",
+                  "pm.collectionVariables.set(\"currentTestDesc\", currentScenario.description);\r",
+                  "\r",
+                  "console.log(`[Update Test ${currentIndex + 1}/3] Running: ${currentScenario.description}`);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{dynamicRequestBody}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/updpoint/{{badPointId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "updpoint",
+                "{{badPointId}}"
+              ]
+            },
+            "description": "Update a point. Allowed fields in body: status, kwhprice. Requires auth header X-OBSERVATORY-AUTH."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reservations",
+      "item": [
+        {
+          "name": "Reserve point [200-Default Minutes]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response contains valid reservation details\", function () {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "\r",
+                  "    // Verify 'pointid' exists and is a number\r",
+                  "    pm.expect(jsonData).to.have.property(\"pointid\");\r",
+                  "    pm.expect(jsonData.pointid).to.be.a(\"number\");\r",
+                  "    // Verify that the requested ID matches the response ID\r",
+                  "    var requestedId = pm.environment.get(\"FirstNonReservedPointId\");\r",
+                  "    if (requestedId) {\r",
+                  "        pm.expect(jsonData.pointid).to.eql(Number(requestedId));\r",
+                  "    }\r",
+                  "\r",
+                  "    // Verify 'status' is strictly \"reserved\"\r",
+                  "    pm.expect(jsonData).to.have.property(\"status\");\r",
+                  "    pm.expect(jsonData.status).to.eql(\"reserved\");\r",
+                  "\r",
+                  "    // Verify 'reservationendtime' exists and is not null\r",
+                  "    pm.expect(jsonData).to.have.property(\"reservationendtime\");\r",
+                  "    pm.expect(jsonData.reservationendtime).to.not.be.null;\r",
+                  "\r",
+                  "    const moment = require('moment');\r",
+                  "    const addMinutes = Number(pm.collectionVariables.get(\"Defaultminutes\"));\r",
+                  "    const actualTime = moment(jsonData.reservationendtime);\r",
+                  "    const expectedTime = moment().add(addMinutes, 'minutes');\r",
+                  "    const diff = Math.abs(actualTime.diff(expectedTime, 'minutes', true));\r",
+                  "    console.log(`Actual: ${actualTime.format()}`);\r",
+                  "    console.log(`Expected: ${expectedTime.format()}`);\r",
+                  "\r",
+                  "    pm.expect(diff).to.be.below(2, `Time mismatch! Difference is ${diff.toFixed(2)} minutes.`);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reserve/{{FirstNonReservedPointId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reserve",
+                "{{FirstNonReservedPointId}}"
+              ]
+            },
+            "description": "Reserve a charging point for default duration (requires auth)."
+          },
+          "response": []
+        },
+        {
+          "name": "point [200-Reserved Point]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const moment = require('moment');\r",
+                  "\r",
+                  "eval(pm.collectionVariables.get(\"sharedUtils\"));\r",
+                  "var requestedId = Number(pm.collectionVariables.get(\"FirstNonReservedPointId\"));\r",
+                  "\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.expect(pm.response.code).to.equal(200);\r",
+                  "});\r",
+                  "\r",
+                  "if (pm.response.code === 200) {\r",
+                  "    var data = pm.response.json();\r",
+                  "\r",
+                  "    // Data Integrity\r",
+                  "    pm.test(\"Returned PointID matches requested ID\", function () {\r",
+                  "        pm.expect(data.pointid).to.equal(Number(requestedId));\r",
+                  "    });\r",
+                  "    // Structure Validation\r",
+                  "    pm.test(\"Point structure is valid\", function () {\r",
+                  "        validatePoint(data, isCsv=false, isproviderName=false);\r",
+                  "    });\r",
+                  "    // Reservation Timestamp Logic\r",
+                  "    pm.test(\"Reservationendtime field exists\", function () {\r",
+                  "        pm.expect(data).to.have.property(\"reservationendtime\");\r",
+                  "    });\r",
+                  "    // Valid Date Format \"YYYY-MM-DD HH:MM\"\r",
+                  "    var dateFormatRegex = /^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$/;\r",
+                  "\r",
+                  "    pm.test(\"Valid Date Format (YYYY-MM-DD HH:MM)\", function () {\r",
+                  "        pm.expect(data.reservationendtime).to.match(dateFormatRegex);\r",
+                  "    });\r",
+                  "\r",
+                  "    // For non-reserved points check if the returned time is close to the current time\r",
+                  "    if (data.status !== \"reserved\") {\r",
+                  "        pm.test(\"For non-reserved points, the returned time is close to the current time\", function () {\r",
+                  "            var serverTime = moment(data.reservationendtime);\r",
+                  "            var now = moment();\r",
+                  "            \r",
+                  "            var diffMinutes = Math.abs(now.diff(serverTime, 'minutes'));\r",
+                  "            \r",
+                  "            // We allow a small margin of error (1 minute) for the time difference\r",
+                  "            pm.expect(diffMinutes).to.be.below(1, \"The returned time is not close to the current time\");\r",
+                  "        });\r",
+                  "        \r",
+                  "    } else {\r",
+                  "        // For reserved points check if the returned time is in the future\r",
+                  "        pm.test(\"Valid Reservation Timestamp\", function () {\r",
+                  "             var Time = moment(data.reservationendtime);\r",
+                  "             pm.expect(Time.isValid()).to.be.true;\r",
+                  "        });\r",
+                  "    }\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/point/{{FirstNonReservedPointId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "point",
+                "{{FirstNonReservedPointId}}"
+              ]
+            },
+            "description": "Get point details by id."
+          },
+          "response": []
+        },
+        {
+          "name": "Update point [200-OK] (HELPER v1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is the documented 200 code\", () => { ",
+                  "    pm.expect([200]).to.include(pm.response.code); ",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "  const j = pm.response.json();",
+                  "  pm.test(\"Has pointid/status/kwhprice\", () => {",
+                  "    pm.expect(j).to.have.property(\"pointid\");",
+                  "    pm.expect(j).to.have.property(\"status\");",
+                  "    pm.expect(j).to.have.property(\"kwhprice\");",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"available\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/updpoint/{{FirstNonReservedPointId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "updpoint",
+                "{{FirstNonReservedPointId}}"
+              ]
+            },
+            "description": "Update a point. Allowed fields in body: status, kwhprice. Requires auth header X-OBSERVATORY-AUTH."
+          },
+          "response": []
+        },
+        {
+          "name": "Reserve point [200-Custom Minutes (Max 60)]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const moment = require('moment');\r",
+                  "\r",
+                  "// TEST THE RESERVATION \r",
+                  "var testTitle = pm.collectionVariables.get(\"currentTimeDescription\");\r",
+                  "\r",
+                  "pm.test(`${testTitle} - Returns 200`, function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(`${testTitle} - Valid Reservation Details`, function () {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "\r",
+                  "    // Verify 'pointid' exists and is a number\r",
+                  "    pm.expect(jsonData).to.have.property(\"pointid\");\r",
+                  "    pm.expect(jsonData.pointid).to.be.a(\"number\");\r",
+                  "    // Verify that the requested ID matches the response ID\r",
+                  "    var requestedId = pm.collectionVariables.get(\"FirstNonReservedPointId\");\r",
+                  "    if (requestedId) {\r",
+                  "        pm.expect(jsonData.pointid).to.eql(Number(requestedId));\r",
+                  "    }\r",
+                  "\r",
+                  "    // Verify 'status' is strictly \"reserved\"\r",
+                  "    pm.expect(jsonData).to.have.property(\"status\");\r",
+                  "    pm.expect(jsonData.status).to.eql(\"reserved\");\r",
+                  "\r",
+                  "    // Verify 'reservationendtime' exists and is not null\r",
+                  "    pm.expect(jsonData).to.have.property(\"reservationendtime\");\r",
+                  "    pm.expect(jsonData.reservationendtime).to.not.be.null;\r",
+                  "\r",
+                  "    const moment = require('moment');\r",
+                  "    const customMin = Number(pm.collectionVariables.get(\"CustomMinutes\"));\r",
+                  "    const maxMin = Number(pm.collectionVariables.get(\"MaxReservationMinutes\"));\r",
+                  "    // Cap the minutes (don't exceed the max)\r",
+                  "    const addMinutes = Math.min(customMin, maxMin);\r",
+                  "    const actualTime = moment(jsonData.reservationendtime);\r",
+                  "    const expectedTime = moment().add(addMinutes, 'minutes');\r",
+                  "    const diff = Math.abs(actualTime.diff(expectedTime, 'minutes', true));\r",
+                  "    console.log(`Actual: ${actualTime.format()}`);\r",
+                  "    console.log(`Expected: ${expectedTime.format()}`);\r",
+                  "\r",
+                  "    pm.expect(diff).to.be.below(2, `Time mismatch! Difference is ${diff.toFixed(2)} minutes.`);\r",
+                  "});\r",
+                  "\r",
+                  "// RESET THE POINT (Background Call)\r",
+                  "// We create the request object for the Reset\r",
+                  "const resetRequest = {\r",
+                  "    url: pm.collectionVariables.get(\"baseUrl\") + \"/updpoint/\" + pm.collectionVariables.get(\"FirstNonReservedPointId\"),\r",
+                  "    method: 'POST',\r",
+                  "    // 🚨 THIS WAS MISSING:\r",
+                  "    header: [\r",
+                  "        'Content-Type: application/json',\r",
+                  "        // 🚨 ADD THIS LINE:\r",
+                  "        'X-OBSERVATORY-AUTH: ' + pm.collectionVariables.get(\"token\")\r",
+                  "    ],\r",
+                  "    body: {\r",
+                  "        mode: 'raw',\r",
+                  "        raw: JSON.stringify({ \"status\": \"available\" })\r",
+                  "    }\r",
+                  "};\r",
+                  "\r",
+                  "// Send the request\r",
+                  "pm.sendRequest(resetRequest, (err, res) => {\r",
+                  "    if (err) {\r",
+                  "        console.error(\"Reset Request Failed (Network):\", err);\r",
+                  "    } else {\r",
+                  "        // Log the actual response from the server to see if it worked\r",
+                  "        console.log(`Reset Response Code: ${res.code}`); \r",
+                  "        console.log(`Reset Response Body: ${res.text()}`);\r",
+                  "        if (res.code !== 200) {\r",
+                  "             console.error(\"⚠️ Reset failed! Server returned error.\");\r",
+                  "        } else {\r",
+                  "             console.log(\"✅ Cleanup successful: Point reset to available.\");\r",
+                  "        }\r",
+                  "    }\r",
+                  "    \r",
+                  "    // We do this INSIDE the callback to ensure reset finishes before next loop\r",
+                  "    var currentIndex = Number(pm.collectionVariables.get(\"timeLoopIndex\")) || 0;\r",
+                  "    currentIndex++;\r",
+                  "\r",
+                  "    if (currentIndex < 3) {\r",
+                  "        pm.collectionVariables.set(\"timeLoopIndex\", currentIndex);\r",
+                  "        // Loop back to THIS same request\r",
+                  "        postman.setNextRequest(pm.info.requestName); \r",
+                  "    } else {\r",
+                  "        pm.collectionVariables.set(\"timeLoopIndex\", 0);\r",
+                  "        pm.collectionVariables.set(\"CustomMinutes\", 15);\r",
+                  "        // postman.setNextRequest(null); // Stop\r",
+                  "        console.log(\"All scenarios finished.\");\r",
+                  "    }\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Define the 3 scenarios\r",
+                  "var timeScenarios = [\r",
+                  "    { minutes: 15, description: \"SCENARIO 1: 15 Minutes\" },\r",
+                  "    { minutes: 45, description: \"SCENARIO 2: 45 Minutes\" },\r",
+                  "    { minutes: 75, description: \"SCENARIO 3: 75 Minutes\" }\r",
+                  "];\r",
+                  "\r",
+                  "// Get current index \r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"timeLoopIndex\")) || 0;\r",
+                  "// Pick the current test case\r",
+                  "var currentTest = timeScenarios[currentIndex];\r",
+                  "// Set the variable for the URL {{CustomMinutes}}\r",
+                  "pm.collectionVariables.set(\"CustomMinutes\", currentTest.minutes);\r",
+                  "// Save description for the Test titles\r",
+                  "pm.collectionVariables.set(\"currentTimeDescription\", currentTest.description);\r",
+                  "\r",
+                  "// Logs for debugging\r",
+                  "console.log(`[Time Loop ${currentIndex + 1}/3] ${currentTest.description}`);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reserve/{{FirstNonReservedPointId}}/{{CustomMinutes}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reserve",
+                "{{FirstNonReservedPointId}}",
+                "{{CustomMinutes}}"
+              ]
+            },
+            "description": "Reserve a charging point for specific duration minutes (1-60). Requires auth."
+          },
+          "response": []
+        },
+        {
+          "name": "Update point [200-OK] (HELPER v2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is the documented 200 code\", () => { ",
+                  "    pm.expect([200]).to.include(pm.response.code); ",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "  const j = pm.response.json();",
+                  "  pm.test(\"Has pointid/status/kwhprice\", () => {",
+                  "    pm.expect(j).to.have.property(\"pointid\");",
+                  "    pm.expect(j).to.have.property(\"status\");",
+                  "    pm.expect(j).to.have.property(\"kwhprice\");",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"offline\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/updpoint/{{FirstNonReservedPointId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "updpoint",
+                "{{FirstNonReservedPointId}}"
+              ]
+            },
+            "description": "Update a point. Allowed fields in body: status, kwhprice. Requires auth header X-OBSERVATORY-AUTH."
+          },
+          "response": []
+        },
+        {
+          "name": "Reserve point [200-Unavailable Point/Incomplete Reservation]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Verify that the reservation was REJECTED\r",
+                  "pm.test(\"Reservation was rejected (Status is not reserved, Time is 1970)\", function () {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "\r",
+                  "    // Verify Point ID matches\r",
+                  "    pm.expect(jsonData.pointid).to.eql(Number(pm.collectionVariables.get(\"FirstNonReservedPointId\")));\r",
+                  "\r",
+                  "    // Status should remain as it was\r",
+                  "    pm.expect(jsonData.status).to.not.eql(\"reserved\");\r",
+                  "    \r",
+                  "    // Reservation End Time must be the \"Zero\" date\r",
+                  "    pm.expect(jsonData).to.have.property(\"reservationendtime\");\r",
+                  "    pm.expect(jsonData.reservationendtime).to.eql(\"1970-01-01 00:00\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reserve/{{FirstNonReservedPointId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reserve",
+                "{{FirstNonReservedPointId}}"
+              ]
+            },
+            "description": "Reserve a charging point for specific duration minutes (1-60). Requires auth."
+          },
+          "response": []
+        },
+        {
+          "name": "Reserve point [400-PointId not found]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {\r",
+                  "    pm.response.to.have.status(400);\r",
+                  "});\r",
+                  "\r",
+                  "// Verify Error Response Structure\r",
+                  "const schema = JSON.parse(pm.collectionVariables.get(\"GlobalErrorSchema\"));\r",
+                  "console.log(schema); // Debugging line to print the schema in the console\r",
+                  "pm.test(\"Response matches standard Error Schema\", function () {\r",
+                  "    pm.expect(pm.response.json()).to.have.jsonSchema(schema);\r",
+                  "});\r",
+                  "\r",
+                  "// Verify Error Details are Correct\r",
+                  "pm.test(\"Error response contains valid 'Not Found' details\", function () {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "    var badId = pm.collectionVariables.get(\"badPointId\")\r",
+                  "\r",
+                  "\r",
+                  "    // Check 'return_code' matches HTTP status\r",
+                  "    pm.expect(jsonData.return_code).to.eql(400);\r",
+                  "\r",
+                  "    // Check the error message explicitly mentions the ID\r",
+                  "    pm.expect(jsonData.error).to.include(badId);\r",
+                  "    pm.expect(jsonData.error).to.include(\"not found\");\r",
+                  "\r",
+                  "    // Check specific debugging info\r",
+                  "    pm.expect(jsonData.debuginfo).to.eql(\"Check if pointid exists\");\r",
+                  "\r",
+                  "    // Check metadata fields exist\r",
+                  "    pm.expect(jsonData.call).to.include(\"/api/reserve\");\r",
+                  "    pm.expect(jsonData.timeref).to.match(/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$/); // Matches \"YYYY-MM-DD HH:MM\"\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reserve/{{badPointId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reserve",
+                "{{badPointId}}"
+              ]
+            },
+            "description": "Reserve a charging point for specific duration minutes (1-60). Requires auth."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Sessions",
+      "item": [
+        {
+          "name": "New session [200-ΟΚ]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Get current data for dynamic titles\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"sessionLoopIndex\")) || 0;\r",
+                  "// We need to re-parse the payload we saved in the Pre-request script to read the values\r",
+                  "var payload = JSON.parse(pm.collectionVariables.get(\"sessionPayload\"));\r",
+                  "\r",
+                  "// Dynamic Test Titles\r",
+                  "var titlePrefix = `[Run ${currentIndex + 1}/3]`;\r",
+                  "var details = `(€${payload.amount} / ${payload.totalkwh}kWh)`;\r",
+                  "\r",
+                  "// TEST: Status 200\r",
+                  "pm.test(`${titlePrefix} Status is 200 ${details}`, function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// TEST: Empty Body\r",
+                  "pm.test(`${titlePrefix} Body is Empty`, function () {\r",
+                  "    pm.expect(pm.response.text()).to.be.empty;\r",
+                  "});\r",
+                  "\r",
+                  "// Loop Logic\r",
+                  "currentIndex++;\r",
+                  "\r",
+                  "if (currentIndex < 3) {\r",
+                  "    pm.collectionVariables.set(\"sessionLoopIndex\", currentIndex);\r",
+                  "    postman.setNextRequest(pm.info.requestName); \r",
+                  "} else {\r",
+                  "    pm.collectionVariables.set(\"sessionLoopIndex\", 0);\r",
+                  "    pm.collectionVariables.set(\"sessionPayload\", \"\"); \r",
+                  "    // postman.setNextRequest(null); \r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const moment = require('moment');\r",
+                  "\r",
+                  "// Initialize Loop Index\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"sessionLoopIndex\")) || 0;\r",
+                  "\r",
+                  "// Generate Random Data\r",
+                  "//  Dates \r",
+                  "// Random start time within last 30 days\r",
+                  "var start = moment().subtract(Math.floor(Math.random() * 30), 'days');\r",
+                  "// End time is Start + random minutes (15 to 120)\r",
+                  "var end = moment(start).add(Math.floor(Math.random() * 105) + 15, 'minutes');\r",
+                  "\r",
+                  "//  SoC (10% to 90%) \r",
+                  "var startSoc = Math.floor(Math.random() * 80) + 10; \r",
+                  "// End SoC must be greater than Start (add 5-20%), max 100\r",
+                  "var endSoc = Math.min(startSoc + Math.floor(Math.random() * 15) + 5, 100);\r",
+                  "\r",
+                  "// Random kWh (5.0 to 50.0)\r",
+                  "var totalKwh = Number((Math.random() * 45 + 5).toFixed(2));\r",
+                  "// Random Price (0.20 to 0.50)\r",
+                  "var kwhPrice = Number((Math.random() * 0.30 + 0.20).toFixed(2));\r",
+                  "// Calculate Amount explicitly to ensure math is correct\r",
+                  "var amount = Number((totalKwh * kwhPrice).toFixed(3));\r",
+                  "\r",
+                  "// Construct the Payload Object\r",
+                  "var payload = {\r",
+                  "  \"pointid\": pm.collectionVariables.get(\"FirstNonReservedPointId\"), // Or use a dynamic one\r",
+                  "  \"starttime\": start.format(\"YYYY-MM-DDTHH:mm:ss\") + \"Z\",\r",
+                  "  \"endtime\": end.format(\"YYYY-MM-DDTHH:mm:ss\") + \"Z\",\r",
+                  "  \"startsoc\": startSoc,\r",
+                  "  \"endsoc\": endSoc,\r",
+                  "  \"totalkwh\": totalKwh,\r",
+                  "  \"kwhprice\": kwhPrice,\r",
+                  "  \"amount\": amount\r",
+                  "};\r",
+                  "\r",
+                  "// Save Payload for the Body and Debugging\r",
+                  "pm.collectionVariables.set(\"sessionPayload\", JSON.stringify(payload));\r",
+                  "\r",
+                  "console.log(`[Session Loop ${currentIndex + 1}/3] Generating:`, payload);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{sessionPayload}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/newsession",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "newsession"
+              ]
+            },
+            "description": "Record a new charging session (requires auth)."
+          },
+          "response": []
+        },
+        {
+          "name": "New session [400-Point not Found]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 400 (Point Not Found)\", function () {\r",
+                  "    pm.response.to.have.status(400);\r",
+                  "});\r",
+                  "\r",
+                  "// Schema Validation (Structure Check)\r",
+                  "const schema = JSON.parse(pm.collectionVariables.get(\"GlobalErrorSchema\"));\r",
+                  "\r",
+                  "pm.test(\"Response matches standard Error Schema\", function () {\r",
+                  "    pm.expect(pm.response.json()).to.have.jsonSchema(schema);\r",
+                  "});\r",
+                  "\r",
+                  "// Error Message Content (Logic) \r",
+                  "pm.test(\"Error message explicitly mentions the missing ID\", function () {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "    \r",
+                  "    // Get the ID we sent \r",
+                  "    var sentId = pm.variables.get(\"badPointId\");\r",
+                  "    // Expect error: \"Point with id 99999999 not found\"\r",
+                  "    pm.expect(jsonData.error).to.include(`Point with id ${sentId} not found`);\r",
+                  "    // Expect debuginfo: \"Invalid pointid\"\r",
+                  "    pm.expect(jsonData.debuginfo).to.eql(\"Invalid pointid\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"pointid\": {{badPointId}},\r\n  \"starttime\": \"2026-01-30T10:00:00Z\",\r\n  \"endtime\": \"2026-01-30T12:00:00Z\",\r\n  \"startsoc\": 50,\r\n  \"endsoc\": 80,\r\n  \"totalkwh\": 10.5,\r\n  \"kwhprice\": 0.50,\r\n  \"amount\": 5.25\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/newsession",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "newsession"
+              ]
+            },
+            "description": "Record a new charging session (requires auth)."
+          },
+          "response": []
+        },
+        {
+          "name": "New session [400-Invalid Data]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var testDescription = pm.collectionVariables.get(\"currentTestDesc\");\r",
+                  "var expectedSnippet = pm.collectionVariables.get(\"expectedErrorSnippet\");\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"badSessionLoopIndex\")) || 0;\r",
+                  "\r",
+                  "pm.test(`[${testDescription}] Status is 400 Bad Request`, function () {\r",
+                  "    pm.response.to.have.status(400);\r",
+                  "});\r",
+                  "\r",
+                  "// Schema Validation (Structure)\r",
+                  "const schema = JSON.parse(pm.collectionVariables.get(\"GlobalErrorSchema\"));\r",
+                  "\r",
+                  "pm.test(`[${testDescription}] Response matches standard Error Schema`, function () {\r",
+                  "    pm.expect(pm.response.json()).to.have.jsonSchema(schema);\r",
+                  "});\r",
+                  "\r",
+                  "// Error Message Content (Logic) \r",
+                  "pm.test(`[${testDescription}] Error message contains: \"${expectedSnippet}\"`, function () {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "    var combinedErrorText = (jsonData.error + \" \" + jsonData.debuginfo);\r",
+                  "    pm.expect(combinedErrorText).to.include(expectedSnippet);\r",
+                  "});\r",
+                  "\r",
+                  "//  LOOP CONTROL \r",
+                  "currentIndex++;\r",
+                  "\r",
+                  "if (currentIndex < 4) {\r",
+                  "    // Continue Looping\r",
+                  "    pm.collectionVariables.set(\"badSessionLoopIndex\", currentIndex);\r",
+                  "    postman.setNextRequest(pm.info.requestName); // Re-run this request\r",
+                  "} else {\r",
+                  "    // Stop & Cleanup\r",
+                  "    pm.collectionVariables.set(\"badSessionLoopIndex\", 0);\r",
+                  "    pm.collectionVariables.set(\"badSessionPayload\", \"\"); // Clear body\r",
+                  "    // postman.setNextRequest(null); // Stop\r",
+                  "    console.log(\"All 4 negative scenarios completed.\");\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Initialize Loop Index\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"badSessionLoopIndex\")) || 0;\r",
+                  "\r",
+                  "// Define Base Valid Data (We will break this below)\r",
+                  "var validPayload = {\r",
+                  "    \"pointid\": Number(pm.collectionVariables.get(\"FirstNonReservedPointId\")) || 100,\r",
+                  "    \"starttime\": \"2024-01-01T10:00:00Z\",\r",
+                  "    \"endtime\": \"2024-01-01T12:00:00Z\", // 2 hours later\r",
+                  "    \"startsoc\": 20,\r",
+                  "    \"endsoc\": 80,\r",
+                  "    \"totalkwh\": 50,\r",
+                  "    \"kwhprice\": 0.50,\r",
+                  "    \"amount\": 25.00\r",
+                  "};\r",
+                  "\r",
+                  "var testPayload = JSON.parse(JSON.stringify(validPayload)); // Deep copy\r",
+                  "var testDescription = \"\";\r",
+                  "var expectedErrorSnippet = \"\";\r",
+                  "\r",
+                  "// Select Scenario based on Index\r",
+                  "switch(currentIndex) {\r",
+                  "    case 0:\r",
+                  "        testDescription = \"Scenario 1: Missing Fields (pointid)\";\r",
+                  "        delete testPayload.pointid; // Remove mandatory field\r",
+                  "        expectedErrorSnippet = \"Missing required fields\";\r",
+                  "        break;\r",
+                  "\r",
+                  "    case 1:\r",
+                  "        testDescription = \"Scenario 2: Invalid Date Logic (End < Start)\";\r",
+                  "        // End is BEFORE Start\r",
+                  "        testPayload.starttime = \"2024-01-01T12:00:00Z\";\r",
+                  "        testPayload.endtime   = \"2024-01-01T10:00:00Z\"; \r",
+                  "        expectedErrorSnippet = \"Invalid time range\";\r",
+                  "        break;\r",
+                  "\r",
+                  "    case 2:\r",
+                  "        testDescription = \"Scenario 3: Invalid SoC Range (EndSoC < StartSoC)\";\r",
+                  "        testPayload.startsoc = 80;\r",
+                  "        testPayload.endsoc = 20; // Cannot charge downwards\r",
+                  "        expectedErrorSnippet = \"Invalid session values\";\r",
+                  "        break;\r",
+                  "\r",
+                  "    case 3:\r",
+                  "        testDescription = \"Scenario 4: Invalid Numeric Format (Negative Amount)\";\r",
+                  "        testPayload.amount = -100; // Negative money\r",
+                  "        expectedErrorSnippet = \"Invalid session values\";\r",
+                  "        break;\r",
+                  "}\r",
+                  "\r",
+                  "// Save variables for the Request and Test phases\r",
+                  "pm.collectionVariables.set(\"badSessionPayload\", JSON.stringify(testPayload));\r",
+                  "pm.collectionVariables.set(\"currentTestDesc\", testDescription);\r",
+                  "pm.collectionVariables.set(\"expectedErrorSnippet\", expectedErrorSnippet);\r",
+                  "\r",
+                  "console.log(`[Bad Session Loop ${currentIndex + 1}/4] ${testDescription}`);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-OBSERVATORY-AUTH",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{badSessionPayload}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/newsession",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "newsession"
+              ]
+            },
+            "description": "Record a new charging session (requires auth)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get sessions [200-JSON/CSV]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "eval(pm.collectionVariables.get(\"sharedUtils\"));\r",
+                  "var title = pm.collectionVariables.get(\"currentTestTitle\");\r",
+                  "var format = pm.collectionVariables.get(\"currentFormat\");\r",
+                  "\r",
+                  "pm.test(`${title} - Status is 200`, function () {\r",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);\r",
+                  "});\r",
+                  "\r",
+                  "// Validate Content based on Format\r",
+                  "if (pm.response.code === 200) {\r",
+                  "\r",
+                  "    if (format === \"json\") {\r",
+                  "        // --- JSON SCENARIO ---\r",
+                  "        var jsonData = pm.response.json();\r",
+                  "        \r",
+                  "        pm.test(`${title} - Structure is Valid Array`, function () {\r",
+                  "            pm.expect(jsonData).to.be.an(\"array\");\r",
+                  "            pm.expect(jsonData.length).to.be.above(0);\r",
+                  "        });\r",
+                  "\r",
+                  "        pm.test(`${title} - All Sessions Valid`, function () {\r",
+                  "            jsonData.forEach(s => validateSession(s, false)); \r",
+                  "        });\r",
+                  "\r",
+                  "    } else if (format === \"csv\") {\r",
+                  "        // --- CSV SCENARIO ---\r",
+                  "        var csvText = pm.response.text();\r",
+                  "\r",
+                  "        var csvData = parseCSV(csvText); \r",
+                  "\r",
+                  "        pm.test(`${title} - Parsed CSV is Valid Array`, function () {\r",
+                  "            pm.expect(csvData).to.be.an(\"array\");\r",
+                  "            pm.expect(csvData.length).to.be.above(0);\r",
+                  "        });\r",
+                  "\r",
+                  "        pm.test(`${title} - All Sessions Valid`, function () {\r",
+                  "            csvData.forEach(s => validateSession(s, true)); \r",
+                  "        });\r",
+                  "    }\r",
+                  "\r",
+                  "} else {\r",
+                  "    console.log(`${title} - No sessions found (204).`);\r",
+                  "}\r",
+                  "\r",
+                  "// Loop Controller\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"sessionGetLoopIndex\")) || 0;\r",
+                  "currentIndex++;\r",
+                  "\r",
+                  "if (currentIndex < 2) {\r",
+                  "    pm.collectionVariables.set(\"sessionGetLoopIndex\", currentIndex);\r",
+                  "    postman.setNextRequest(pm.info.requestName);\r",
+                  "} else {\r",
+                  "    pm.collectionVariables.set(\"sessionGetLoopIndex\", 0);\r",
+                  "    pm.collectionVariables.set(\"currentFormat\", \"json\"); \r",
+                  "    // postman.setNextRequest(null);\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Define Scenarios\r",
+                  "var formats = [\"json\", \"csv\"];\r",
+                  "\r",
+                  "// Get Loop Index\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"sessionGetLoopIndex\")) || 0;\r",
+                  "\r",
+                  "// Set Format Variable\r",
+                  "var fmt = formats[currentIndex];\r",
+                  "pm.collectionVariables.set(\"currentFormat\", fmt);\r",
+                  "\r",
+                  "// Set Dynamic Title for the Test\r",
+                  "var title = `[Scenario ${currentIndex + 1}/2] Format: ${fmt.toUpperCase()}`;\r",
+                  "pm.collectionVariables.set(\"currentTestTitle\", title);\r",
+                  "\r",
+                  "console.log(`${title} | ID: ${pm.collectionVariables.get(\"FirstNonReservedPointId\")}`);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{FirstNonReservedPointId}}/{{from}}/{{to}}?format={{currentFormat}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sessions",
+                "{{FirstNonReservedPointId}}",
+                "{{from}}",
+                "{{to}}"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "{{currentFormat}}"
+                }
+              ]
+            },
+            "description": "Get sessions for a point between dates (from/to)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get sessions [204-Empty Result]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Verify Status is 204 (No Content)\r",
+                  "pm.test(\"Status is 204 No Content\", function () {\r",
+                  "    pm.response.to.have.status(204);\r",
+                  "});\r",
+                  "\r",
+                  "// Verify Body is Strictly Empty\r",
+                  "pm.test(\"Response body is empty (Zero Bytes)\", function () {\r",
+                  "    // 204 responses should have an empty string body\r",
+                  "    pm.expect(pm.response.text()).to.equal(\"\");\r",
+                  "});\r",
+                  "\r",
+                  "// Verify No Content-Type header (Standard for 204)\r",
+                  "pm.test(\"No Content-Type header present\", function () {\r",
+                  "    pm.expect(pm.response.headers.has(\"Content-Type\")).to.be.false;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{FirstNonReservedPointId}}/19700101/19700101",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sessions",
+                "{{FirstNonReservedPointId}}",
+                "19700101",
+                "19700101"
+              ]
+            },
+            "description": "Get sessions for a point between dates (from/to)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get sessions [400-Invalid Format]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// 1. Get Metadata\r",
+                  "var testDesc = pm.collectionVariables.get(\"currentBadTestDesc\");\r",
+                  "var expectedSnippet = pm.collectionVariables.get(\"expectedErrorSnippet\");\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"badGetSessionLoopIndex\")) || 0;\r",
+                  "\r",
+                  "// Status Code \r",
+                  "pm.test(`[${testDesc}] Status is 400 Bad Request`, function () {\r",
+                  "    pm.response.to.have.status(400);\r",
+                  "});\r",
+                  "\r",
+                  "// Schema Validation (Structure) \r",
+                  "const schema = JSON.parse(pm.collectionVariables.get(\"GlobalErrorSchema\"));\r",
+                  "\r",
+                  "pm.test(`[${testDesc}] Response matches standard Error Schema`, function () {\r",
+                  "    pm.expect(pm.response.json()).to.have.jsonSchema(schema);\r",
+                  "});\r",
+                  "\r",
+                  "// Specific Logic Check (Text)\r",
+                  "pm.test(`[${testDesc}] Error message contains: \"${expectedSnippet}\"`, function () {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "    // Combine error and debuginfo to catch the text wherever it appears\r",
+                  "    var combinedText = (jsonData.error + \" \" + jsonData.debuginfo);\r",
+                  "    \r",
+                  "    pm.expect(combinedText).to.include(expectedSnippet);\r",
+                  "    \r",
+                  "    // Additional specific check for Format scenario\r",
+                  "    if (testDesc.includes(\"Format\")) {\r",
+                  "         pm.expect(combinedText).to.include(\"json, csv\");\r",
+                  "    }\r",
+                  "    // Additional specific check for Date scenario\r",
+                  "    if (testDesc.includes(\"Date\")) {\r",
+                  "         pm.expect(combinedText).to.include(\"'from' must be <= 'to'\");\r",
+                  "    }\r",
+                  "});\r",
+                  "\r",
+                  "// --- LOOP CONTROL ---\r",
+                  "currentIndex++;\r",
+                  "\r",
+                  "if (currentIndex < 2) {\r",
+                  "    // Continue Looping\r",
+                  "    pm.collectionVariables.set(\"badGetSessionLoopIndex\", currentIndex);\r",
+                  "    postman.setNextRequest(pm.info.requestName); \r",
+                  "} else {\r",
+                  "    // Stop & Cleanup\r",
+                  "    pm.collectionVariables.set(\"badGetSessionLoopIndex\", 0);\r",
+                  "    // Reset variables to avoid confusion in future runs\r",
+                  "    pm.collectionVariables.set(\"badFormat\", \"json\"); \r",
+                  "    // postman.setNextRequest(null); \r",
+                  "    console.log(\"All negative scenarios for GET /sessions completed.\");\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// 1. Initialize Loop Index\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"badGetSessionLoopIndex\")) || 0;\r",
+                  "\r",
+                  "// 2. Define Valid Default Values (to be broken)\r",
+                  "var pointId = pm.collectionVariables.get(\"FirstNonReservedPointId\");\r",
+                  "// Valid dates: from 2024-01-01 to 2024-01-02\r",
+                  "var validFrom = \"20240101\"; \r",
+                  "var validTo = \"20240102\"; \r",
+                  "\r",
+                  "// 3. Define Scenarios\r",
+                  "var testScenario = \"\";\r",
+                  "var expectedErrorSnippet = \"\";\r",
+                  "\r",
+                  "switch(currentIndex) {\r",
+                  "    case 0:\r",
+                  "        // SCENARIO 1: Invalid Date Range (From > To)\r",
+                  "        testScenario = \"Scenario 1: Invalid Date Range (From > To)\";\r",
+                  "        pm.collectionVariables.set(\"badFrom\", \"20240105\"); // LATER date\r",
+                  "        pm.collectionVariables.set(\"badTo\", \"20240101\");   // EARLIER date\r",
+                  "        pm.collectionVariables.set(\"badFormat\", \"json\");   // Valid format\r",
+                  "        \r",
+                  "        expectedErrorSnippet = \"Invalid date range\";\r",
+                  "        break;\r",
+                  "\r",
+                  "    case 1:\r",
+                  "        // SCENARIO 2: Invalid Format (xml)\r",
+                  "        testScenario = \"Scenario 2: Invalid Format (xml)\";\r",
+                  "        pm.collectionVariables.set(\"badFrom\", validFrom);  // Valid date\r",
+                  "        pm.collectionVariables.set(\"badTo\", validTo);      // Valid date\r",
+                  "        pm.collectionVariables.set(\"badFormat\", \"xml\");    // INVALID format\r",
+                  "        \r",
+                  "        expectedErrorSnippet = \"Invalid format\";\r",
+                  "        break;\r",
+                  "}\r",
+                  "\r",
+                  "// 4. Save Metadata for Tests\r",
+                  "pm.collectionVariables.set(\"currentBadTestDesc\", testScenario);\r",
+                  "pm.collectionVariables.set(\"expectedErrorSnippet\", expectedErrorSnippet);\r",
+                  "\r",
+                  "console.log(`[Bad GET Session ${currentIndex + 1}/2] ${testScenario}`);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{FirstNonReservedPointId}}/{{badFrom}}/{{badTo}}?format={{badFormat}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sessions",
+                "{{FirstNonReservedPointId}}",
+                "{{badFrom}}",
+                "{{badTo}}"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "{{badFormat}}"
+                }
+              ]
+            },
+            "description": "Get sessions for a point between dates (from/to)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "History",
+      "item": [
+        {
+          "name": "Point status history [200-JSON/CSV]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "eval(pm.collectionVariables.get(\"sharedUtils\"));\r",
+                  "\r",
+                  "var title = pm.collectionVariables.get(\"currentTestTitle\");\r",
+                  "var format = pm.collectionVariables.get(\"currentFormat\");\r",
+                  "\r",
+                  "pm.test(`${title} - Status is 200`, function () {\r",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);\r",
+                  "});\r",
+                  "\r",
+                  "// 4. Validate Content based on Format\r",
+                  "if (pm.response.code === 200) {\r",
+                  "\r",
+                  "    if (format === \"json\") {\r",
+                  "        // --- JSON SCENARIO ---\r",
+                  "        var jsonData = pm.response.json();\r",
+                  "        \r",
+                  "        pm.test(`${title} - Structure is Valid Array`, function () {\r",
+                  "            pm.expect(jsonData).to.be.an(\"array\");\r",
+                  "            pm.expect(jsonData.length).to.be.above(0);\r",
+                  "        });\r",
+                  "\r",
+                  "        pm.test(`${title} - All Records Valid`, function () {\r",
+                  "            jsonData.forEach(h => validateHistory(h, false)); \r",
+                  "        });\r",
+                  "\r",
+                  "    } else if (format === \"csv\") {\r",
+                  "        // --- CSV SCENARIO ---\r",
+                  "        var csvText = pm.response.text();\r",
+                  "        \r",
+                  "        pm.test(`${title} - CSV Headers Present`, function () {\r",
+                  "            pm.expect(csvText).to.include(\"timeref\");\r",
+                  "            pm.expect(csvText).to.include(\"old_state\");\r",
+                  "            pm.expect(csvText).to.include(\"new_state\");\r",
+                  "        });\r",
+                  "\r",
+                  "        var csvData = parseCSV(csvText); \r",
+                  "\r",
+                  "        pm.test(`${title} - Parsed CSV is Valid Array`, function () {\r",
+                  "            pm.expect(csvData).to.be.an(\"array\");\r",
+                  "            pm.expect(csvData.length).to.be.above(0);\r",
+                  "        });\r",
+                  "\r",
+                  "        pm.test(`${title} - All Records Valid`, function () {\r",
+                  "            csvData.forEach(h => validateHistory(h, true)); \r",
+                  "        });\r",
+                  "    }\r",
+                  "\r",
+                  "} else {\r",
+                  "    // 204 No Content\r",
+                  "    console.log(`${title} - No history found (204). Skipping structure checks.`);\r",
+                  "}\r",
+                  "\r",
+                  "// Loop Controller\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"historyLoopIndex\")) || 0;\r",
+                  "currentIndex++;\r",
+                  "\r",
+                  "if (currentIndex < 2) {\r",
+                  "    // Continue Loop\r",
+                  "    pm.collectionVariables.set(\"historyLoopIndex\", currentIndex);\r",
+                  "    postman.setNextRequest(pm.info.requestName);\r",
+                  "} else {\r",
+                  "    // Stop Loop & Cleanup\r",
+                  "    pm.collectionVariables.set(\"historyLoopIndex\", 0);\r",
+                  "    pm.collectionVariables.set(\"currentFormat\", \"json\"); \r",
+                  "    // postman.setNextRequest(null); // Uncomment if this is the last request\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// 1. Define Scenarios\r",
+                  "var formats = [\"json\", \"csv\"];\r",
+                  "\r",
+                  "// 2. Get Loop Index\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"historyLoopIndex\")) || 0;\r",
+                  "\r",
+                  "// 3. Set Format Variable\r",
+                  "var fmt = formats[currentIndex];\r",
+                  "pm.collectionVariables.set(\"currentFormat\", fmt);\r",
+                  "\r",
+                  "// 4. Set Dynamic Title\r",
+                  "var title = `[History Scenario ${currentIndex + 1}/2] Format: ${fmt.toUpperCase()}`;\r",
+                  "pm.collectionVariables.set(\"currentTestTitle\", title);\r",
+                  "\r",
+                  "// 5. Ensure Dates are set (Fallback safety)\r",
+                  "if (!pm.collectionVariables.get(\"from\")) {\r",
+                  "    var today = new Date().toISOString().slice(0, 10).replace(/-/g, \"\"); // YYYYMMDD\r",
+                  "    pm.collectionVariables.set(\"from\", today);\r",
+                  "    pm.collectionVariables.set(\"to\", today);\r",
+                  "}\r",
+                  "\r",
+                  "console.log(`${title} | Point: ${pm.collectionVariables.get(\"FirstNonReservedPointId\")}`);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pointstatus/{{FirstNonReservedPointId}}/{{from}}/{{to}}?format={{currentFormat}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pointstatus",
+                "{{FirstNonReservedPointId}}",
+                "{{from}}",
+                "{{to}}"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "{{currentFormat}}"
+                }
+              ]
+            },
+            "description": "Get point status history between dates (from/to)."
+          },
+          "response": []
+        },
+        {
+          "name": "Point status history [204-Empty Result]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 204 No Content\", function () {\r",
+                  "    pm.response.to.have.status(204);\r",
+                  "});\r",
+                  "\r",
+                  "// Verify Body is Strictly Empty\r",
+                  "pm.test(\"Response body is empty (Zero Bytes)\", function () {\r",
+                  "    // 204 responses must have an empty string body\r",
+                  "    pm.expect(pm.response.text()).to.equal(\"\");\r",
+                  "});\r",
+                  "\r",
+                  "// Verify No Content-Type header\r",
+                  "// (A 204 response should not describe a content type since there is no content)\r",
+                  "pm.test(\"No Content-Type header present\", function () {\r",
+                  "    pm.expect(pm.response.headers.has(\"Content-Type\")).to.be.false;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pointstatus/19700101/19700101/{{to}}?format={{currentFormat}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pointstatus",
+                "19700101",
+                "19700101",
+                "{{to}}"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "{{currentFormat}}"
+                }
+              ]
+            },
+            "description": "Get point status history between dates (from/to)."
+          },
+          "response": []
+        },
+        {
+          "name": "Point status history [400-Invalid Data]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var title = pm.collectionVariables.get(\"currentTestTitle\");\r",
+                  "var expectedMsg = pm.collectionVariables.get(\"expectedErrorMsg\");\r",
+                  "\r",
+                  "pm.test(`${title} - Status is 400`, function () {\r",
+                  "    pm.response.to.have.status(400);\r",
+                  "});\r",
+                  "\r",
+                  "// Validate Schema structure\r",
+                  "const schema = JSON.parse(pm.collectionVariables.get(\"GlobalErrorSchema\"));\r",
+                  "pm.test(`[${title}] Response matches standard Error Schema`, function () {\r",
+                  "    pm.expect(pm.response.json()).to.have.jsonSchema(schema);\r",
+                  "});\r",
+                  "\r",
+                  "// Schema & Content Validation\r",
+                  "pm.test(`${title} - Error Body is Valid`, function () {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "    \r",
+                  "    // Validate Specific Values (Logic Check)\r",
+                  "    pm.expect(jsonData.return_code).to.eql(400);\r",
+                  "    pm.expect(jsonData.error).to.include(expectedMsg);\r",
+                  "\r",
+                  "    // Optional: Log for debugging\r",
+                  "    console.log(\"Debug Info:\", jsonData.debuginfo);\r",
+                  "});\r",
+                  "\r",
+                  "// Loop Controller\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"errorLoopIndex\")) || 0;\r",
+                  "currentIndex++;\r",
+                  "\r",
+                  "if (currentIndex < 3) { \r",
+                  "    pm.collectionVariables.set(\"errorLoopIndex\", currentIndex);\r",
+                  "    postman.setNextRequest(pm.info.requestName);\r",
+                  "} else {\r",
+                  "    // Stop Loop & Cleanup\r",
+                  "    pm.collectionVariables.set(\"errorLoopIndex\", 0);\r",
+                  "    // postman.setNextRequest(null); \r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "var scenarios = [\r",
+                  "    {\r",
+                  "        title: \"Invalid Format Type\",\r",
+                  "        from: \"19701212\",\r",
+                  "        to: \"20991212\",\r",
+                  "        format: \"randomformat123\",\r",
+                  "        expectedError: \"Invalid format 'randomformat123'\"\r",
+                  "    },\r",
+                  "    {\r",
+                  "        title: \"Invalid Date Format\",\r",
+                  "        from: \"25515151\",\r",
+                  "        to: \"Ada123\",\r",
+                  "        format: \"json\",\r",
+                  "        expectedError: \"Invalid date format\"\r",
+                  "    },\r",
+                  "    {\r",
+                  "        title: \"Invalid Date Range (From > To)\",\r",
+                  "        from: \"20991212\", \r",
+                  "        to: \"19701212\", \r",
+                  "        format: \"json\",\r",
+                  "        expectedError: \"From date must be before or equal to To date\"\r",
+                  "    }\r",
+                  "];\r",
+                  "\r",
+                  "// Get Loop Index\r",
+                  "var currentIndex = Number(pm.collectionVariables.get(\"errorLoopIndex\")) || 0;\r",
+                  "var currentScenario = scenarios[currentIndex];\r",
+                  "\r",
+                  "// Set Variables for the Request\r",
+                  "pm.collectionVariables.set(\"badFrom\", currentScenario.from);\r",
+                  "pm.collectionVariables.set(\"badTo\", currentScenario.to);\r",
+                  "pm.collectionVariables.set(\"badFormat\", currentScenario.format);\r",
+                  "\r",
+                  "// Set Variables for Validation\r",
+                  "pm.collectionVariables.set(\"currentTestTitle\", `[Scenario ${currentIndex + 1}/3] ${currentScenario.title}`);\r",
+                  "pm.collectionVariables.set(\"expectedErrorMsg\", currentScenario.expectedError);\r",
+                  "\r",
+                  "console.log(`Starting: ${currentScenario.title}`);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pointstatus/{{FirstNonReservedPointId}}/{{badFrom}}/{{badTo}}?format={{badFormat}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pointstatus",
+                "{{FirstNonReservedPointId}}",
+                "{{badFrom}}",
+                "{{badTo}}"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "{{badFormat}}"
+                }
+              ]
+            },
+            "description": "Get point status history between dates (from/to)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Navigation",
+      "item": [
+        {
+          "name": "Navigate to point[302-found]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 302\", function () {",
+                  "  pm.response.to.have.status(302);",
+                  "});",
+                  "",
+                  "pm.test(\"Has Location header\", function () {",
+                  "  pm.expect(pm.response.headers.has(\"Location\")).to.eql(true);",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/navigate/{{pointId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "navigate",
+                "{{pointId}}"
+              ]
+            },
+            "description": "Navigate to charging point. Expect 302 redirect when successful."
+          },
+          "response": []
+        },
+        {
+          "name": "Navigate to point[400-invalid pointid]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var testDescription = pm.collectionVariables.get(\"currentTestDesc\") || \"Navigate Invalid pointId\";",
+                  "",
+                  "",
+                  "pm.test(`[${testDescription}] Status is 400`, function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});",
+                  "",
+                  "",
+                  "// ====== ERROR LOG VALIDATION ======",
+                  "const schemaStr = pm.collectionVariables.get(\"GlobalErrorSchema\");",
+                  "if (schemaStr) {",
+                  "    const schema = JSON.parse(schemaStr);",
+                  "",
+                  "    pm.test(`[${testDescription}] Response matches standard Error Schema`, function () {",
+                  "        pm.expect(pm.response.json()).to.have.jsonSchema(schema);",
+                  "    });",
+                  "}",
+                  "",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/navigate/{{badPointId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "navigate",
+                "{{badPointId}}"
+              ]
+            },
+            "description": "Navigate to charging point. Expect 302 redirect when successful."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Logout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status is 200\", () => { \r",
+              "    pm.expect([200]).to.include(pm.response.code); \r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-OBSERVATORY-AUTH",
+            "value": "{{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/logout",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "logout"
+          ]
+        },
+        "description": "Logout user (requires X-OBSERVATORY-AUTH)."
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          "// Allowed status list helper",
+          "pm.collectionVariables.set(\"allowedStatus\", JSON.stringify([\"available\",\"charging\",\"reserved\",\"malfunction\",\"offline\"]));",
+          "",
+          "pm.collectionVariables.set(\"Defaultminutes\",        30);",
+          "pm.collectionVariables.set(\"MaxReservationMinutes\", 60);",
+          "",
+          "// Define all your helper functions as a single string",
+          "var utilsCode = `",
+          "    function parseCSV(csvText) {",
+          "        var rows = csvText.trim().split(/\\\\r?\\\\n/);",
+          "        if (rows.length < 2) return [];",
+          "        var headers = rows[0].split(',').map(h => h.replace(/\"/g, '').trim());",
+          "        return rows.slice(1).map(function(row) {",
+          "            var values = row.split(',');",
+          "            var obj = {};",
+          "            headers.forEach(function(header, index) {",
+          "                var val = values[index] ? values[index].replace(/\"/g, '').trim() : \"\";",
+          "                obj[header] = val;",
+          "            });",
+          "            return obj;",
+          "        });",
+          "    }",
+          "",
+          "    function getAllowedStatuses() {",
+          "        var allowed = pm.collectionVariables.get(\"allowedStatus\");",
+          "        if (typeof allowed === 'string') {",
+          "            try { return JSON.parse(allowed); } ",
+          "            catch (e) { return [allowed]; }",
+          "        }",
+          "        return allowed;",
+          "    }",
+          "",
+          "    function calculateCounts(dataArray) {",
+          "        var allowed = getAllowedStatuses();",
+          "        var counts = {};",
+          "        allowed.forEach(status => counts[status] = 0);",
+          "        dataArray.forEach(point => {",
+          "            if (allowed.includes(point.status)) {",
+          "                counts[point.status]++;",
+          "            }",
+          "        });",
+          "        return counts;",
+          "    }",
+          "",
+          "    function validatePoint(point, isCsv, isproviderName) {",
+          "        // ID Check",
+          "        var idVal = isCsv ? Number(point.pointid) : point.pointid;",
+          "        pm.expect(idVal, \"Point ID\").to.be.a('number');",
+          "        pm.expect(idVal, \"Point ID\").to.not.be.NaN;",
+          "        pm.expect(idVal, \"Point ID\").to.be.at.least(0);",
+          "",
+          "        // Provider Check",
+          "        if(isproviderName){",
+          "            pm.expect(point.providerName, \"Provider Name\").to.be.a('string');",
+          "        };",
+          "        // Coords Check",
+          "        pm.expect(point.lon, \"Longitude\").to.be.a('string');",
+          "        pm.expect(point.lat, \"Latitude\").to.be.a('string');",
+          "        var latNum = parseFloat(point.lat);",
+          "        var lonNum = parseFloat(point.lon);",
+          "        pm.expect(latNum, \"Latitude Parsing\").to.not.be.NaN;",
+          "        pm.expect(lonNum, \"Longitude Parsing\").to.not.be.NaN;",
+          "        pm.expect(latNum, \"Latitude Range\").to.be.within(-90, 90); ",
+          "        pm.expect(lonNum, \"Longitude Range\").to.be.within(-180, 180);",
+          "",
+          "        // Status Check",
+          "        var allowed = getAllowedStatuses();",
+          "        pm.expect(allowed, \"Status Value\").to.include(point.status);",
+          "",
+          "        // Capacity Check",
+          "        var capVal = isCsv ? Number(point.cap) : point.cap;",
+          "        pm.expect(capVal, \"Capacity\").to.be.a('number');",
+          "        pm.expect(capVal, \"Capacity\").to.not.be.NaN;",
+          "        pm.expect(capVal, \"Capacity\").to.be.at.least(0);",
+          "    }",
+          "",
+          "    function validateSession(session, isCsv) {",
+          "        // Define Allowed Keys",
+          "        var allowedKeys = [",
+          "            \"starttime\", \"endtime\", ",
+          "            \"startsoc\", \"endsoc\", ",
+          "            \"totalkwh\", \"kwhprice\", \"amount\"",
+          "        ];",
+          "",
+          "        // CHECK FOR EXTRA FIELDS ",
+          "        var actualKeys = Object.keys(session);",
+          "        var extraKeys = actualKeys.filter(key => !allowedKeys.includes(key));",
+          "",
+          "        pm.expect(extraKeys.length, \\`Found forbidden extra fields: \\${extraKeys.join(\", \")}\\`).to.eql(0);",
+          "",
+          "        // CHECK FOR MISSING FIELDS",
+          "        var missingKeys = allowedKeys.filter(key => !actualKeys.includes(key));",
+          "        pm.expect(missingKeys.length, \\`Missing mandatory fields: \\${missingKeys.join(\", \")}\\`).to.eql(0);",
+          "",
+          "        // Validate Data Types",
+          "        // Time Fields",
+          "        pm.expect(session.starttime, \"Start Time\").to.be.a('string');",
+          "        pm.expect(session.endtime,   \"End Time\").to.be.a('string');",
+          "",
+          "        // Numeric Fields (Convert if CSV)",
+          "        var numericFields = [\"startsoc\", \"endsoc\", \"totalkwh\", \"kwhprice\", \"amount\"];",
+          "        ",
+          "        numericFields.forEach(field => {",
+          "            var val = isCsv ? Number(session[field]) : session[field];",
+          "            pm.expect(val, field).to.be.a('number');",
+          "            pm.expect(val, field).to.not.be.NaN;",
+          "        });",
+          "    }",
+          "",
+          "    function validateHistory(record, isCsv) {",
+          "        // 1. Mandatory Fields Check",
+          "        pm.expect(record).to.have.property(\"timeref\");",
+          "        pm.expect(record).to.have.property(\"old_state\");",
+          "        pm.expect(record).to.have.property(\"new_state\");",
+          "",
+          "        // 2. Data Type Check",
+          "        pm.expect(record.timeref, \"Time Reference\").to.be.a('string');",
+          "        pm.expect(record.old_state, \"Old State\").to.be.a('string');",
+          "        pm.expect(record.new_state, \"New State\").to.be.a('string');",
+          "",
+          "        // 3. Value Constraints (Allowed Statuses)",
+          "        var allowed = [\"available\", \"charging\", \"reserved\", \"malfunction\", \"offline\"];",
+          "        pm.expect(allowed, \"Old State Value\").to.include(record.old_state);",
+          "        pm.expect(allowed, \"New State Value\").to.include(record.new_state);",
+          "    }",
+          "`;",
+          "",
+          "pm.collectionVariables.set(\"sharedUtils\", utilsCode);",
+          "",
+          "// Define the Error Schema once",
+          "const errorSchema = {",
+          "    \"type\": \"object\",",
+          "    \"required\": [\"call\", \"timeref\", \"originator\", \"return_code\", \"error\", \"debuginfo\"],",
+          "    \"properties\": {",
+          "        \"call\": { \"type\": \"string\" },",
+          "        \"timeref\": { \"type\": \"string\" },",
+          "        \"originator\": { \"type\": \"string\" },",
+          "        \"return_code\": { \"type\": \"integer\" },",
+          "        \"error\": { \"type\": \"string\" },",
+          "        \"debuginfo\": { \"type\": \"string\" }",
+          "    },",
+          "    \"additionalProperties\": false",
+          "};",
+          "",
+          "pm.collectionVariables.set(\"GlobalErrorSchema\", JSON.stringify(errorSchema));"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+ "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:9876/api"
+    },
+    {
+      "key": "email",
+      "value": "test_1769822240552_2082d25341656@example.com"
+    },
+    {
+      "key": "password",
+      "value": "StrongP@ssw0rd!"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "pointId",
+      "value": "1"
+    },
+    {
+      "key": "badPointId",
+      "value": "99999999"
+    },
+    {
+      "key": "from",
+      "value": "19701212"
+    },
+    {
+      "key": "to",
+      "value": "50001212"
+    },
+    {
+      "key": "admintoken",
+      "value": "ed50e4a75f9bdc85d9fc90ae5e207455d7d53103d21c387c29eb49392633f6c1"
+    },
+    {
+      "key": "allowedStatus",
+      "value": ""
+    },
+    {
+      "key": "count_available",
+      "value": ""
+    },
+    {
+      "key": "count_charging",
+      "value": ""
+    },
+    {
+      "key": "count_reserved",
+      "value": ""
+    },
+    {
+      "key": "count_malfunction",
+      "value": ""
+    },
+    {
+      "key": "count_offline",
+      "value": ""
+    },
+    {
+      "key": "sharedUtils",
+      "value": ""
+    },
+    {
+      "key": "currentFilter",
+      "value": ""
+    },
+    {
+      "key": "expectedCountForLoop",
+      "value": ""
+    },
+    {
+      "key": "loopIndex",
+      "value": ""
+    },
+    {
+      "key": "currentFormat",
+      "value": ""
+    },
+    {
+      "key": "errorLoopIndex",
+      "value": ""
+    },
+    {
+      "key": "FirstNonReservedPointId",
+      "value": ""
+    },
+    {
+      "key": "uploadLoopIndex",
+      "value": ""
+    },
+    {
+      "key": "currentFileName",
+      "value": ""
+    },
+    {
+      "key": "currentExpectedError",
+      "value": ""
+    },
+    {
+      "key": "currentTestDescription",
+      "value": ""
+    },
+    {
+      "key": "currentErrorDescription",
+      "value": ""
+    },
+    {
+      "key": "dynamicRequestBody",
+      "value": ""
+    },
+    {
+      "key": "currentTestDesc",
+      "value": ""
+    },
+    {
+      "key": "updLoopIndex",
+      "value": ""
+    },
+    {
+      "key": "PointId",
+      "value": ""
+    },
+    {
+      "key": "GlobalErrorSchema",
+      "value": "{\"type\":\"object\",\"required\":[\"call\",\"timeref\",\"originator\",\"return_code\",\"error\",\"debuginfo\"],\"properties\":{\"call\":{\"type\":\"string\"},\"timeref\":{\"type\":\"string\"},\"originator\":{\"type\":\"string\"},\"return_code\":{\"type\":\"integer\"},\"error\":{\"type\":\"string\"},\"debuginfo\":{\"type\":\"string\"}},\"additionalProperties\":false}"
+    },
+    {
+      "key": "minutes",
+      "value": ""
+    },
+    {
+      "key": "CustomMinutes",
+      "value": ""
+    },
+    {
+      "key": "currentTimeDescription",
+      "value": ""
+    },
+    {
+      "key": "timeLoopIndex",
+      "value": ""
+    },
+    {
+      "key": "sessionPayload",
+      "value": ""
+    },
+    {
+      "key": "sessionLoopIndex",
+      "value": ""
+    },
+    {
+      "key": "badSessionPayload",
+      "value": ""
+    },
+    {
+      "key": "expectedErrorSnippet",
+      "value": ""
+    },
+    {
+      "key": "badSessionLoopIndex",
+      "value": ""
+    },
+    {
+      "key": "currentTestTitle",
+      "value": ""
+    },
+    {
+      "key": "sessionGetLoopIndex",
+      "value": ""
+    },
+    {
+      "key": "badFrom",
+      "value": ""
+    },
+    {
+      "key": "badTo",
+      "value": ""
+    },
+    {
+      "key": "badFormat",
+      "value": ""
+    },
+    {
+      "key": "currentBadTestDesc",
+      "value": ""
+    },
+    {
+      "key": "badGetSessionLoopIndex",
+      "value": ""
+    },
+    {
+      "key": "Defaultminutes",
+      "value": 30
+    },
+    {
+      "key": "MaxReservationMinutes",
+      "value": "60"
+    },
+    {
+      "key": "historyLoopIndex",
+      "value": ""
+    },
+    {
+      "key": "expectedErrorMsg",
+      "value": ""
+    }
+  ]
+}
