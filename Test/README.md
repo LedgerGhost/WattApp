@@ -46,10 +46,11 @@ Ensure your test folder looks like this before running:
 
 
 ```bash
-npx newman run API-TEST.json --insecure --env-var baseUrl=https://yourlocalhost:xxxx/api --env-var admintoken=YOUR_TOKEN_HERE
+npx newman run API-TEST.json --bail --insecure --env-var baseUrl=https://yourlocalhost:xxxx/api --env-var admintoken=YOUR_TOKEN_HERE
 ```
 **Breakdown of Flags:**
 
+- --bail: Stops the execution when a test fails (for debugging)
 - --insecure: Bypasses self-signed SSL certificate errors (required for localhost https).
 
 - --env-var baseUrl=...: Sets the API URL (change port if needed).
