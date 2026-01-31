@@ -7,6 +7,7 @@ import { isGuest } from '../../services/auth'
 import { getChargerImage } from '../../utils/chargerImages'
 import { DEFAULT_CENTER, DEFAULT_ZOOM, LOCATION_ZOOM, EARTH_RADIUS_KM, mapStatus } from '../../utils/constants'
 import type { Charger, ChargerType, AvailabilityStatus, BackendPointInfo } from '../../types'
+import { GuestWarningModal, ActiveReservationOverlay, ReserveModal } from '../../components'
 
 // Use Leaflet from CDN (loaded globally in index.html)
 declare const L: typeof import('leaflet')
@@ -325,6 +326,12 @@ export default function Map() {
 
   const closeReserveModal = () => {
     setShowReserveModal(false)
+    // If closing after successful reservation, reload to update charger status
+    if (reserveStatus === 'success') {
+      setReserveStatus('idle')
+      setReserveMessage('')
+      window.location.reload()
+    }
   }
 
   const confirmReservation = async () => {
@@ -396,14 +403,6 @@ export default function Map() {
     }
   }
 
-  // Handle closing the success modal
-  const closeSuccessModal = () => {
-    setShowReserveModal(false)
-    setReserveStatus('idle')
-    setReserveMessage('')
-    // Optionally refresh chargers to update status
-    window.location.reload()
-  }
 
   // Get unique charger types from all chargers
   const uniqueChargerTypes = Array.from(
@@ -763,189 +762,36 @@ export default function Map() {
 
         {/* Guest Warning Modal */}
         {showGuestModal && (
-          <div className="modal-overlay" onClick={() => setShowGuestModal(false)}>
-            <div className="modal" onClick={e => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3>Account Required</h3>
-                <button className="modal-close" onClick={() => setShowGuestModal(false)}>
-                  ✕
-                </button>
-              </div>
-              <div className="modal-body success-body">
-                <div
-                  className="success-icon"
-                  style={{
-                    background: 'linear-gradient(135deg, #f6ad55 0%, #ed8936 100%)',
-                    boxShadow: '0 8px 24px rgba(237, 137, 54, 0.35)'
-                  }}
-                >
-                  🔒
-                </div>
-                <div className="success-message" style={{ color: '#c05621' }}>Login Required</div>
-                <p className="success-sub">You need to log in to access this feature.</p>
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="modal-btn secondary"
-                  onClick={() => setShowGuestModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="modal-btn primary"
-                  onClick={() => navigate('/login')}
-                  style={{ background: 'linear-gradient(135deg, #f6ad55 0%, #ed8936 100%)' }}
-                >
-                  Go to Login
-                </button>
-              </div>
-            </div>
-          </div>
+          <GuestWarningModal
+            onClose={() => setShowGuestModal(false)}
+            onLogin={() => navigate('/login')}
+          />
         )}
 
         {/* Active Reservation Overlay - persistent until cancelled */}
         {activeReservation && (
-          <div className="active-reservation-overlay">
-            <div className="reservation-header">
-              <span className="reservation-badge">Active Reservation</span>
-            </div>
-            <div className="reservation-charger-info">
-              <img
-                src={getChargerImage(activeReservation.charger.chargerType)}
-                alt={activeReservation.charger.chargerType || 'Charger'}
-                className="charger-type-icon-small"
-              />
-              <div className="reservation-details">
-                <h4>{activeReservation.charger.name}</h4>
-                <p>{activeReservation.charger.address}</p>
-                <div className="reservation-specs">
-                  <span>{activeReservation.charger.chargerType}</span>
-                  <span>{activeReservation.charger.power} kW</span>
-                  <span>${activeReservation.charger.price.toFixed(2)}/kWh</span>
-                </div>
-                <div className="reservation-time">
-                  <span className="time-label">Reserved until:</span>
-                  <span className="time-value">{activeReservation.endTime}</span>
-                </div>
-              </div>
-            </div>
-            {cancelStatus === 'error' && (
-              <div className="reservation-error">{cancelMessage}</div>
-            )}
-            <button
-              className="cancel-reservation-btn"
-              onClick={handleCancelReservation}
-              disabled={cancelStatus === 'loading'}
-            >
-              {cancelStatus === 'loading' ? 'Cancelling...' : 'Cancel Reservation'}
-            </button>
-          </div>
+          <ActiveReservationOverlay
+            reservation={activeReservation}
+            onCancel={handleCancelReservation}
+            cancelStatus={cancelStatus}
+            cancelMessage={cancelMessage}
+          />
         )}
 
         {/* Reserve modal */}
         {showReserveModal && selectedCharger && (
-          <div className="modal-overlay" onClick={closeReserveModal}>
-            <div className="modal" onClick={e => e.stopPropagation()}>
-              {reserveStatus === 'success' ? (
-                /* Success confirmation screen */
-                <>
-                  <div className="modal-header">
-                    <h3>Reservation Confirmed</h3>
-                    <button className="modal-close" onClick={closeSuccessModal}>
-                      ✕
-                    </button>
-                  </div>
-                  <div className="modal-body success-body">
-                    {cancelStatus === 'success' ? (
-                      <>
-                        <div className="success-icon" style={{ background: 'linear-gradient(135deg, #f6ad55 0%, #ed8936 100%)' }}>✓</div>
-                        <div className="success-message" style={{ color: '#c05621' }}>
-                          {cancelMessage}
-                        </div>
-                        <p className="success-sub">Your reservation has been cancelled.</p>
-                      </>
-                    ) : (
-                      <>
-                        <div className="success-icon">✓</div>
-                        <div className="success-message">
-                          {reserveMessage}
-                        </div>
-                        <p className="success-sub">Your spot has been reserved at {selectedCharger.name}</p>
-                        {cancelStatus === 'error' && (
-                          <div className="modal-alert error" style={{ marginTop: '1rem' }}>{cancelMessage}</div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <div className="modal-footer">
-                    {cancelStatus !== 'success' && (
-                      <button
-                        className="modal-btn secondary"
-                        onClick={handleCancelReservation}
-                        disabled={cancelStatus === 'loading'}
-                        style={{ marginRight: 'auto' }}
-                      >
-                        {cancelStatus === 'loading' ? 'Cancelling...' : 'Cancel Reservation'}
-                      </button>
-                    )}
-                    <button
-                      className="modal-btn primary"
-                      onClick={closeSuccessModal}
-                    >
-                      Close Window
-                    </button>
-                  </div>
-                </>
-              ) : (
-                /* Normal reservation form */
-                <>
-                  <div className="modal-header">
-                    <h3>Reserve: {selectedCharger.name}</h3>
-                    <button className="modal-close" onClick={closeReserveModal}>
-                      ✕
-                    </button>
-                  </div>
-
-                  <div className="modal-body">
-                    <label className="modal-label">Duration (minutes)</label>
-
-                    <div className="modal-row">
-                      <input
-                        type="range"
-                        min={1}
-                        max={60}
-                        value={reserveMinutes}
-                        onChange={e => setReserveMinutes(parseInt(e.target.value, 10))}
-                      />
-                      <span className="minutes-pill">{reserveMinutes} min</span>
-                    </div>
-
-                    {reserveMessage && (
-                      <div className={`modal-alert ${reserveStatus}`}>{reserveMessage}</div>
-                    )}
-                  </div>
-
-                  <div className="modal-footer">
-                    <button
-                      className="modal-btn secondary"
-                      onClick={closeReserveModal}
-                      disabled={reserveStatus === 'loading'}
-                    >
-                      Cancel
-                    </button>
-
-                    <button
-                      className="modal-btn primary"
-                      onClick={confirmReservation}
-                      disabled={reserveStatus === 'loading'}
-                    >
-                      {reserveStatus === 'loading' ? 'Reserving...' : 'Confirm Reservation'}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+          <ReserveModal
+            charger={selectedCharger}
+            reserveMinutes={reserveMinutes}
+            onMinutesChange={setReserveMinutes}
+            onConfirm={confirmReservation}
+            onClose={closeReserveModal}
+            onCancelReservation={handleCancelReservation}
+            reserveStatus={reserveStatus}
+            reserveMessage={reserveMessage}
+            cancelStatus={cancelStatus}
+            cancelMessage={cancelMessage}
+          />
         )}
       </div>
     </div>
