@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { Marker, Popup } from 'react-leaflet'
-import type { Station } from '../../types'
+import type { Station, BackendStatus } from '../../types'
 import type { PointInfo } from '../../services/station'
 import { getPointsByIds } from '../../services/station'
 import { reservePoint } from '../../services/chargers'
@@ -141,7 +141,7 @@ export default function StationMarker({
   }
 
   const getStatusColor = (status: string): string => {
-    const mappedStatus = mapStatus(status)
+    const mappedStatus = mapStatus(status as BackendStatus)
     switch (mappedStatus) {
       case 'Available':
         return '#22c55e'
@@ -247,7 +247,7 @@ export default function StationMarker({
                         style={{ backgroundColor: getStatusColor(charger.status) }}
                       />
                       <span className={`status-badge status-${charger.status}`}>
-                        {mapStatus(charger.status)}
+                        {mapStatus(charger.status as BackendStatus)}
                       </span>
                     </div>
 
