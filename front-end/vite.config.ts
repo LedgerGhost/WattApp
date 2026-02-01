@@ -9,13 +9,13 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://localhost:9876',
+        target: 'https://api.corg1.uk',
         changeOrigin: true,
         secure: false,
-        ssl: {
-          key: fs.readFileSync(path.resolve(__dirname, '../back-end/api/certs/localhost-key.pem')),
-          cert: fs.readFileSync(path.resolve(__dirname, '../back-end/api/certs/localhost.pem')),
-        },
+        // ssl: {
+        //   key: fs.readFileSync(path.resolve(__dirname, '../back-end/api/certs/localhost-key.pem')),
+        //   cert: fs.readFileSync(path.resolve(__dirname, '../back-end/api/certs/localhost.pem')),
+        // },
       },
     },
   },
