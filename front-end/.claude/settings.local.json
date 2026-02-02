@@ -6,7 +6,10 @@
       "Bash(wc:*)",
       "Bash(ls:*)",
       "Bash(tree:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)",
+      "Bash(curl:*)"
     ]
   }
 }

@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-leaflet'
 import { useNavigate } from 'react-router-dom'
 import './map.css'
 import { getMyReservations, cancelReservation } from '../../services/chargers'
-import { getStationsByLocation, getPointById, getPointsByIds } from '../../services/station'
+import { getStationsByLocation, getPointById, getAllPointsInfo } from '../../services/station'
+import type { PointInfo } from '../../services/station'
 import { isGuest } from '../../services/auth'
 import { DEFAULT_CENTER, DEFAULT_ZOOM, LOCATION_ZOOM } from '../../utils/constants'
 import type { Station, Charger, AvailabilityStatus } from '../../types'
@@ -60,6 +61,25 @@ function FlyToStation({ station }: { station: Station | null }) {
   return null
 }
 
+// Component to track map center changes
+function MapCenterTracker({ onCenterChange }: { onCenterChange: (center: [number, number]) => void }) {
+  const map = useMap()
+
+  useEffect(() => {
+    const handleMoveEnd = () => {
+      const center = map.getCenter()
+      onCenterChange([center.lat, center.lng])
+    }
+
+    map.on('moveend', handleMoveEnd)
+    return () => {
+      map.off('moveend', handleMoveEnd)
+    }
+  }, [map, onCenterChange])
+
+  return null
+}
+
 export default function Map() {
 
   const [stations, setStations] = useState<Station[]>([])
@@ -69,12 +89,25 @@ export default function Map() {
 
   // Cache for station charger info (maps station name to array of connector types)
   const [stationChargerTypes, setStationChargerTypes] = useState<Record<string, string[]>>({})
-  const fetchedStationsRef = useRef<Set<string>>(new Set())
 
   // User location state
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [_locationError, setLocationError] = useState<string | null>(null)
   const [isLoadingLocation, setIsLoadingLocation] = useState(true)
+
+  // Map center for fetching stations as user scrolls
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null)
+  const mapCenterTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Debounced map center update to prevent too many API calls
+  const handleMapCenterChange = useCallback((center: [number, number]) => {
+    if (mapCenterTimeoutRef.current) {
+      clearTimeout(mapCenterTimeoutRef.current)
+    }
+    mapCenterTimeoutRef.current = setTimeout(() => {
+      setMapCenter(center)
+    }, 300)
+  }, [])
 
   const navigate = useNavigate()
   const [selectedStation, setSelectedStation] = useState<Station | null>(null)
@@ -82,70 +115,72 @@ export default function Map() {
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState('')
-  const [maxDistance, setMaxDistance] = useState(50)
+  const [maxDistance, setMaxDistance] = useState(5)
   const [chargerType, setChargerType] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [isFiltersMinimized, setIsFiltersMinimized] = useState(false)
 
-  // Common EV charger connector types (hardcoded for performance - no need to fetch all points)
-  const availableChargerTypes = useMemo(() => [
-    'CCS',
-    'CHAdeMO',
-    'Type 2',
-    'Type 1',
-    'Tesla',
-    'GB/T',
-  ], [])
+  // Fetch all points info once to get connector types and statuses
+  const [allPointsInfo, setAllPointsInfo] = useState<Record<number, PointInfo>>({})
 
-  // Pre-fetch charger info for stations to show connector types in the list
+  // Get unique connector types from actual data
+  const availableChargerTypes = useMemo(() => {
+    const types = new Set<string>()
+    Object.values(allPointsInfo).forEach(p => {
+      if (p.connector_type) types.add(p.connector_type)
+    })
+    return Array.from(types).sort()
+  }, [allPointsInfo])
+
+  // Map of pointId -> connector_type for StationMarker
+  const pointConnectorTypes = useMemo(() => {
+    const map: Record<number, string> = {}
+    Object.values(allPointsInfo).forEach(p => {
+      if (p.connector_type) map[p.pointid] = p.connector_type
+    })
+    return map
+  }, [allPointsInfo])
+
+  const hasFetchedPointsInfo = useRef(false)
+
   useEffect(() => {
-    const fetchStationChargerInfo = async () => {
-      // Only fetch for stations we haven't fetched yet (using ref to avoid infinite loops)
-      const stationsToFetch = stations.filter(
-        s => !fetchedStationsRef.current.has(s.station_name)
-      )
+    const fetchAllPointsInfo = async () => {
+      if (hasFetchedPointsInfo.current) return
+      hasFetchedPointsInfo.current = true
 
-      if (stationsToFetch.length === 0) return
-
-      // Mark stations as being fetched
-      stationsToFetch.forEach(s => fetchedStationsRef.current.add(s.station_name))
-
-      // Fetch in batches to avoid too many parallel requests
-      const batchSize = 5
-      for (let i = 0; i < stationsToFetch.length; i += batchSize) {
-        const batch = stationsToFetch.slice(i, i + batchSize)
-
-        const batchResults = await Promise.allSettled(
-          batch.map(async station => {
-            const points = await getPointsByIds(station.points)
-            const connectorTypes = [...new Set(
-              points.map(p => p.connector_type).filter(Boolean)
-            )] as string[]
-            return { stationName: station.station_name, connectorTypes }
-          })
-        )
-
-        // Update cache with successful results
-        const newTypes: Record<string, string[]> = {}
-        batchResults.forEach((result, idx) => {
-          if (result.status === 'fulfilled') {
-            newTypes[result.value.stationName] = result.value.connectorTypes
-          } else {
-            // Mark as fetched but empty on error
-            newTypes[batch[idx].station_name] = []
-          }
+      try {
+        const points = await getAllPointsInfo()
+        // Build a map of pointId -> full point info
+        const pointsMap: Record<number, PointInfo> = {}
+        points.forEach(p => {
+          pointsMap[p.pointid] = p
         })
-
-        setStationChargerTypes(prev => ({ ...prev, ...newTypes }))
+        setAllPointsInfo(pointsMap)
+      } catch (err) {
+        console.error('Error fetching points info:', err)
       }
     }
 
-    if (stations.length > 0) {
-      fetchStationChargerInfo()
-    }
-  }, [stations])
+    fetchAllPointsInfo()
+  }, [])
 
-  // Filtered stations based on search query and charger type (when info is available)
+  // Build station charger types from allPointsInfo when stations or pointsInfo change
+  useEffect(() => {
+    if (stations.length === 0 || Object.keys(allPointsInfo).length === 0) return
+
+    const newTypes: Record<string, string[]> = {}
+    stations.forEach(station => {
+      const connectorTypes = [...new Set(
+        station.points
+          .map(pointId => allPointsInfo[pointId]?.connector_type)
+          .filter(Boolean)
+      )] as string[]
+      newTypes[station.station_name] = connectorTypes
+    })
+    setStationChargerTypes(newTypes)
+  }, [stations, allPointsInfo])
+
+  // Filtered stations based on search query, charger type, and status (when info is available)
   // Distance filtering is handled by the API radius parameter
   const filteredStations = useMemo(() => {
     return stations.filter(station => {
@@ -159,9 +194,14 @@ export default function Map() {
         !stationTypes ||  // Show if we haven't loaded types yet
         stationTypes.includes(chargerType)
 
-      return matchesSearch && matchesChargerType
+      // Filter by status - check if station has any charger with the selected status
+      const matchesStatus = !statusFilter ||
+        Object.keys(allPointsInfo).length === 0 ||  // Show if we haven't loaded info yet
+        station.points.some(pointId => allPointsInfo[pointId]?.status === statusFilter)
+
+      return matchesSearch && matchesChargerType && matchesStatus
     })
-  }, [stations, searchQuery, chargerType, stationChargerTypes])
+  }, [stations, searchQuery, chargerType, stationChargerTypes, statusFilter, allPointsInfo])
 
   // Guest modal
   const [showGuestModal, setShowGuestModal] = useState(false)
@@ -210,9 +250,9 @@ export default function Map() {
 
   useEffect(() => {
     const fetchStations = async () => {
-      // Use user location as center (for accurate dist_from_user), fall back to default
-      const lat = userLocation?.[0] ?? DEFAULT_CENTER[0];
-      const lon = userLocation?.[1] ?? DEFAULT_CENTER[1];
+      // Use map center for fetching (updates as user scrolls), fall back to user location or default
+      const lat = mapCenter?.[0] ?? userLocation?.[0] ?? DEFAULT_CENTER[0];
+      const lon = mapCenter?.[1] ?? userLocation?.[1] ?? DEFAULT_CENTER[1];
       // Use maxDistance filter (km) converted to meters as the search radius
       const searchRadius = maxDistance * 1000;
 
@@ -249,7 +289,7 @@ export default function Map() {
     if (!isLoadingLocation) {
       fetchStations();
     }
-  }, [userLocation, isLoadingLocation, maxDistance]);
+  }, [mapCenter, userLocation, isLoadingLocation, maxDistance]);
 
   // Check for active reservations on load (only once after stations load)
   const [hasCheckedReservations, setHasCheckedReservations] = useState(false)
@@ -415,6 +455,8 @@ export default function Map() {
           onSelectStation={setSelectedStation}
           stationChargerTypes={stationChargerTypes}
           selectedChargerType={chargerType}
+          allPointsInfo={allPointsInfo}
+          statusFilter={statusFilter}
         />
       </div>
 
@@ -428,6 +470,9 @@ export default function Map() {
         >
           {/* Fix gray tiles issue */}
           <MapResizer />
+
+          {/* Track map center for fetching stations as user scrolls */}
+          <MapCenterTracker onCenterChange={handleMapCenterChange} />
 
           {/* Fly to selected station */}
           <FlyToStation station={selectedStation} />
@@ -443,6 +488,21 @@ export default function Map() {
             url="https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png"
             maxZoom={19}
           />
+
+          {/* Circle overlay showing fetch radius */}
+          {(mapCenter || userLocation) && (
+            <Circle
+              center={mapCenter || userLocation || DEFAULT_CENTER}
+              radius={maxDistance * 1000}
+              pathOptions={{
+                color: '#3b82f6',
+                fillColor: '#3b82f6',
+                fillOpacity: 0.1,
+                weight: 2,
+                dashArray: '5, 5'
+              }}
+            />
+          )}
 
           {/* User location marker */}
           {userLocation && (
@@ -473,7 +533,9 @@ export default function Map() {
               onReservationSuccess={handleReservationSuccess}
               refreshTrigger={refreshTrigger}
               chargerTypeFilter={chargerType}
-	      />
+              statusFilter={statusFilter}
+              pointConnectorTypes={pointConnectorTypes}
+            />
           ))}
         </MapContainer>
 

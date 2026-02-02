@@ -48,7 +48,8 @@ interface StationMarkerProps {
   onReservationSuccess: (pointId: number, endTime: string) => void
   refreshTrigger?: number
   chargerTypeFilter?: string
-  showAvailableOnly?: boolean
+  statusFilter?: string
+  pointConnectorTypes?: Record<number, string>
 }
 
 export default function StationMarker({
@@ -58,7 +59,8 @@ export default function StationMarker({
   onReservationSuccess,
   refreshTrigger,
   chargerTypeFilter = '',
-  showAvailableOnly = false,
+  statusFilter = '',
+  pointConnectorTypes = {},
 }: StationMarkerProps) {
   const markerRef = useRef<L.Marker>(null)
   const [chargers, setChargers] = useState<PointInfo[] | null>(null)
@@ -80,14 +82,19 @@ export default function StationMarker({
       const refreshChargers = async () => {
         try {
           const points = await getPointsByIds(station.points)
-          setChargers(points)
+          // Merge connector types from the pre-fetched data
+          const pointsWithTypes = points.map(p => ({
+            ...p,
+            connector_type: p.connector_type || pointConnectorTypes[p.pointid]
+          }))
+          setChargers(pointsWithTypes)
         } catch (err) {
           console.error('Error refreshing chargers:', err)
         }
       }
       refreshChargers()
     }
-  }, [refreshTrigger])
+  }, [refreshTrigger, pointConnectorTypes])
 
   const handlePopupOpen = async () => {
     // Already loaded from a previous fetch
@@ -98,7 +105,12 @@ export default function StationMarker({
 
     try {
       const points = await getPointsByIds(station.points)
-      setChargers(points)
+      // Merge connector types from the pre-fetched data
+      const pointsWithTypes = points.map(p => ({
+        ...p,
+        connector_type: p.connector_type || pointConnectorTypes[p.pointid]
+      }))
+      setChargers(pointsWithTypes)
     } catch (err) {
       setError('Failed to load chargers')
       console.error('Error loading chargers:', err)
@@ -128,7 +140,12 @@ export default function StationMarker({
 
       // Refresh chargers to show updated status
       const points = await getPointsByIds(station.points)
-      setChargers(points)
+      // Merge connector types from the pre-fetched data
+      const pointsWithTypes = points.map(p => ({
+        ...p,
+        connector_type: p.connector_type || pointConnectorTypes[p.pointid]
+      }))
+      setChargers(pointsWithTypes)
     } catch (e: any) {
       const errorMsg = e?.message || 'Failed to reserve.'
       if (errorMsg.includes('409') || errorMsg.includes('active reservation')) {
@@ -161,12 +178,11 @@ export default function StationMarker({
 
   // Memoize icon to prevent unnecessary re-renders
   const markerIcon = useMemo(() => {
-    if (chargers) {
-      const hasAvailable = chargers.some(c => c.status === 'available')
-      return getIcon(hasAvailable ? 'green' : 'red')
+    if (isSelected) {
+      return getIcon('green')
     }
     return getIcon('blue')
-  }, [chargers])
+  }, [isSelected])
 
   // Memoize position to prevent unnecessary re-renders
   const position = useMemo(
@@ -174,7 +190,7 @@ export default function StationMarker({
     [station.coordinates.lat, station.coordinates.lon]
   )
 
-  // Filter chargers based on type and availability
+  // Filter chargers based on type and status
   const filteredChargers = useMemo(() => {
     if (!chargers) return null
 
@@ -182,12 +198,12 @@ export default function StationMarker({
       // Filter by charger type (exact match)
       const matchesType = !chargerTypeFilter || charger.connector_type === chargerTypeFilter
 
-      // Filter by availability
-      const matchesAvailability = !showAvailableOnly || charger.status === 'available'
+      // Filter by status
+      const matchesStatus = !statusFilter || charger.status === statusFilter
 
-      return matchesType && matchesAvailability
+      return matchesType && matchesStatus
     })
-  }, [chargers, chargerTypeFilter, showAvailableOnly])
+  }, [chargers, chargerTypeFilter, statusFilter])
 
   return (
     <Marker
