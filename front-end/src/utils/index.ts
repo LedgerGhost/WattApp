@@ -1,3 +1,4 @@
 export * from './constants'
 export * from './distance'
-export { getChargerImage, chargerImages } from './chargerImages'
+export * from './chargerImages'
+export * from '../components/map/mapviewtracker'

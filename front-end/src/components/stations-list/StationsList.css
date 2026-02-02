@@ -1,0 +1,116 @@
+.stations-list {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.sidebar.minimized .stations-list {
+  display: none;
+}
+
+.no-stations {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 24px;
+  font-size: 14px;
+}
+
+.station-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.station-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(25, 233, 171, 0.15);
+}
+
+.station-card.active {
+  border-color: var(--color-primary-dark);
+  background: var(--card-active-bg);
+  box-shadow: 0 4px 12px rgba(13, 125, 90, 0.2);
+}
+
+.station-card-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.station-card-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.station-distance {
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+:root.dark-mode .station-distance {
+  color: var(--color-primary);
+}
+
+.station-chargers {
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* Charger type badges in station card */
+.station-card-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.station-card-types .charger-type-badge {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.station-card-types .charger-type-badge.highlighted {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* Highlight station cards that match selected charger type */
+.station-card.matches-filter {
+  border-left: 3px solid var(--color-primary);
+}
+
+.station-card.matches-filter .station-card-name {
+  color: var(--color-primary-dark);
+}
+
+:root.dark-mode .station-card.matches-filter .station-card-name {
+  color: var(--color-primary);
+}
+
+@media (max-width: 1024px) {
+  .stations-list {
+    padding: 12px;
+  }
+}

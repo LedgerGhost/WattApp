@@ -1,0 +1,212 @@
+.station-popup-content {
+  padding: 8px;
+  min-width: 280px;
+}
+
+.station-name {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.station-distance {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #718096;
+}
+
+.chargers-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a5568;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+
+.charger-count {
+  font-weight: 400;
+  color: #718096;
+}
+
+.no-chargers-match {
+  text-align: center;
+  padding: 16px;
+  color: #718096;
+  font-size: 13px;
+  font-style: italic;
+}
+
+.charger-type-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #0d7d5a 0%, #19e9ab 100%);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.loading-chargers {
+  text-align: center;
+  padding: 16px;
+  color: #718096;
+  font-size: 13px;
+}
+
+.chargers-error,
+.reserve-error {
+  background: #fed7d7;
+  color: #742a2a;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.chargers-popup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.charger-popup-item {
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.charger-popup-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.charger-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.charger-connector {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.charger-popup-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #718096;
+}
+
+.charger-power {
+  font-weight: 500;
+}
+
+.charger-price {
+  font-weight: 600;
+  color: #0d7d5a;
+}
+
+.charger-popup-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: capitalize;
+}
+
+.status-badge.status-available {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.status-badge.status-charging {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+.status-badge.status-reserved {
+  background: #feebc8;
+  color: #744210;
+}
+
+.status-badge.status-offline {
+  background: #e2e8f0;
+  color: #4a5568;
+}
+
+.status-badge.status-malfunction {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+.charger-reserve-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #0d7d5a 0%, #19e9ab 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.charger-reserve-btn:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(25, 233, 171, 0.35);
+}
+
+.charger-reserve-btn:disabled {
+  background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.station-popup-content .gmaps-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+  background: #0d7d5a;
+  color: #fff;
+  text-decoration: none;
+  width: 100%;
+}
+
+.station-popup-content .gmaps-link:hover {
+  background: #19e9ab;
+}
+
+/* Custom popup styling */
+.station-popup .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.station-popup .leaflet-popup-content {
+  margin: 12px;
+  width: auto !important;
+}

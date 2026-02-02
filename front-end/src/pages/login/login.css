@@ -38,6 +38,10 @@
   z-index: 1;
 }
 
+:root.dark-mode .login-container::after {
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.9) 50%, rgba(15, 52, 96, 0.85) 100%);
+}
+
 /* Background decoration */
 .background-decoration {
   position: absolute;
@@ -100,6 +104,11 @@
   z-index: 10;
 }
 
+:root.dark-mode .login-card {
+  background: rgba(26, 26, 46, 0.95);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
 /* Header */
 .login-header {
   text-align: center;
@@ -128,14 +137,14 @@
 .login-header h1 {
   font-size: 32px;
   font-weight: 700;
-  color: #2d3748;
+  color: var(--text-primary);
   margin: 0 0 8px 0;
   letter-spacing: -0.5px;
 }
 
 .subtitle {
   font-size: 14px;
-  color: #718096;
+  color: var(--text-muted);
   margin: 0;
   font-weight: 500;
 }
@@ -157,7 +166,7 @@
 .form-group label {
   font-size: 14px;
   font-weight: 600;
-  color: #2d3748;
+  color: var(--text-primary);
   display: block;
 }
 
@@ -165,27 +174,39 @@
 .form-group input[type='password'],
 .form-group input[type='text'] {
   padding: 12px 16px;
-  border: 2px solid #c8e6d7;
+  border: 2px solid var(--border-input);
   border-radius: 12px;
   font-size: 15px;
   transition: all 0.3s ease;
-  background: #f0faf7;
-  color: #2d3748;
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+:root.dark-mode .form-group input[type='email'],
+:root.dark-mode .form-group input[type='password'],
+:root.dark-mode .form-group input[type='text'] {
+  background: var(--bg-tertiary);
 }
 
 .form-group input[type='email']::placeholder,
 .form-group input[type='password']::placeholder,
 .form-group input[type='text']::placeholder {
-  color: #a0aec0;
+  color: var(--text-placeholder);
 }
 
 .form-group input[type='email']:focus,
 .form-group input[type='password']:focus,
 .form-group input[type='text']:focus {
   outline: none;
-  border-color: #19e9ab;
-  background: white;
+  border-color: var(--color-primary);
+  background: var(--bg-primary);
   box-shadow: 0 0 0 3px rgba(25, 233, 171, 0.15);
+}
+
+:root.dark-mode .form-group input[type='email']:focus,
+:root.dark-mode .form-group input[type='password']:focus,
+:root.dark-mode .form-group input[type='text']:focus {
+  background: var(--bg-secondary);
 }
 
 .form-group input:disabled {
@@ -237,7 +258,7 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  color: #4a5568;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -245,18 +266,22 @@
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #0d7d5a;
+  accent-color: var(--color-primary-dark);
 }
 
 .forgot-password {
-  color: #0d7d5a;
+  color: var(--color-primary-dark);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s ease;
 }
 
+:root.dark-mode .forgot-password {
+  color: var(--color-primary);
+}
+
 .forgot-password:hover {
-  color: #19e9ab;
+  color: var(--color-primary);
   text-decoration: underline;
 }
 
@@ -293,24 +318,28 @@
   text-align: center;
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-color);
 }
 
 .login-footer p {
   font-size: 14px;
-  color: #4a5568;
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .signup-link {
-  color: #0d7d5a;
+  color: var(--color-primary-dark);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s ease;
 }
 
+:root.dark-mode .signup-link {
+  color: var(--color-primary);
+}
+
 .signup-link:hover {
-  color: #19e9ab;
+  color: var(--color-primary);
   text-decoration: underline;
 }
 
@@ -326,12 +355,12 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #e2e8f0;
+  background: var(--border-color);
 }
 
 .guest-divider span {
   padding: 0 12px;
-  color: #718096;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 500;
 }
@@ -339,25 +368,29 @@
 .guest-button {
   width: 100%;
   padding: 12px 20px;
-  border: 2px solid #c8e6d7;
+  border: 2px solid var(--border-input);
   border-radius: 12px;
   background: transparent;
-  color: #0d7d5a;
+  color: var(--color-primary-dark);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
+:root.dark-mode .guest-button {
+  color: var(--color-primary);
+}
+
 .guest-button:hover {
-  background: #f0faf7;
-  border-color: #19e9ab;
+  background: var(--card-hover-bg);
+  border-color: var(--color-primary);
 }
 
 .guest-note {
   margin: 8px 0 0 !important;
   font-size: 12px !important;
-  color: #a0aec0 !important;
+  color: var(--text-muted) !important;
 }
 
 /* Responsive design */

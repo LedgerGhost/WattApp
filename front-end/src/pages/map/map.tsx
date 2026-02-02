@@ -1,134 +1,177 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import './map.css'
-import { getPointsInfo, getMyReservations, reservePoint, cancelReservation } from '../../services/chargers'
+import { getMyReservations, cancelReservation } from '../../services/chargers'
+import { getStationsByLocation, getPointById, getPointsByIds } from '../../services/station'
 import { isGuest } from '../../services/auth'
-import { getChargerImage } from '../../utils/chargerImages'
-import { DEFAULT_CENTER, DEFAULT_ZOOM, LOCATION_ZOOM, EARTH_RADIUS_KM, mapStatus } from '../../utils/constants'
-import type { Charger, ChargerType, AvailabilityStatus, BackendPointInfo } from '../../types'
-import { GuestWarningModal, ActiveReservationOverlay, ReserveModal } from '../../components'
+import { DEFAULT_CENTER, DEFAULT_ZOOM, LOCATION_ZOOM } from '../../utils/constants'
+import type { Station, Charger, AvailabilityStatus } from '../../types'
+import {
+  GuestWarningModal,
+  ActiveReservationOverlay,
+  RecenterButton,
+  SidebarHeader,
+  StationMarker,
+  StationsList,
+  StationFilters
+} from '../../components'
 
 // Use Leaflet from CDN (loaded globally in index.html)
 declare const L: typeof import('leaflet')
 
-// Charger type images are now handled in utils/chargerImages.ts
-
-
-
-
-
-
-
-
-
-
-
-// Calculate distance between two coordinates using Haversine formula (returns km)
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = EARTH_RADIUS_KM // Earth's radius in kilometers
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLon = (lon2 - lon1) * Math.PI / 180
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c
-}
-
-// Component to fit bounds when charger is selected
-function FitBoundsOnSelect({
-  userLocation,
-  selectedCharger
-}: {
-  userLocation: [number, number] | null
-  selectedCharger: Charger | null
-}) {
+// Component to fix gray tiles by invalidating map size
+function MapResizer() {
   const map = useMap()
 
   useEffect(() => {
-    if (selectedCharger && userLocation) {
-      const bounds = L.latLngBounds(
-        [userLocation[0], userLocation[1]],
-        [selectedCharger.latitude, selectedCharger.longitude]
-      )
-      map.fitBounds(bounds, { padding: [100, 100], maxZoom: 15 })
+    // Invalidate size multiple times to ensure tiles load
+    const timers = [100, 300, 500, 1000].map(delay =>
+      setTimeout(() => map.invalidateSize(), delay)
+    )
+
+    // Also invalidate on window resize
+    const handleResize = () => map.invalidateSize()
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      timers.forEach(clearTimeout)
+      window.removeEventListener('resize', handleResize)
     }
-  }, [selectedCharger, userLocation, map])
+  }, [map])
 
   return null
 }
 
-// Component to handle recenter button
-function RecenterButton({
-  userLocation,
-  onRecenter
-}: {
-  userLocation: [number, number] | null
-  onRecenter: () => void
-}) {
+// Component to fly to selected station
+function FlyToStation({ station }: { station: Station | null }) {
   const map = useMap()
 
-  const handleRecenter = () => {
-    if (userLocation) {
-      map.setView(userLocation, LOCATION_ZOOM, { animate: true })
-      onRecenter()
+  useEffect(() => {
+    if (station) {
+      map.flyTo(
+        [station.coordinates.lat, station.coordinates.lon],
+        15,
+        { animate: true, duration: 1 }
+      )
     }
-  }
+  }, [station, map])
 
-  if (!userLocation) return null
-
-  return (
-    <button
-      className="recenter-button"
-      onClick={handleRecenter}
-      title="Center map on my location"
-    >
-      📍
-    </button>
-  )
+  return null
 }
 
 export default function Map() {
-  console.log('✅ Map component mounted')
 
-  const [chargers, setChargers] = useState<Charger[]>([])
-  const [isLoadingChargers, setIsLoadingChargers] = useState(true)
-  const [chargersError, setChargersError] = useState<string | null>(null)
+  const [stations, setStations] = useState<Station[]>([])
+  const [isLoadingStations, setIsLoadingStations] = useState(true)
+  const hasInitialLoadRef = useRef(false)
+  const [stationsError, setStationsError] = useState<string | null>(null)
+
+  // Cache for station charger info (maps station name to array of connector types)
+  const [stationChargerTypes, setStationChargerTypes] = useState<Record<string, string[]>>({})
+  const fetchedStationsRef = useRef<Set<string>>(new Set())
 
   // User location state
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [_locationError, setLocationError] = useState<string | null>(null)
-  const [_isLoadingLocation, setIsLoadingLocation] = useState(true)
+  const [isLoadingLocation, setIsLoadingLocation] = useState(true)
 
   const navigate = useNavigate()
-  const location = useLocation()
-  const [selectedCharger, setSelectedCharger] = useState<Charger | null>(null)
-  const [chargerTypeSearch, setChargerTypeSearch] = useState('')
-  const [showChargerTypeSuggestions, setShowChargerTypeSuggestions] = useState(false)
+  const [selectedStation, setSelectedStation] = useState<Station | null>(null)
   const [isLeftSidebarMinimized, setIsLeftSidebarMinimized] = useState(false)
+
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [maxDistance, setMaxDistance] = useState(50)
+  const [chargerType, setChargerType] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
   const [isFiltersMinimized, setIsFiltersMinimized] = useState(false)
 
+  // Common EV charger connector types (hardcoded for performance - no need to fetch all points)
+  const availableChargerTypes = useMemo(() => [
+    'CCS',
+    'CHAdeMO',
+    'Type 2',
+    'Type 1',
+    'Tesla',
+    'GB/T',
+  ], [])
 
-  const [filters, setFilters] = useState({
-    maxPrice: 1 as number,
-    availabilityFilter: 'All' as 'All' | AvailabilityStatus,
-    chargerTypeFilter: '' as string,
-  })
+  // Pre-fetch charger info for stations to show connector types in the list
+  useEffect(() => {
+    const fetchStationChargerInfo = async () => {
+      // Only fetch for stations we haven't fetched yet (using ref to avoid infinite loops)
+      const stationsToFetch = stations.filter(
+        s => !fetchedStationsRef.current.has(s.station_name)
+      )
 
+      if (stationsToFetch.length === 0) return
 
+      // Mark stations as being fetched
+      stationsToFetch.forEach(s => fetchedStationsRef.current.add(s.station_name))
 
-  //reserve hooks
-  const [showReserveModal, setShowReserveModal] = useState(false)
+      // Fetch in batches to avoid too many parallel requests
+      const batchSize = 5
+      for (let i = 0; i < stationsToFetch.length; i += batchSize) {
+        const batch = stationsToFetch.slice(i, i + batchSize)
+
+        const batchResults = await Promise.allSettled(
+          batch.map(async station => {
+            const points = await getPointsByIds(station.points)
+            const connectorTypes = [...new Set(
+              points.map(p => p.connector_type).filter(Boolean)
+            )] as string[]
+            return { stationName: station.station_name, connectorTypes }
+          })
+        )
+
+        // Update cache with successful results
+        const newTypes: Record<string, string[]> = {}
+        batchResults.forEach((result, idx) => {
+          if (result.status === 'fulfilled') {
+            newTypes[result.value.stationName] = result.value.connectorTypes
+          } else {
+            // Mark as fetched but empty on error
+            newTypes[batch[idx].station_name] = []
+          }
+        })
+
+        setStationChargerTypes(prev => ({ ...prev, ...newTypes }))
+      }
+    }
+
+    if (stations.length > 0) {
+      fetchStationChargerInfo()
+    }
+  }, [stations])
+
+  // Filtered stations based on search query and charger type (when info is available)
+  // Distance filtering is handled by the API radius parameter
+  const filteredStations = useMemo(() => {
+    return stations.filter(station => {
+      // Filter by search query
+      const matchesSearch = searchQuery === '' ||
+        station.station_name.toLowerCase().includes(searchQuery.toLowerCase())
+
+      // Filter by charger type if we have the info and a filter is selected
+      const stationTypes = stationChargerTypes[station.station_name]
+      const matchesChargerType = !chargerType ||
+        !stationTypes ||  // Show if we haven't loaded types yet
+        stationTypes.includes(chargerType)
+
+      return matchesSearch && matchesChargerType
+    })
+  }, [stations, searchQuery, chargerType, stationChargerTypes])
+
+  // Guest modal
   const [showGuestModal, setShowGuestModal] = useState(false)
-  const [reserveMinutes, setReserveMinutes] = useState(30)
-  const [reserveStatus, setReserveStatus] = useState<
-    'idle' | 'loading' | 'success' | 'error'
-  >('idle')
-  const [reserveMessage, setReserveMessage] = useState('')
+
+  // Cancel reservation state
   const [cancelStatus, setCancelStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [cancelMessage, setCancelMessage] = useState('')
+
+  // Trigger to refresh charger statuses
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   // Active reservation state - persists until cancelled or expired
   const [activeReservation, setActiveReservation] = useState<{
@@ -137,116 +180,7 @@ export default function Map() {
     minutes: number
   } | null>(null)
 
-
-
-  useEffect(() => {
-    const fetchChargers = async () => {
-      try {
-        setIsLoadingChargers(true)
-        setChargersError(null)
-
-        const raw = await getPointsInfo()
-
-        console.log('RAW /pointsinfo response:', raw)
-
-        // The backend might return either an array OR an object with an array inside.
-        const points: BackendPointInfo[] = Array.isArray(raw)
-          ? raw
-          : Array.isArray(raw.points)
-            ? raw.points
-            : Array.isArray(raw.pointsinfo)
-              ? raw.pointsinfo
-              : []
-
-        if (points.length === 0) {
-          throw new Error('No points array found in response')
-        }
-
-
-        const mapped: Charger[] = points.map(p => ({
-          id: p.pointid, // ✅ keep as string (recommended)
-          name: p.station_name || p.providerName || 'Unknown Station',
-          address: p.address || 'Unknown location',
-          price: p.kwhprice ?? 0,
-          available: p.status === 'available' ? 1 : 0,
-          distance: 0,
-          latitude: p.lat,
-          longitude: p.lon,
-          chargerType: (p.connector_type as ChargerType),
-          status: mapStatus(p.status),
-          power: p.cap ?? 0,
-        }))
-
-        setChargers(mapped)
-
-        // Check if we navigated here with a specific point to show
-        const state = location.state as { pointId?: string; lat?: number; lon?: number } | null
-        if (state?.pointId) {
-          const targetCharger = mapped.find(c => c.id === state.pointId)
-          if (targetCharger) {
-            setSelectedCharger(targetCharger)
-          }
-          // Clear the state after using it
-          navigate(location.pathname, { replace: true, state: {} })
-        }
-      } catch (err) {
-        setChargersError('Could not load charging points')
-      } finally {
-        setIsLoadingChargers(false)
-      }
-    }
-
-    fetchChargers()
-  }, [])
-
-  // Check for active reservations on load
-  useEffect(() => {
-    const checkActiveReservation = async () => {
-      // Don't check if user is a guest or chargers haven't loaded yet
-      if (isGuest() || isLoadingChargers || chargers.length === 0) return
-
-      try {
-        const reservations = await getMyReservations()
-
-        // API returns 204 (null) if no reservations
-        if (!reservations || !Array.isArray(reservations)) return
-
-        // Find active reservation
-        const active = reservations.find((r: any) => r.status === 'active')
-        if (!active) return
-
-        // Find matching charger from loaded chargers
-        const matchingCharger = chargers.find(c => c.id === active.pointid)
-
-        // Build charger object from reservation data (fallback if not found in chargers)
-        const chargerData: Charger = matchingCharger || {
-          id: active.pointid,
-          name: active.station_name || 'Unknown Station',
-          address: active.address || 'Unknown location',
-          price: 0,
-          available: 0,
-          distance: 0,
-          latitude: 0,
-          longitude: 0,
-          chargerType: active.connector_type || 'Unknown',
-          status: 'Reserved' as AvailabilityStatus,
-          power: active.power_kw || 0,
-        }
-
-        setActiveReservation({
-          charger: chargerData,
-          endTime: active.end_time,
-          minutes: active.duration_minutes,
-        })
-      } catch (err) {
-        console.warn('Failed to check active reservations:', err)
-      }
-    }
-
-    checkActiveReservation()
-  }, [isLoadingChargers, chargers])
-
-  // Get user's location from browser
+  // Get user's location from browser first
   useEffect(() => {
     if (!navigator.geolocation) {
       setLocationError('Geolocation is not supported by your browser')
@@ -274,108 +208,102 @@ export default function Map() {
     )
   }, [])
 
+  useEffect(() => {
+    const fetchStations = async () => {
+      // Use user location as center (for accurate dist_from_user), fall back to default
+      const lat = userLocation?.[0] ?? DEFAULT_CENTER[0];
+      const lon = userLocation?.[1] ?? DEFAULT_CENTER[1];
+      // Use maxDistance filter (km) converted to meters as the search radius
+      const searchRadius = maxDistance * 1000;
 
-  if (isLoadingChargers) {
-    return <div className="map-container">Loading chargers…</div>
-  }
+      try {
+        // Only show loading state on initial load
+        if (!hasInitialLoadRef.current) {
+          setIsLoadingStations(true);
+        }
+        setStationsError(null);
 
-  if (chargersError) {
-    return <div className="map-container">{chargersError}</div>
-  }
+        const response = await getStationsByLocation(lat, lon, searchRadius);
+        console.log(`📍 Fetched stations within ${maxDistance}km (${searchRadius}m radius): ${response?.results?.length || 0} found`);
 
-
-
-  // =========================
-  // HELPERS
-  // =========================
-
-  // Helper for map pin color based on status
-
-  const getMapPinColor = (status: AvailabilityStatus): string => {
-    switch (status) {
-      case 'Available':
-        return 'green'
-      case 'Charging':
-        return 'red'
-      case 'Offline':
-        return 'grey'
-      case 'Malfunction':
-        return 'orange'
-      default:
-        return 'blue'
-    }
-  }
-
-  // =========================
-  // RESERVE HANDLERS
-  // =========================
-  const openReserveModal = () => {
-    if (!selectedCharger) return
-
-    // Check if user is a guest
-    if (isGuest()) {
-      setShowGuestModal(true)
-      return
-    }
-
-    setReserveMinutes(30)
-    setReserveStatus('idle')
-    setReserveMessage('')
-    setShowReserveModal(true)
-  }
-
-  const closeReserveModal = () => {
-    setShowReserveModal(false)
-    // If closing after successful reservation, reload to update charger status
-    if (reserveStatus === 'success') {
-      setReserveStatus('idle')
-      setReserveMessage('')
-      window.location.reload()
-    }
-  }
-
-  const confirmReservation = async () => {
-    if (!selectedCharger) return
-
-    const minutes = Math.max(1, Math.min(60, reserveMinutes))
-
-    try {
-      setReserveStatus('loading')
-      setReserveMessage('')
-
-      const data = await reservePoint(selectedCharger.id, minutes)
-      console.log('Reserve response:', data)
-
-      // Check if reservation was unsuccessful (point not available)
-      if (data.reservationendtime === '1970-01-01 00:00') {
-        setReserveStatus('error')
-        setReserveMessage('Point is not available for reservation.')
-        return
+        if (response?.results?.length > 0) {
+          const sorted = [...response.results].sort(
+            (a, b) => (a.dist_from_user ?? Infinity) - (b.dist_from_user ?? Infinity)
+          );
+          setStations(sorted);
+        } else {
+          console.log('No stations found nearby');
+          setStations([]);
+        }
+      } catch (err) {
+        console.error('Error fetching stations:', err);
+        if (!hasInitialLoadRef.current) {
+          setStationsError('Could not load stations');
+        }
+      } finally {
+        setIsLoadingStations(false);
+        hasInitialLoadRef.current = true;
       }
+    };
 
-      // Store active reservation and close modal
-      setActiveReservation({
-        charger: selectedCharger,
-        endTime: data.reservationendtime,
-        minutes: minutes
-      })
-      setShowReserveModal(false)
-      setReserveStatus('idle')
-      setReserveMessage('')
-    } catch (e: any) {
-      setReserveStatus('error')
-      const errorMsg = e?.message || 'Unexpected error. Please try again.'
-      if (errorMsg.includes('401') || errorMsg.toLowerCase().includes('auth')) {
-        setReserveMessage('You must be logged in to reserve a spot. Please log in again.')
-      } else if (errorMsg.includes('404')) {
-        setReserveMessage('Point not found.')
-      } else if (errorMsg.includes('active reservation') || errorMsg.includes('409')) {
-        setReserveMessage('You already have an active reservation.')
-      } else {
-        setReserveMessage(errorMsg)
+    if (!isLoadingLocation) {
+      fetchStations();
+    }
+  }, [userLocation, isLoadingLocation, maxDistance]);
+
+  // Check for active reservations on load (only once after stations load)
+  const [hasCheckedReservations, setHasCheckedReservations] = useState(false)
+
+  useEffect(() => {
+    // Only run once, after stations have loaded, and only for logged-in users
+    if (hasCheckedReservations || isLoadingStations || isGuest()) return
+
+    setHasCheckedReservations(true)
+
+    const checkActiveReservation = async () => {
+      try {
+        const reservations = await getMyReservations()
+
+        // API returns 204 (null) if no reservations
+        if (!reservations || !Array.isArray(reservations)) return
+
+        // Find active reservation
+        const active = reservations.find((r: any) => r.status === 'active')
+        if (!active) return
+
+        // Fetch the point info for the active reservation
+        try {
+          const pointInfo = await getPointById(active.pointid)
+
+          const chargerData: Charger = {
+            id: String(pointInfo.pointid),
+            name: pointInfo.station_name || 'Unknown Station',
+            address: '',
+            price: pointInfo.kwhprice ?? 0,
+            available: pointInfo.status === 'available' ? 1 : 0,
+            distance: 0,
+            latitude: parseFloat(pointInfo.lat),
+            longitude: parseFloat(pointInfo.lon),
+            chargerType: pointInfo.connector_type || 'Unknown',
+            status: 'Reserved' as AvailabilityStatus,
+            power: pointInfo.cap ?? 0,
+          }
+
+          setActiveReservation({
+            charger: chargerData,
+            endTime: active.end_time,
+            minutes: active.duration_minutes,
+          })
+        } catch (err) {
+          console.warn('Failed to fetch point info for reservation:', err)
+        }
+      } catch (err) {
+        console.warn('Failed to check active reservations:', err)
       }
     }
-  }
+
+    checkActiveReservation()
+  }, [isLoadingStations, hasCheckedReservations])
 
   const handleCancelReservation = async () => {
     if (!activeReservation) return
@@ -389,8 +317,7 @@ export default function Map() {
       setCancelStatus('idle')
       setCancelMessage('')
       setActiveReservation(null)
-      // Refresh chargers to update statuses
-      window.location.reload()
+      setRefreshTrigger(prev => prev + 1)
     } catch (e: any) {
       setCancelStatus('error')
       const errorMsg = e?.message || 'Failed to cancel reservation.'
@@ -403,46 +330,52 @@ export default function Map() {
     }
   }
 
+  const handleReservationSuccess = (pointId: number, endTime: string) => {
+    // Find which station contains this point
+    const station = stations.find(s => s.points.includes(pointId))
 
-  // Get unique charger types from all chargers
-  const uniqueChargerTypes = Array.from(
-    new Set(chargers.map(c => c.chargerType).filter(Boolean))
-  ).sort()
-
-  // Filter suggestions based on search input
-  const chargerTypeSuggestions = uniqueChargerTypes.filter(type =>
-    type.toLowerCase().includes(chargerTypeSearch.toLowerCase())
-  )
-
-  // Calculate distances and sort by proximity
-  const chargersWithDistance = chargers.map(charger => {
-    if (userLocation) {
-      const distance = calculateDistance(
-        userLocation[0],
-        userLocation[1],
-        charger.latitude,
-        charger.longitude
-      )
-      return { ...charger, distance: parseFloat(distance.toFixed(1)) }
+    // Create a basic charger object for the overlay
+    const chargerData: Charger = {
+      id: String(pointId),
+      name: station?.station_name || 'Unknown Station',
+      address: '',
+      price: 0,
+      available: 0,
+      distance: station?.dist_from_user ?? 0,
+      latitude: station?.coordinates.lat ?? 0,
+      longitude: station?.coordinates.lon ?? 0,
+      chargerType: 'Unknown',
+      status: 'Reserved' as AvailabilityStatus,
+      power: 0,
     }
-    return charger
-  })
 
-  const filteredChargers = chargersWithDistance
-    .filter(charger => {
-      const priceMatch = charger.price <= filters.maxPrice
-
-      const availabilityMatch =
-        filters.availabilityFilter === 'All' ||
-        charger.status === filters.availabilityFilter
-
-      const chargerTypeMatch =
-        !filters.chargerTypeFilter ||
-        charger.chargerType === filters.chargerTypeFilter
-
-      return priceMatch && availabilityMatch && chargerTypeMatch
+    setActiveReservation({
+      charger: chargerData,
+      endTime: endTime,
+      minutes: 30, // Default
     })
-    .sort((a, b) => a.distance - b.distance)
+  }
+
+  // Loading state - only show on initial load, not on subsequent fetches
+  if (isLoadingLocation || (isLoadingStations && !hasInitialLoadRef.current)) {
+    return (
+      <div className="map-container">
+        <div className="loading-message">
+          {isLoadingLocation ? 'Getting your location...' : 'Loading stations...'}
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (stationsError) {
+    return (
+      <div className="map-container">
+        <div className="error-message">{stationsError}</div>
+      </div>
+    )
+  }
+
 
   // =========================
   // RENDER
@@ -451,175 +384,38 @@ export default function Map() {
     <div className="map-container">
       {/* Left Sidebar */}
       <div className={`sidebar sidebar-left ${isLeftSidebarMinimized ? 'minimized' : ''}`}>
-        <div className="sidebar-header">
-          <div className="header-top">
-            <h2>⚡ WattApp</h2>
-            <button
-              type="button"
-              className="minimize-btn"
-              onClick={() => setIsLeftSidebarMinimized(!isLeftSidebarMinimized)}
-              title={isLeftSidebarMinimized ? 'Expand filters' : 'Minimize filters'}
-            >
-              {isLeftSidebarMinimized ? '▶' : '◀'}
-            </button>
-          </div>
+        <SidebarHeader
+          isMinimized={isLeftSidebarMinimized}
+          onToggleMinimize={() => setIsLeftSidebarMinimized(!isLeftSidebarMinimized)}
+          onProfileClick={() => {
+            if (isGuest()) {
+              setShowGuestModal(true)
+            } else {
+              navigate('/profile')
+            }
+          }}
+        />
+        <StationFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          maxDistance={maxDistance}
+          onMaxDistanceChange={setMaxDistance}
+          chargerType={chargerType}
+          onChargerTypeChange={setChargerType}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          isMinimized={isFiltersMinimized}
+          onToggleMinimized={() => setIsFiltersMinimized(!isFiltersMinimized)}
+          availableChargerTypes={availableChargerTypes}
+        />
 
-          <button
-            type="button"
-            className="profile-btn"
-            onClick={() => {
-              if (isGuest()) {
-                setShowGuestModal(true)
-              } else {
-                navigate('/profile')
-              }
-            }}
-          >
-            Profile
-          </button>
-        </div>
-
-        {/* Filters */}
-        <div className={`filters ${isFiltersMinimized ? 'minimized' : ''}`}>
-          <div className="filter-group">
-            <label>Max Price ($/kWh)</label>
-            <div className="price-range">
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={filters.maxPrice}
-                onChange={e =>
-                  setFilters(prev => ({
-                    ...prev,
-                    maxPrice: parseFloat(e.target.value),
-                  }))
-                }
-              />
-              <div className="price-display">
-                ${filters.maxPrice.toFixed(2)}/kWh
-              </div>
-            </div>
-          </div>
-
-          <div className="filter-group">
-            <label>Availability Status</label>
-            <div className="availability-filter">
-              {(['All', 'Available', 'Charging', 'Reserved', 'Offline', 'Malfunction'] as const).map(
-                status => (
-                  <label key={status} className="checkbox-label">
-                    <input
-                      type="radio"
-                      name="availability"
-                      value={status}
-                      checked={filters.availabilityFilter === status}
-                      onChange={e =>
-                        setFilters(prev => ({
-                          ...prev,
-                          availabilityFilter: e.target.value as any,
-                        }))
-                      }
-                    />
-                    <span>{status}</span>
-                  </label>
-                )
-              )}
-            </div>
-          </div>
-
-          <div className="filter-group">
-            <label>Charger Type</label>
-            <div className="charger-type-search-container">
-              <input
-                type="text"
-                placeholder="Search charger type..."
-                value={chargerTypeSearch}
-                onChange={e => {
-                  setChargerTypeSearch(e.target.value)
-                  setShowChargerTypeSuggestions(true)
-                }}
-                onFocus={() => setShowChargerTypeSuggestions(true)}
-                className="charger-type-search-input"
-              />
-              {filters.chargerTypeFilter && (
-                <button
-                  className="clear-search-btn"
-                  onClick={() => {
-                    setChargerTypeSearch('')
-                    setFilters(prev => ({
-                      ...prev,
-                      chargerTypeFilter: '',
-                    }))
-                  }}
-                >
-                  ✕
-                </button>
-              )}
-              {showChargerTypeSuggestions && chargerTypeSearch && (
-                <div className="charger-type-suggestions">
-                  {chargerTypeSuggestions.length > 0 ? (
-                    chargerTypeSuggestions.map(type => (
-                      <div
-                        key={type}
-                        className="suggestion-item"
-                        onClick={() => {
-                          setChargerTypeSearch(type)
-                          setFilters(prev => ({
-                            ...prev,
-                            chargerTypeFilter: type,
-                          }))
-                          setShowChargerTypeSuggestions(false)
-                        }}
-                      >
-                        {type}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="suggestion-item no-results">No matches found</div>
-                  )}
-                </div>
-              )}
-              {filters.chargerTypeFilter && (
-                <div className="selected-filter">
-                  Selected: <strong>{filters.chargerTypeFilter}</strong>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <button
-          className="toggle-filters-btn"
-          onClick={() => setIsFiltersMinimized(!isFiltersMinimized)}
-          title={isFiltersMinimized ? 'Show filters' : 'Hide filters'}
-        >
-          {isFiltersMinimized ? '▼ Show Filters' : '▲ Hide Filters'}
-        </button>
-
-        {/* Chargers list */}
-        <div className="chargers-list">
-          {filteredChargers.map(charger => (
-            <div
-              key={charger.id}
-              className={`charger-card ${selectedCharger?.id === charger.id ? 'active' : ''}`}
-              onClick={() => setSelectedCharger(charger)}
-            >
-              <div className="charger-name">{charger.name}</div>
-              <div className="charger-info">
-                <span className="price">${charger.price.toFixed(2)}/kWh</span>
-                <span className="distance">{charger.distance} km</span>
-              </div>
-              <div className="charger-specs">
-                <span className="type">{charger.chargerType}</span>
-                <span className="power">{charger.power}kW</span>
-              </div>
-              <div className="charger-status">
-                <span className={`status ${charger.status.toLowerCase()}`}>{charger.status}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <StationsList
+          stations={filteredStations}
+          selectedStationName={selectedStation?.station_name || null}
+          onSelectStation={setSelectedStation}
+          stationChargerTypes={stationChargerTypes}
+          selectedChargerType={chargerType}
+        />
       </div>
 
       {/* Map area */}
@@ -630,16 +426,16 @@ export default function Map() {
           scrollWheelZoom={true}
           className="leaflet-container"
         >
-          {/* Fit bounds to show both user and selected charger */}
-          <FitBoundsOnSelect
-            userLocation={userLocation}
-            selectedCharger={selectedCharger}
-          />
+          {/* Fix gray tiles issue */}
+          <MapResizer />
+
+          {/* Fly to selected station */}
+          <FlyToStation station={selectedStation} />
 
           {/* Recenter button */}
           <RecenterButton
             userLocation={userLocation}
-            onRecenter={() => setSelectedCharger(null)}
+            onRecenter={() => setSelectedStation(null)}
           />
 
           <TileLayer
@@ -667,98 +463,19 @@ export default function Map() {
             </Marker>
           )}
 
-          {filteredChargers.map(charger => {
-            const isSelected = selectedCharger?.id === charger.id
-            return (
-              <Marker
-                key={charger.id}
-                position={[charger.latitude, charger.longitude]}
-                icon={L.icon({
-                  iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${getMapPinColor(
-                    charger.status
-                  )}.png`,
-                  // shadowUrl:
-                  //   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                  iconSize: isSelected ? [35, 57] : [25, 41],
-                  iconAnchor: isSelected ? [17, 57] : [12, 41],
-                  popupAnchor: [1, -34],
-                  // shadowSize: [41, 41],
-                  className: isSelected ? 'selected-marker' : '',
-                })}
-                eventHandlers={{
-                  click: () => setSelectedCharger(charger),
-                }}
-              >
-                <Popup>
-                  <div className="popup-content">
-                    <h4>{charger.name}</h4>
-                    <p>{charger.address}</p>
-                    <p>
-                      <strong>${charger.price.toFixed(2)}</strong>/kWh
-                    </p>
-
-                    <a
-                      href={`https://www.google.com/maps?q=${charger.latitude},${charger.longitude}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="gmaps-link"
-                    >
-                      See location ↗
-                    </a>
-                  </div>
-                </Popup>
-              </Marker>
-            )
-          })}
+          {/* Station markers */}
+          {filteredStations.map(station => (
+            <StationMarker
+              key={`${station.station_name}-${station.coordinates.lat}-${station.coordinates.lon}`}
+              station={station}
+              isSelected={selectedStation?.station_name === station.station_name}
+              onGuestWarning={() => setShowGuestModal(true)}
+              onReservationSuccess={handleReservationSuccess}
+              refreshTrigger={refreshTrigger}
+              chargerTypeFilter={chargerType}
+	      />
+          ))}
         </MapContainer>
-
-        {/* Selected charger panel */}
-        {selectedCharger && (
-          <>
-            <div className="selected-charger-info">
-              <div className="charger-icon-header">
-                <img
-                  src={getChargerImage(selectedCharger.chargerType)}
-                  alt={selectedCharger.chargerType || 'Charger'}
-                  className="charger-type-icon"
-                />
-              </div>
-
-              <h4>{selectedCharger.name}</h4>
-              <p>{selectedCharger.address}</p>
-
-              <div className="charger-details">
-                <div className="detail-item">
-                  <span className="label">Type:</span>
-                  <span className="value">{selectedCharger.chargerType}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="label">Power:</span>
-                  <span className="value">{selectedCharger.power} kW</span>
-                </div>
-                <div className="detail-item">
-                  <span className="label">Price:</span>
-                  <span className="value">${selectedCharger.price.toFixed(2)}/kWh</span>
-                </div>
-                <div className="detail-item">
-                  <span className="label">Status:</span>
-                  <span className={`value status ${selectedCharger.status.toLowerCase()}`}>
-                    {selectedCharger.status}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                className="reserve-btn"
-                onClick={openReserveModal}
-                disabled={selectedCharger.status !== 'Available'}
-                title={selectedCharger.status !== 'Available' ? 'Can only reserve available chargers' : 'Reserve this charger'}
-              >
-                Reserve Spot
-              </button>
-            </div>
-          </>
-        )}
 
         {/* Guest Warning Modal */}
         {showGuestModal && (
@@ -773,22 +490,6 @@ export default function Map() {
           <ActiveReservationOverlay
             reservation={activeReservation}
             onCancel={handleCancelReservation}
-            cancelStatus={cancelStatus}
-            cancelMessage={cancelMessage}
-          />
-        )}
-
-        {/* Reserve modal */}
-        {showReserveModal && selectedCharger && (
-          <ReserveModal
-            charger={selectedCharger}
-            reserveMinutes={reserveMinutes}
-            onMinutesChange={setReserveMinutes}
-            onConfirm={confirmReservation}
-            onClose={closeReserveModal}
-            onCancelReservation={handleCancelReservation}
-            reserveStatus={reserveStatus}
-            reserveMessage={reserveMessage}
             cancelStatus={cancelStatus}
             cancelMessage={cancelMessage}
           />
