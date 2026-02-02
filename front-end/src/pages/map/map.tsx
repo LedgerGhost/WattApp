@@ -228,6 +228,12 @@ export default function Map() {
       return
     }
 
+    // Check if we're on HTTPS (required for geolocation on mobile)
+    const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost'
+    if (!isSecure) {
+      console.warn('Geolocation may not work over HTTP on mobile browsers')
+    }
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords
@@ -236,13 +242,26 @@ export default function Map() {
         console.log('📍 User location:', latitude, longitude)
       },
       (error) => {
-        console.warn('Geolocation error:', error.message)
-        setLocationError(error.message)
+        console.warn('Geolocation error:', error.code, error.message)
+        // Provide user-friendly error messages
+        let errorMsg = error.message
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMsg = 'Location access denied. Please enable location permissions in your browser settings.'
+            break
+          case error.POSITION_UNAVAILABLE:
+            errorMsg = 'Location information unavailable. Please try again.'
+            break
+          case error.TIMEOUT:
+            errorMsg = 'Location request timed out. Please check your connection and try again.'
+            break
+        }
+        setLocationError(errorMsg)
         setIsLoadingLocation(false)
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 15000, // Increased timeout for mobile networks
         maximumAge: 300000, // Cache location for 5 minutes
       }
     )

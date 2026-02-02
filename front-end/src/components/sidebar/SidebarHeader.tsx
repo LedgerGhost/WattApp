@@ -21,6 +21,15 @@ export default function SidebarHeader({
     return window.matchMedia('(prefers-color-scheme: dark)').matches
   })
 
+  // Track if we're on mobile for arrow direction
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark-mode')
@@ -53,7 +62,10 @@ export default function SidebarHeader({
             onClick={onToggleMinimize}
             title={isMinimized ? 'Expand filters' : 'Minimize filters'}
           >
-            {isMinimized ? '▶' : '◀'}
+            {isMobile
+              ? (isMinimized ? '▼' : '▲')
+              : (isMinimized ? '▶' : '◀')
+            }
           </button>
         </div>
       </div>

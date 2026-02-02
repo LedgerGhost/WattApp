@@ -27,3 +27,17 @@
 .recenter-button:active {
   transform: scale(0.95);
 }
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .recenter-button {
+    bottom: 100px;
+    right: 10px;
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    /* Better touch support */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+}
