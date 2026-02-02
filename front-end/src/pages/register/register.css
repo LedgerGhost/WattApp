@@ -35,12 +35,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(25, 233, 171, 0.6) 50%, rgba(13, 125, 90, 0.7) 100%);
-  z-index: 1;
-}
-
-:root.dark-mode .register-container::after {
   background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.9) 50%, rgba(15, 52, 96, 0.85) 100%);
+  z-index: 1;
 }
 
 /* Background decoration */
@@ -94,20 +90,15 @@
 
 /* Card */
 .register-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(26, 26, 46, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 48px;
   width: 100%;
   max-width: 480px;
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
   position: relative;
   z-index: 10;
-}
-
-:root.dark-mode .register-card {
-  background: rgba(26, 26, 46, 0.95);
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 /* Header */
@@ -179,14 +170,8 @@
   border-radius: 12px;
   font-size: 15px;
   transition: all 0.3s ease;
-  background: var(--bg-input);
-  color: var(--text-primary);
-}
-
-:root.dark-mode .form-group input[type='text'],
-:root.dark-mode .form-group input[type='email'],
-:root.dark-mode .form-group input[type='password'] {
   background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .form-group input[type='text']::placeholder,
@@ -200,14 +185,8 @@
 .form-group input[type='password']:focus {
   outline: none;
   border-color: var(--color-primary);
-  background: var(--bg-primary);
-  box-shadow: 0 0 0 3px rgba(25, 233, 171, 0.15);
-}
-
-:root.dark-mode .form-group input[type='text']:focus,
-:root.dark-mode .form-group input[type='email']:focus,
-:root.dark-mode .form-group input[type='password']:focus {
   background: var(--bg-secondary);
+  box-shadow: 0 0 0 3px rgba(25, 233, 171, 0.15);
 }
 
 .form-group input:disabled {
@@ -249,12 +228,8 @@
   border-radius: 0 12px 12px 0;
   font-size: 15px;
   transition: all 0.3s ease;
-  background: var(--bg-input);
-  color: var(--text-primary);
-}
-
-:root.dark-mode .phone-input-wrapper input[type='tel'] {
   background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .phone-input-wrapper input[type='tel']::placeholder {
@@ -264,12 +239,8 @@
 .phone-input-wrapper input[type='tel']:focus {
   outline: none;
   border-color: var(--color-primary);
-  background: var(--bg-primary);
-  box-shadow: 0 0 0 3px rgba(25, 233, 171, 0.15);
-}
-
-:root.dark-mode .phone-input-wrapper input[type='tel']:focus {
   background: var(--bg-secondary);
+  box-shadow: 0 0 0 3px rgba(25, 233, 171, 0.15);
 }
 
 .phone-input-wrapper input[type='tel']:focus+.phone-prefix,
@@ -330,14 +301,10 @@
 }
 
 .terms-link {
-  color: var(--color-primary-dark);
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s ease;
-}
-
-:root.dark-mode .terms-link {
-  color: var(--color-primary);
 }
 
 .terms-link:hover {
@@ -388,14 +355,10 @@
 }
 
 .signin-link {
-  color: var(--color-primary-dark);
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s ease;
-}
-
-:root.dark-mode .signin-link {
-  color: var(--color-primary);
 }
 
 .signin-link:hover {
@@ -431,15 +394,11 @@
   border: 2px solid var(--border-input);
   border-radius: 12px;
   background: transparent;
-  color: var(--color-primary-dark);
+  color: var(--color-primary);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-}
-
-:root.dark-mode .guest-button {
-  color: var(--color-primary);
 }
 
 .guest-button:hover {

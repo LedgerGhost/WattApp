@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-leaflet'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import './map.css'
 import { getMyReservations, cancelReservation } from '../../services/chargers'
-import { getStationsByLocation, getPointById, getAllPointsInfo } from '../../services/station'
+import { getStationsByLocation, getAllPointsInfo } from '../../services/station'
 import type { PointInfo } from '../../services/station'
 import { isGuest } from '../../services/auth'
 import { DEFAULT_CENTER, DEFAULT_ZOOM, LOCATION_ZOOM } from '../../utils/constants'
@@ -22,7 +22,7 @@ import {
 declare const L: typeof import('leaflet')
 
 // Component to fix gray tiles by invalidating map size
-function MapResizer() {
+function MapResizer({ sidebarMinimized }: { sidebarMinimized?: boolean }) {
   const map = useMap()
 
   useEffect(() => {
@@ -40,6 +40,13 @@ function MapResizer() {
       window.removeEventListener('resize', handleResize)
     }
   }, [map])
+
+  // Invalidate map size when sidebar is minimized/expanded
+  useEffect(() => {
+    // Small delay to let CSS transition complete
+    const timer = setTimeout(() => map.invalidateSize(), 350)
+    return () => clearTimeout(timer)
+  }, [map, sidebarMinimized])
 
   return null
 }
@@ -110,7 +117,11 @@ export default function Map() {
   }, [])
 
   const navigate = useNavigate()
+  const location = useLocation()
   const [selectedStation, setSelectedStation] = useState<Station | null>(null)
+
+  // Track if we've handled the navigation state (to avoid re-selecting on re-renders)
+  const hasHandledNavState = useRef(false)
   const [isLeftSidebarMinimized, setIsLeftSidebarMinimized] = useState(false)
 
   // Filter state
@@ -310,6 +321,26 @@ export default function Map() {
     }
   }, [mapCenter, userLocation, isLoadingLocation, maxDistance]);
 
+  // Handle navigation state from profile page (select station by pointId)
+  useEffect(() => {
+    // Only run once after stations have loaded
+    if (hasHandledNavState.current || isLoadingStations || stations.length === 0) return
+
+    const navState = location.state as { pointId?: number; lat?: number; lon?: number } | null
+    if (!navState?.pointId) return
+
+    hasHandledNavState.current = true
+
+    // Find the station that contains this point
+    const station = stations.find(s => s.points.includes(navState.pointId!))
+    if (station) {
+      setSelectedStation(station)
+    }
+
+    // Clear the navigation state to prevent re-selection on refresh
+    window.history.replaceState({}, document.title)
+  }, [isLoadingStations, stations, location.state])
+
   // Check for active reservations on load (only once after stations load)
   const [hasCheckedReservations, setHasCheckedReservations] = useState(false)
 
@@ -330,32 +361,26 @@ export default function Map() {
         const active = reservations.find((r: any) => r.status === 'active')
         if (!active) return
 
-        // Fetch the point info for the active reservation
-        try {
-          const pointInfo = await getPointById(active.pointid)
-
-          const chargerData: Charger = {
-            id: String(pointInfo.pointid),
-            name: pointInfo.station_name || 'Unknown Station',
-            address: '',
-            price: pointInfo.kwhprice ?? 0,
-            available: pointInfo.status === 'available' ? 1 : 0,
-            distance: 0,
-            latitude: parseFloat(pointInfo.lat),
-            longitude: parseFloat(pointInfo.lon),
-            chargerType: pointInfo.connector_type || 'Unknown',
-            status: 'Reserved' as AvailabilityStatus,
-            power: pointInfo.cap ?? 0,
-          }
-
-          setActiveReservation({
-            charger: chargerData,
-            endTime: active.end_time,
-            minutes: active.duration_minutes,
-          })
-        } catch (err) {
-          console.warn('Failed to fetch point info for reservation:', err)
+        // Use data directly from myreservations response (includes station_name, connector_type, power_kw)
+        const chargerData: Charger = {
+          id: String(active.pointid),
+          name: active.station_name || 'Unknown Station',
+          address: active.address || '',
+          price: 0, // Not included in myreservations response
+          available: 0,
+          distance: 0,
+          latitude: 0,
+          longitude: 0,
+          chargerType: active.connector_type || 'Unknown',
+          status: 'Reserved' as AvailabilityStatus,
+          power: active.power_kw ?? 0,
         }
+
+        setActiveReservation({
+          charger: chargerData,
+          endTime: active.end_time,
+          minutes: active.duration_minutes,
+        })
       } catch (err) {
         console.warn('Failed to check active reservations:', err)
       }
@@ -389,29 +414,37 @@ export default function Map() {
     }
   }
 
-  const handleReservationSuccess = (pointId: number, endTime: string) => {
+  const handleReservationSuccess = (data: {
+    pointId: number
+    endTime: string
+    stationName: string
+    connectorType: string
+    power: number
+    price: number
+    minutes: number
+  }) => {
     // Find which station contains this point
-    const station = stations.find(s => s.points.includes(pointId))
+    const station = stations.find(s => s.points.includes(data.pointId))
 
-    // Create a basic charger object for the overlay
+    // Create charger object with full details
     const chargerData: Charger = {
-      id: String(pointId),
-      name: station?.station_name || 'Unknown Station',
+      id: String(data.pointId),
+      name: data.stationName,
       address: '',
-      price: 0,
+      price: data.price,
       available: 0,
       distance: station?.dist_from_user ?? 0,
       latitude: station?.coordinates.lat ?? 0,
       longitude: station?.coordinates.lon ?? 0,
-      chargerType: 'Unknown',
+      chargerType: data.connectorType,
       status: 'Reserved' as AvailabilityStatus,
-      power: 0,
+      power: data.power,
     }
 
     setActiveReservation({
       charger: chargerData,
-      endTime: endTime,
-      minutes: 30, // Default
+      endTime: data.endTime,
+      minutes: data.minutes,
     })
   }
 
@@ -488,7 +521,7 @@ export default function Map() {
           className="leaflet-container"
         >
           {/* Fix gray tiles issue */}
-          <MapResizer />
+          <MapResizer sidebarMinimized={isLeftSidebarMinimized} />
 
           {/* Track map center for fetching stations as user scrolls */}
           <MapCenterTracker onCenterChange={handleMapCenterChange} />
@@ -566,11 +599,15 @@ export default function Map() {
           />
         )}
 
-        {/* Active Reservation Overlay - persistent until cancelled */}
+        {/* Active Reservation Overlay - persistent until cancelled or expired */}
         {activeReservation && (
           <ActiveReservationOverlay
             reservation={activeReservation}
             onCancel={handleCancelReservation}
+            onExpire={() => {
+              setActiveReservation(null)
+              setRefreshTrigger(prev => prev + 1)
+            }}
             cancelStatus={cancelStatus}
             cancelMessage={cancelMessage}
           />

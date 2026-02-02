@@ -55,12 +55,8 @@
 }
 
 .station-distance {
-  color: var(--color-primary-dark);
-  font-weight: 600;
-}
-
-:root.dark-mode .station-distance {
   color: var(--color-primary);
+  font-weight: 600;
 }
 
 .station-chargers {
@@ -102,10 +98,6 @@
 }
 
 .station-card.matches-filter .station-card-name {
-  color: var(--color-primary-dark);
-}
-
-:root.dark-mode .station-card.matches-filter .station-card-name {
   color: var(--color-primary);
 }
 

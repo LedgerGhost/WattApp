@@ -1,34 +1,13 @@
 :root {
-  --wa-bg: #eef7f4;
-  --wa-card: #ffffff;
-  --wa-border: #e3eef0;
-  --wa-text: #1f2a37;
-  --wa-muted: #64748b;
-
-  --wa-green-1: #34d399;
-  --wa-green-2: #10b981;
-  --wa-green-3: #059669;
-
-  --wa-shadow: 0 14px 40px rgba(16, 185, 129, 0.12);
-  --wa-shadow-soft: 0 10px 28px rgba(15, 23, 42, 0.08);
-
-  --wa-table-bg: #f6fffb;
-  --wa-row-bg: #fff;
-  --wa-row-hover: #fbfffd;
-  --wa-detail-bg: #fbfffd;
-  --wa-note-bg: #f6fffb;
-  --wa-note-border: #d7f3ea;
-  --wa-pill-bg: #f6fffb;
-  --wa-pill-border: #d7f3ea;
-  --wa-input-bg: #fff;
-}
-
-:root.dark-mode {
   --wa-bg: #1a1a2e;
   --wa-card: #16213e;
   --wa-border: #2d3748;
   --wa-text: #e2e8f0;
   --wa-muted: #a0aec0;
+
+  --wa-green-1: #34d399;
+  --wa-green-2: #10b981;
+  --wa-green-3: #059669;
 
   --wa-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
   --wa-shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.3);
@@ -72,12 +51,8 @@ body {
 .wa-sidebar {
   position: relative;
   padding: 18px 16px;
-  background: linear-gradient(180deg, rgba(16, 185, 129, 0.92) 0%, rgba(52, 211, 153, 0.85) 100%);
-  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.18);
-}
-
-:root.dark-mode .wa-sidebar {
   background: linear-gradient(180deg, rgba(15, 52, 96, 0.95) 0%, rgba(22, 33, 62, 0.9) 100%);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.18);
 }
 
 .wa-brand {
@@ -741,14 +716,9 @@ body {
 .wa-health-results {
   margin-top: 20px;
   padding: 20px;
-  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
-  border-radius: 16px;
-  border: 1px solid #bbf7d0;
-}
-
-:root.dark-mode .wa-health-results {
   background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
-  border-color: var(--wa-border);
+  border-radius: 16px;
+  border: 1px solid var(--wa-border);
 }
 
 .wa-health-header {
@@ -757,11 +727,7 @@ body {
   gap: 12px;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #d1fae5;
-}
-
-:root.dark-mode .wa-health-header {
-  border-bottom-color: var(--wa-border);
+  border-bottom: 1px solid var(--wa-border);
 }
 
 .wa-health-icon {
@@ -771,10 +737,6 @@ body {
 .wa-health-title {
   font-size: 18px;
   font-weight: 700;
-  color: #166534;
-}
-
-:root.dark-mode .wa-health-title {
   color: var(--wa-green-1);
 }
 
@@ -789,12 +751,8 @@ body {
   background: var(--wa-card);
   padding: 16px;
   border-radius: 12px;
-  border: 1px solid #d1fae5;
+  border: 1px solid var(--wa-border);
   text-align: center;
-}
-
-:root.dark-mode .wa-health-item {
-  border-color: var(--wa-border);
 }
 
 .wa-health-label {
@@ -829,11 +787,7 @@ body {
   padding: 12px 16px;
   background: var(--wa-card);
   border-radius: 8px;
-  border: 1px solid #d1fae5;
-}
-
-:root.dark-mode .wa-health-db {
-  border-color: var(--wa-border);
+  border: 1px solid var(--wa-border);
 }
 
 .wa-health-db-label {
