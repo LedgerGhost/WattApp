@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://api.corg1.uk',
+        target: 'https://localhost:9876',
         changeOrigin: true,
         secure: false,
         // ssl: {

@@ -55,12 +55,8 @@
 }
 
 .station-distance {
-  color: var(--color-primary-dark);
-  font-weight: 600;
-}
-
-:root.dark-mode .station-distance {
   color: var(--color-primary);
+  font-weight: 600;
 }
 
 .station-chargers {
@@ -102,15 +98,27 @@
 }
 
 .station-card.matches-filter .station-card-name {
-  color: var(--color-primary-dark);
-}
-
-:root.dark-mode .station-card.matches-filter .station-card-name {
   color: var(--color-primary);
 }
 
 @media (max-width: 1024px) {
   .stations-list {
     padding: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .stations-list {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .station-card {
+    padding: 12px;
+  }
+
+  /* Ensure stations list is hidden when sidebar is minimized on mobile */
+  .sidebar.minimized .stations-list {
+    display: none;
   }
 }

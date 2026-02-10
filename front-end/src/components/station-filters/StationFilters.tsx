@@ -71,7 +71,7 @@ export default function StationFilters({
               <input
                 type="range"
                 min="1"
-                max="50"
+                max="10"
                 step="1"
                 value={maxDistance}
                 onChange={e => onMaxDistanceChange(parseInt(e.target.value))}

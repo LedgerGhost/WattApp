@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-leaflet'
+import { useNavigate, useLocation } from 'react-router-dom'
 import './map.css'
 import { getMyReservations, cancelReservation } from '../../services/chargers'
-import { getStationsByLocation, getPointById, getPointsByIds } from '../../services/station'
+import { getStationsByLocation, getAllPointsInfo } from '../../services/station'
+import type { PointInfo } from '../../services/station'
 import { isGuest } from '../../services/auth'
 import { DEFAULT_CENTER, DEFAULT_ZOOM, LOCATION_ZOOM } from '../../utils/constants'
 import type { Station, Charger, AvailabilityStatus } from '../../types'
@@ -21,7 +22,7 @@ import {
 declare const L: typeof import('leaflet')
 
 // Component to fix gray tiles by invalidating map size
-function MapResizer() {
+function MapResizer({ sidebarMinimized }: { sidebarMinimized?: boolean }) {
   const map = useMap()
 
   useEffect(() => {
@@ -39,6 +40,13 @@ function MapResizer() {
       window.removeEventListener('resize', handleResize)
     }
   }, [map])
+
+  // Invalidate map size when sidebar is minimized/expanded
+  useEffect(() => {
+    // Small delay to let CSS transition complete
+    const timer = setTimeout(() => map.invalidateSize(), 350)
+    return () => clearTimeout(timer)
+  }, [map, sidebarMinimized])
 
   return null
 }
@@ -60,6 +68,25 @@ function FlyToStation({ station }: { station: Station | null }) {
   return null
 }
 
+// Component to track map center changes
+function MapCenterTracker({ onCenterChange }: { onCenterChange: (center: [number, number]) => void }) {
+  const map = useMap()
+
+  useEffect(() => {
+    const handleMoveEnd = () => {
+      const center = map.getCenter()
+      onCenterChange([center.lat, center.lng])
+    }
+
+    map.on('moveend', handleMoveEnd)
+    return () => {
+      map.off('moveend', handleMoveEnd)
+    }
+  }, [map, onCenterChange])
+
+  return null
+}
+
 export default function Map() {
 
   const [stations, setStations] = useState<Station[]>([])
@@ -69,83 +96,102 @@ export default function Map() {
 
   // Cache for station charger info (maps station name to array of connector types)
   const [stationChargerTypes, setStationChargerTypes] = useState<Record<string, string[]>>({})
-  const fetchedStationsRef = useRef<Set<string>>(new Set())
 
   // User location state
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [_locationError, setLocationError] = useState<string | null>(null)
   const [isLoadingLocation, setIsLoadingLocation] = useState(true)
 
+  // Map center for fetching stations as user scrolls
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null)
+  const mapCenterTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Debounced map center update to prevent too many API calls
+  const handleMapCenterChange = useCallback((center: [number, number]) => {
+    if (mapCenterTimeoutRef.current) {
+      clearTimeout(mapCenterTimeoutRef.current)
+    }
+    mapCenterTimeoutRef.current = setTimeout(() => {
+      setMapCenter(center)
+    }, 300)
+  }, [])
+
   const navigate = useNavigate()
+  const location = useLocation()
   const [selectedStation, setSelectedStation] = useState<Station | null>(null)
+
+  // Track if we've handled the navigation state (to avoid re-selecting on re-renders)
+  const hasHandledNavState = useRef(false)
   const [isLeftSidebarMinimized, setIsLeftSidebarMinimized] = useState(false)
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState('')
-  const [maxDistance, setMaxDistance] = useState(50)
+  const [maxDistance, setMaxDistance] = useState(5)
   const [chargerType, setChargerType] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [isFiltersMinimized, setIsFiltersMinimized] = useState(false)
 
-  // Common EV charger connector types (hardcoded for performance - no need to fetch all points)
-  const availableChargerTypes = useMemo(() => [
-    'CCS',
-    'CHAdeMO',
-    'Type 2',
-    'Type 1',
-    'Tesla',
-    'GB/T',
-  ], [])
+  // Fetch all points info once to get connector types and statuses
+  const [allPointsInfo, setAllPointsInfo] = useState<Record<number, PointInfo>>({})
 
-  // Pre-fetch charger info for stations to show connector types in the list
+  // Get unique connector types from actual data
+  const availableChargerTypes = useMemo(() => {
+    const types = new Set<string>()
+    Object.values(allPointsInfo).forEach(p => {
+      if (p.connector_type) types.add(p.connector_type)
+    })
+    return Array.from(types).sort()
+  }, [allPointsInfo])
+
+  // Map of pointId -> connector_type for StationMarker
+  const pointConnectorTypes = useMemo(() => {
+    const map: Record<number, string> = {}
+    Object.values(allPointsInfo).forEach(p => {
+      if (p.connector_type) map[p.pointid] = p.connector_type
+    })
+    return map
+  }, [allPointsInfo])
+
+  const hasFetchedPointsInfo = useRef(false)
+
   useEffect(() => {
-    const fetchStationChargerInfo = async () => {
-      // Only fetch for stations we haven't fetched yet (using ref to avoid infinite loops)
-      const stationsToFetch = stations.filter(
-        s => !fetchedStationsRef.current.has(s.station_name)
-      )
+    const fetchAllPointsInfo = async () => {
+      if (hasFetchedPointsInfo.current) return
+      hasFetchedPointsInfo.current = true
 
-      if (stationsToFetch.length === 0) return
-
-      // Mark stations as being fetched
-      stationsToFetch.forEach(s => fetchedStationsRef.current.add(s.station_name))
-
-      // Fetch in batches to avoid too many parallel requests
-      const batchSize = 5
-      for (let i = 0; i < stationsToFetch.length; i += batchSize) {
-        const batch = stationsToFetch.slice(i, i + batchSize)
-
-        const batchResults = await Promise.allSettled(
-          batch.map(async station => {
-            const points = await getPointsByIds(station.points)
-            const connectorTypes = [...new Set(
-              points.map(p => p.connector_type).filter(Boolean)
-            )] as string[]
-            return { stationName: station.station_name, connectorTypes }
-          })
-        )
-
-        // Update cache with successful results
-        const newTypes: Record<string, string[]> = {}
-        batchResults.forEach((result, idx) => {
-          if (result.status === 'fulfilled') {
-            newTypes[result.value.stationName] = result.value.connectorTypes
-          } else {
-            // Mark as fetched but empty on error
-            newTypes[batch[idx].station_name] = []
-          }
+      try {
+        const points = await getAllPointsInfo()
+        // Build a map of pointId -> full point info
+        const pointsMap: Record<number, PointInfo> = {}
+        points.forEach(p => {
+          pointsMap[p.pointid] = p
         })
-
-        setStationChargerTypes(prev => ({ ...prev, ...newTypes }))
+        setAllPointsInfo(pointsMap)
+      } catch (err) {
+        console.error('Error fetching points info:', err)
       }
     }
 
-    if (stations.length > 0) {
-      fetchStationChargerInfo()
-    }
-  }, [stations])
+    fetchAllPointsInfo()
+  }, [])
 
-  // Filtered stations based on search query and charger type (when info is available)
+  // Build station charger types from allPointsInfo when stations or pointsInfo change
+  useEffect(() => {
+    if (stations.length === 0 || Object.keys(allPointsInfo).length === 0) return
+
+    const newTypes: Record<string, string[]> = {}
+    stations.forEach(station => {
+      const connectorTypes = [...new Set(
+        station.points
+          .map(pointId => allPointsInfo[pointId]?.connector_type)
+          .filter(Boolean)
+      )] as string[]
+      newTypes[station.station_name] = connectorTypes
+    })
+    setStationChargerTypes(newTypes)
+  }, [stations, allPointsInfo])
+
+  // Filtered stations based on search query, charger type, and status (when info is available)
   // Distance filtering is handled by the API radius parameter
   const filteredStations = useMemo(() => {
     return stations.filter(station => {
@@ -159,9 +205,14 @@ export default function Map() {
         !stationTypes ||  // Show if we haven't loaded types yet
         stationTypes.includes(chargerType)
 
-      return matchesSearch && matchesChargerType
+      // Filter by status - check if station has any charger with the selected status
+      const matchesStatus = !statusFilter ||
+        Object.keys(allPointsInfo).length === 0 ||  // Show if we haven't loaded info yet
+        station.points.some(pointId => allPointsInfo[pointId]?.status === statusFilter)
+
+      return matchesSearch && matchesChargerType && matchesStatus
     })
-  }, [stations, searchQuery, chargerType, stationChargerTypes])
+  }, [stations, searchQuery, chargerType, stationChargerTypes, statusFilter, allPointsInfo])
 
   // Guest modal
   const [showGuestModal, setShowGuestModal] = useState(false)
@@ -188,6 +239,12 @@ export default function Map() {
       return
     }
 
+    // Check if we're on HTTPS (required for geolocation on mobile)
+    const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost'
+    if (!isSecure) {
+      console.warn('Geolocation may not work over HTTP on mobile browsers')
+    }
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords
@@ -196,13 +253,26 @@ export default function Map() {
         console.log('📍 User location:', latitude, longitude)
       },
       (error) => {
-        console.warn('Geolocation error:', error.message)
-        setLocationError(error.message)
+        console.warn('Geolocation error:', error.code, error.message)
+        // Provide user-friendly error messages
+        let errorMsg = error.message
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMsg = 'Location access denied. Please enable location permissions in your browser settings.'
+            break
+          case error.POSITION_UNAVAILABLE:
+            errorMsg = 'Location information unavailable. Please try again.'
+            break
+          case error.TIMEOUT:
+            errorMsg = 'Location request timed out. Please check your connection and try again.'
+            break
+        }
+        setLocationError(errorMsg)
         setIsLoadingLocation(false)
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 15000, // Increased timeout for mobile networks
         maximumAge: 300000, // Cache location for 5 minutes
       }
     )
@@ -210,9 +280,9 @@ export default function Map() {
 
   useEffect(() => {
     const fetchStations = async () => {
-      // Use user location as center (for accurate dist_from_user), fall back to default
-      const lat = userLocation?.[0] ?? DEFAULT_CENTER[0];
-      const lon = userLocation?.[1] ?? DEFAULT_CENTER[1];
+      // Use map center for fetching (updates as user scrolls), fall back to user location or default
+      const lat = mapCenter?.[0] ?? userLocation?.[0] ?? DEFAULT_CENTER[0];
+      const lon = mapCenter?.[1] ?? userLocation?.[1] ?? DEFAULT_CENTER[1];
       // Use maxDistance filter (km) converted to meters as the search radius
       const searchRadius = maxDistance * 1000;
 
@@ -249,7 +319,27 @@ export default function Map() {
     if (!isLoadingLocation) {
       fetchStations();
     }
-  }, [userLocation, isLoadingLocation, maxDistance]);
+  }, [mapCenter, userLocation, isLoadingLocation, maxDistance]);
+
+  // Handle navigation state from profile page (select station by pointId)
+  useEffect(() => {
+    // Only run once after stations have loaded
+    if (hasHandledNavState.current || isLoadingStations || stations.length === 0) return
+
+    const navState = location.state as { pointId?: number; lat?: number; lon?: number } | null
+    if (!navState?.pointId) return
+
+    hasHandledNavState.current = true
+
+    // Find the station that contains this point
+    const station = stations.find(s => s.points.includes(navState.pointId!))
+    if (station) {
+      setSelectedStation(station)
+    }
+
+    // Clear the navigation state to prevent re-selection on refresh
+    window.history.replaceState({}, document.title)
+  }, [isLoadingStations, stations, location.state])
 
   // Check for active reservations on load (only once after stations load)
   const [hasCheckedReservations, setHasCheckedReservations] = useState(false)
@@ -271,32 +361,26 @@ export default function Map() {
         const active = reservations.find((r: any) => r.status === 'active')
         if (!active) return
 
-        // Fetch the point info for the active reservation
-        try {
-          const pointInfo = await getPointById(active.pointid)
-
-          const chargerData: Charger = {
-            id: String(pointInfo.pointid),
-            name: pointInfo.station_name || 'Unknown Station',
-            address: '',
-            price: pointInfo.kwhprice ?? 0,
-            available: pointInfo.status === 'available' ? 1 : 0,
-            distance: 0,
-            latitude: parseFloat(pointInfo.lat),
-            longitude: parseFloat(pointInfo.lon),
-            chargerType: pointInfo.connector_type || 'Unknown',
-            status: 'Reserved' as AvailabilityStatus,
-            power: pointInfo.cap ?? 0,
-          }
-
-          setActiveReservation({
-            charger: chargerData,
-            endTime: active.end_time,
-            minutes: active.duration_minutes,
-          })
-        } catch (err) {
-          console.warn('Failed to fetch point info for reservation:', err)
+        // Use data directly from myreservations response (includes station_name, connector_type, power_kw)
+        const chargerData: Charger = {
+          id: String(active.pointid),
+          name: active.station_name || 'Unknown Station',
+          address: active.address || '',
+          price: 0, // Not included in myreservations response
+          available: 0,
+          distance: 0,
+          latitude: 0,
+          longitude: 0,
+          chargerType: active.connector_type || 'Unknown',
+          status: 'Reserved' as AvailabilityStatus,
+          power: active.power_kw ?? 0,
         }
+
+        setActiveReservation({
+          charger: chargerData,
+          endTime: active.end_time,
+          minutes: active.duration_minutes,
+        })
       } catch (err) {
         console.warn('Failed to check active reservations:', err)
       }
@@ -330,29 +414,37 @@ export default function Map() {
     }
   }
 
-  const handleReservationSuccess = (pointId: number, endTime: string) => {
+  const handleReservationSuccess = (data: {
+    pointId: number
+    endTime: string
+    stationName: string
+    connectorType: string
+    power: number
+    price: number
+    minutes: number
+  }) => {
     // Find which station contains this point
-    const station = stations.find(s => s.points.includes(pointId))
+    const station = stations.find(s => s.points.includes(data.pointId))
 
-    // Create a basic charger object for the overlay
+    // Create charger object with full details
     const chargerData: Charger = {
-      id: String(pointId),
-      name: station?.station_name || 'Unknown Station',
+      id: String(data.pointId),
+      name: data.stationName,
       address: '',
-      price: 0,
+      price: data.price,
       available: 0,
       distance: station?.dist_from_user ?? 0,
       latitude: station?.coordinates.lat ?? 0,
       longitude: station?.coordinates.lon ?? 0,
-      chargerType: 'Unknown',
+      chargerType: data.connectorType,
       status: 'Reserved' as AvailabilityStatus,
-      power: 0,
+      power: data.power,
     }
 
     setActiveReservation({
       charger: chargerData,
-      endTime: endTime,
-      minutes: 30, // Default
+      endTime: data.endTime,
+      minutes: data.minutes,
     })
   }
 
@@ -415,6 +507,8 @@ export default function Map() {
           onSelectStation={setSelectedStation}
           stationChargerTypes={stationChargerTypes}
           selectedChargerType={chargerType}
+          allPointsInfo={allPointsInfo}
+          statusFilter={statusFilter}
         />
       </div>
 
@@ -427,7 +521,10 @@ export default function Map() {
           className="leaflet-container"
         >
           {/* Fix gray tiles issue */}
-          <MapResizer />
+          <MapResizer sidebarMinimized={isLeftSidebarMinimized} />
+
+          {/* Track map center for fetching stations as user scrolls */}
+          <MapCenterTracker onCenterChange={handleMapCenterChange} />
 
           {/* Fly to selected station */}
           <FlyToStation station={selectedStation} />
@@ -489,6 +586,7 @@ export default function Map() {
               refreshTrigger={refreshTrigger}
               chargerTypeFilter={chargerType}
               statusFilter={statusFilter}
+              pointConnectorTypes={pointConnectorTypes}
             />
           ))}
         </MapContainer>
@@ -506,6 +604,10 @@ export default function Map() {
           <ActiveReservationOverlay
             reservation={activeReservation}
             onCancel={handleCancelReservation}
+            onExpire={() => {
+              setActiveReservation(null)
+              setRefreshTrigger(prev => prev + 1)
+            }}
             cancelStatus={cancelStatus}
             cancelMessage={cancelMessage}
           />
