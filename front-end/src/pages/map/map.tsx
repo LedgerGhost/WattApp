@@ -444,6 +444,21 @@ export default function Map() {
             maxZoom={19}
           />
 
+          {/* Circle overlay showing fetch radius */}
+          {(mapCenter || userLocation) && (
+            <Circle
+              center={mapCenter || userLocation || DEFAULT_CENTER}
+              radius={maxDistance * 1000}
+              pathOptions={{
+                color: '#3b82f6',
+                fillColor: '#3b82f6',
+                fillOpacity: 0.1,
+                weight: 2,
+                dashArray: '5, 5'
+              }}
+            />
+          )}
+
           {/* User location marker */}
           {userLocation && (
             <Marker
@@ -486,7 +501,7 @@ export default function Map() {
           />
         )}
 
-        {/* Active Reservation Overlay - persistent until cancelled */}
+        {/* Active Reservation Overlay - persistent until cancelled or expired */}
         {activeReservation && (
           <ActiveReservationOverlay
             reservation={activeReservation}

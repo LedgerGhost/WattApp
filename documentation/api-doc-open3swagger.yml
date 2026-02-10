@@ -20,18 +20,42 @@ components:
       type: object
       properties:
         pointid:
-          type: string
+          type: integer
         providerName:
           type: string
         lon:
-          type: number
+          type: string
+          description: Longitude coordinate as string
         lat:
-          type: number
+          type: string
+          description: Latitude coordinate as string
         status:
           type: string
           enum: [available, charging, reserved, malfunction, offline]
         cap:
           type: number
+          description: Capacity in kW
+        kwhprice:
+          type: number
+          description: Price per kWh in EUR
+
+    PointDetail:
+      type: object
+      properties:
+        pointid:
+          type: integer
+        lon:
+          type: string
+        lat:
+          type: string
+        status:
+          type: string
+          enum: [available, charging, reserved, malfunction, offline]
+        cap:
+          type: number
+        reservationendtime:
+          type: string
+          description: "Format: YYYY-MM-DD hh:mm"
         kwhprice:
           type: number
 
@@ -47,6 +71,174 @@ components:
               type: string
               nullable: true
 
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: MongoDB ObjectId
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [admin, operator, customer]
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+        email_verified:
+          type: boolean
+        last_login:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Reservation:
+      type: object
+      properties:
+        id:
+          type: string
+          description: MongoDB ObjectId
+        pointid:
+          type: integer
+        status:
+          type: string
+          enum: [active, completed, cancelled, expired, converted]
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        duration_minutes:
+          type: integer
+          minimum: 1
+          maximum: 60
+        station_name:
+          type: string
+        address:
+          type: string
+        connector_type:
+          type: string
+        power_kw:
+          type: number
+
+    ReservationResult:
+      type: object
+      properties:
+        pointid:
+          type: integer
+        status:
+          type: string
+          enum: [reserved, charging, malfunction, offline, available]
+        reservationendtime:
+          type: string
+          description: "Format: YYYY-MM-DD hh:mm (returns '1970-01-01 00:00' if unavailable)"
+
+    ChargingSession:
+      type: object
+      properties:
+        starttime:
+          type: string
+          description: "Format: YYYY-MM-DD hh:mm"
+        endtime:
+          type: string
+          description: "Format: YYYY-MM-DD hh:mm"
+        startsoc:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Start state of charge (%)
+        endsoc:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: End state of charge (%)
+        totalkwh:
+          type: number
+          minimum: 0
+          description: Total energy delivered (kWh)
+        kwhprice:
+          type: number
+          minimum: 0
+          description: Price per kWh
+        amount:
+          type: number
+          minimum: 0
+          description: Total cost
+
+    PointStatusChange:
+      type: object
+      properties:
+        timeref:
+          type: string
+          description: "Format: YYYY-MM-DD hh:mm"
+        old_state:
+          type: string
+          enum: [available, charging, reserved, malfunction, offline]
+        new_state:
+          type: string
+          enum: [available, charging, reserved, malfunction, offline]
+
+    StationGroup:
+      type: object
+      properties:
+        station_name:
+          type: string
+        coordinates:
+          type: object
+          properties:
+            lat:
+              type: number
+            lon:
+              type: number
+        points:
+          type: array
+          items:
+            type: integer
+          description: Array of point IDs at this station
+
+    PointsByStationResponse:
+      type: object
+      properties:
+        cnt:
+          type: integer
+          description: Count of unique stations
+        radius:
+          type: number
+          description: Search radius in meters (-1 if unlimited)
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StationGroup'
+
+    HealthCheckResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "OK"
+        dbconnection:
+          type: string
+          description: MongoDB connection string
+        n_charge_points:
+          type: integer
+        n_charge_points_online:
+          type: integer
+        n_charge_points_offline:
+          type: integer
+
     ErrorResponse:
       type: object
       properties:
@@ -54,6 +246,7 @@ components:
           type: string
         timeref:
           type: string
+          format: date-time
         originator:
           type: string
         return_code:
@@ -82,8 +275,10 @@ paths:
               properties:
                 fullName:
                   type: string
+                  description: First and last name separated by space
                 email:
                   type: string
+                  format: email
                 password:
                   type: string
                 phone:
@@ -91,8 +286,26 @@ paths:
       responses:
         '200':
           description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  message:
+                    type: string
+                    example: "User created successfully"
+                  userId:
+                    type: string
+                    description: MongoDB ObjectId
         '400':
-          description: Invalid input
+          description: Invalid input (missing fields, invalid email, user already exists)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Internal server error
 
@@ -110,25 +323,69 @@ paths:
               properties:
                 email:
                   type: string
+                  format: email
                 password:
                   type: string
       responses:
         '200':
           description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  message:
+                    type: string
+                    example: "Login successful"
+                  token:
+                    type: string
+                    description: Opaque authentication token
+                  email:
+                    type: string
+                  role:
+                    type: string
+                    enum: [admin, operator, customer]
         '400':
-          description: Invalid credentials
+          description: Invalid credentials or missing fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Internal server error
 
   /auth/logout:
     post:
-      summary: Logout user
+      summary: Logout user and invalidate token
       tags: [Auth]
       security:
         - ApiKeyAuth: []
       responses:
         '200':
           description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  call:
+                    type: string
+                  timeref:
+                    type: string
+                  originator:
+                    type: string
+                  return_code:
+                    type: integer
+                    example: 200
+                  status:
+                    type: string
+                    example: "OK"
+                  message:
+                    type: string
+                    example: "Logged out successfully"
         '400':
           description: Missing token
         '500':
@@ -143,6 +400,16 @@ paths:
       responses:
         '200':
           description: Current user info
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    properties:
+                      status:
+                        type: string
+                        example: "OK"
+                  - $ref: '#/components/schemas/User'
         '401':
           description: Missing or invalid token
         '500':
@@ -160,16 +427,21 @@ paths:
           name: format
           schema:
             type: string
+            enum: [json, csv]
             default: json
       responses:
         '200':
-          description: OK
+          description: System health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
         '400':
           description: Invalid format or healthcheck failed
 
   /admin/resetpoints:
     post:
-      summary: Reset points database
+      summary: Reset points database from JSON file
       tags: [Admin]
       security:
         - ApiKeyAuth: []
@@ -178,10 +450,29 @@ paths:
           name: format
           schema:
             type: string
+            enum: [json, csv]
             default: json
       responses:
         '200':
           description: Reset completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  timeref:
+                    type: string
+                    format: date-time
+                  action:
+                    type: string
+                    example: "Database reset successfully"
+                  source_file:
+                    type: string
+                  total_points_imported:
+                    type: integer
         '400':
           description: Invalid format
         '401':
@@ -193,7 +484,10 @@ paths:
 
   /admin/addpoints:
     post:
-      summary: Import points from CSV
+      summary: Import points from CSV file
+      description: |
+        Import charging points from a CSV file. Required CSV headers:
+        pointid, lon, lat, providerName, status, connector_type, cap, kwhprice, address, station_name, external_station_id
       tags: [Admin]
       security:
         - ApiKeyAuth: []
@@ -202,6 +496,7 @@ paths:
           name: format
           schema:
             type: string
+            enum: [json, csv]
             default: json
       requestBody:
         required: true
@@ -213,9 +508,25 @@ paths:
                 source:
                   type: string
                   format: binary
+                  description: CSV file to upload
       responses:
         '200':
           description: Points imported
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: "OK" or "OK (Partial)"
+                  timeref:
+                    type: string
+                    format: date-time
+                  info:
+                    type: string
+                  points_imported:
+                    type: integer
         '400':
           description: Invalid format or no file uploaded
         '401':
@@ -230,23 +541,32 @@ paths:
   # ==============================
   /points:
     get:
-      summary: Get list of points
+      summary: Get list of all charging points
       tags: [Points]
       parameters:
         - in: query
           name: status
           schema:
             type: string
+            enum: [available, charging, reserved, malfunction, offline]
+          description: Filter by point status
         - in: query
           name: format
           schema:
             type: string
+            enum: [json, csv]
             default: json
       responses:
         '200':
           description: Points list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Point'
         '204':
-          description: No content
+          description: No content (no points found)
         '400':
           description: Invalid status or format
         '500':
@@ -254,21 +574,29 @@ paths:
 
   /pointsinfo:
     get:
-      summary: Get list of points with extra info
+      summary: Get list of points with extended info (station name, connector type)
       tags: [Points]
       parameters:
         - in: query
           name: status
           schema:
             type: string
+            enum: [available, charging, reserved, malfunction, offline]
         - in: query
           name: format
           schema:
             type: string
+            enum: [json, csv]
             default: json
       responses:
         '200':
           description: Points info list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PointInfo'
         '204':
           description: No content
         '400':
@@ -278,7 +606,7 @@ paths:
 
   /point/{id}:
     get:
-      summary: Get point details
+      summary: Get specific charging point details
       tags: [Points]
       parameters:
         - in: path
@@ -286,17 +614,22 @@ paths:
           required: true
           schema:
             type: integer
+          description: Point ID
       responses:
         '200':
           description: Point details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointDetail'
         '204':
-          description: No content
+          description: Point not found
         '500':
           description: Internal server error
 
   /updpoint/{id}:
     post:
-      summary: Update point
+      summary: Update point status and/or price
       tags: [Points]
       security:
         - ApiKeyAuth: []
@@ -318,9 +651,21 @@ paths:
                   enum: [available, charging, reserved, malfunction, offline]
                 kwhprice:
                   type: number
+                  minimum: 0
       responses:
         '200':
-          description: Updated
+          description: Point updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pointid:
+                    type: integer
+                  status:
+                    type: string
+                  kwhprice:
+                    type: number
         '400':
           description: Invalid body or values
         '401':
@@ -332,7 +677,7 @@ paths:
 
   /pointstatus/{pointid}/{from}/{to}:
     get:
-      summary: Get point status history
+      summary: Get point status change history
       tags: [Points]
       parameters:
         - in: path
@@ -345,23 +690,96 @@ paths:
           required: true
           schema:
             type: string
+          description: Start date in YYYYMMDD format
         - in: path
           name: to
           required: true
           schema:
             type: string
+          description: End date in YYYYMMDD format
         - in: query
           name: format
           schema:
             type: string
+            enum: [json, csv]
             default: json
       responses:
         '200':
           description: Status history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PointStatusChange'
         '204':
           description: No content
         '400':
           description: Invalid format or dates
+        '500':
+          description: Internal server error
+
+  /pointsbystation/{lon}/{lat}:
+    get:
+      summary: Get charging points grouped by station (unlimited radius)
+      tags: [Points]
+      parameters:
+        - in: path
+          name: lon
+          required: true
+          schema:
+            type: number
+          description: Longitude coordinate
+        - in: path
+          name: lat
+          required: true
+          schema:
+            type: number
+          description: Latitude coordinate
+      responses:
+        '200':
+          description: Stations with points
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointsByStationResponse'
+        '400':
+          description: Invalid coordinates
+        '500':
+          description: Internal server error
+
+  /pointsbystation/{lon}/{lat}/{radius}:
+    get:
+      summary: Get charging points grouped by station within radius
+      tags: [Points]
+      parameters:
+        - in: path
+          name: lon
+          required: true
+          schema:
+            type: number
+          description: Longitude coordinate
+        - in: path
+          name: lat
+          required: true
+          schema:
+            type: number
+          description: Latitude coordinate
+        - in: path
+          name: radius
+          required: true
+          schema:
+            type: number
+          description: Search radius in meters (negative or undefined = unlimited)
+      responses:
+        '200':
+          description: Stations with points within radius
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointsByStationResponse'
+        '400':
+          description: Invalid coordinates or radius
         '500':
           description: Internal server error
 
@@ -371,8 +789,8 @@ paths:
   /reserve/{id}:
     post:
       summary: Reserve a charging point (default 30 minutes)
-      tags:
-        - Reservations
+      description: Creates a reservation for the specified point. Allows multiple reservations per user.
+      tags: [Reservations]
       security:
         - ApiKeyAuth: []
       parameters:
@@ -381,25 +799,28 @@ paths:
           required: true
           schema:
             type: integer
+          description: Point ID to reserve
       responses:
         '200':
-          description: Reservation result (success OR point not available)
+          description: Reservation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResult'
         '400':
           description: Invalid point id
         '401':
           description: Missing or invalid token
         '404':
           description: Point not found
-        '409':
-          description: User already has an active reservation
         '500':
           description: Internal server error
 
   /reserve/{id}/{minutes}:
     post:
       summary: Reserve a charging point for a specific duration
-      tags:
-        - Reservations
+      description: Creates a reservation for the specified duration. Allows multiple reservations per user.
+      tags: [Reservations]
       security:
         - ApiKeyAuth: []
       parameters:
@@ -414,19 +835,121 @@ paths:
           schema:
             type: integer
             minimum: 1
-            default: 30
             maximum: 60
+            default: 30
+          description: Reservation duration in minutes (1-60)
       responses:
         '200':
-          description: Reservation result (success OR point not available)
+          description: Reservation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResult'
         '400':
-          description: Invalid point id
+          description: Invalid point id or minutes
         '401':
           description: Missing or invalid token
         '404':
           description: Point not found
-        '409':
-          description: User already has an active reservation
+        '500':
+          description: Internal server error
+
+  /USERreserve/{id}:
+    post:
+      summary: Reserve a charging point (enforces one active reservation per user, default 30 minutes)
+      description: Creates a reservation only if the user has no other active reservations.
+      tags: [Reservations]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Point ID to reserve
+      responses:
+        '200':
+          description: Reservation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResult'
+        '400':
+          description: Invalid point id or user already has an active reservation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: Point not found
+        '500':
+          description: Internal server error
+
+  /USERreserve/{id}/{minutes}:
+    post:
+      summary: Reserve a charging point for specific duration (enforces one active reservation per user)
+      description: Creates a reservation only if the user has no other active reservations.
+      tags: [Reservations]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: minutes
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 60
+            default: 30
+          description: Reservation duration in minutes (1-60)
+      responses:
+        '200':
+          description: Reservation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResult'
+        '400':
+          description: Invalid point id, minutes, or user already has an active reservation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: Point not found
+        '500':
+          description: Internal server error
+
+  /myreservations:
+    get:
+      summary: Get reservations for the authenticated user
+      description: Returns all reservations (active and past) for the current user.
+      tags: [Reservations]
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Reservations list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reservation'
+        '204':
+          description: No reservations found
+        '401':
+          description: Missing or invalid token
         '500':
           description: Internal server error
 
@@ -451,23 +974,38 @@ paths:
                   type: integer
                 starttime:
                   type: string
+                  description: "Format: YYYY-MM-DD hh:mm"
                 endtime:
                   type: string
+                  description: "Format: YYYY-MM-DD hh:mm (must be after starttime)"
                 startsoc:
                   type: number
+                  minimum: 0
+                  maximum: 100
+                  description: Start state of charge (%)
                 endsoc:
                   type: number
+                  minimum: 0
+                  maximum: 100
+                  description: End state of charge (%, must be >= startsoc)
                 totalkwh:
                   type: number
+                  minimum: 0
                 kwhprice:
                   type: number
+                  minimum: 0
                 amount:
                   type: number
+                  minimum: 0
       responses:
         '200':
-          description: Session recorded
+          description: Session recorded successfully
         '400':
-          description: Invalid body or values
+          description: Invalid body or values (missing fields, invalid timestamps, invalid SOC values)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Missing or invalid token
         '404':
@@ -477,7 +1015,7 @@ paths:
 
   /sessions/{id}/{from}/{to}:
     get:
-      summary: Get sessions for a point
+      summary: Get charging sessions for a point
       tags: [Sessions]
       parameters:
         - in: path
@@ -485,46 +1023,40 @@ paths:
           required: true
           schema:
             type: integer
+          description: Point ID
         - in: path
           name: from
           required: true
           schema:
             type: string
+          description: Start date in YYYYMMDD format
         - in: path
           name: to
           required: true
           schema:
             type: string
+          description: End date in YYYYMMDD format
         - in: query
           name: format
           schema:
             type: string
+            enum: [json, csv]
             default: json
       responses:
         '200':
           description: Sessions list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChargingSession'
         '204':
-          description: No content
+          description: No sessions found
         '400':
           description: Invalid format or dates
         '404':
           description: Point not found
-        '500':
-          description: Internal server error
-
-  /myreservations:
-    get:
-      summary: Get reservations for the authenticated user
-      tags: [Reservations]
-      security:
-        - ApiKeyAuth: []
-      responses:
-        '200':
-          description: Reservations list
-        '204':
-          description: No content
-        '401':
-          description: Missing or invalid token
         '500':
           description: Internal server error
 
@@ -534,6 +1066,7 @@ paths:
   /navigate/{pointId}:
     get:
       summary: Navigate to charging point
+      description: Redirects to Google Maps with directions to the specified charging point.
       tags: [Navigation]
       parameters:
         - in: path
@@ -543,7 +1076,12 @@ paths:
             type: integer
       responses:
         '302':
-          description: Redirect
+          description: Redirect to Google Maps
+          headers:
+            Location:
+              schema:
+                type: string
+              description: Google Maps URL with destination coordinates
         '400':
           description: Invalid pointId
         '404':

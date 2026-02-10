@@ -34,7 +34,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(25, 233, 171, 0.6) 50%, rgba(13, 125, 90, 0.7) 100%);
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.9) 50%, rgba(15, 52, 96, 0.85) 100%);
   z-index: 1;
 }
 
@@ -93,13 +93,13 @@
 
 /* Card */
 .login-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(26, 26, 46, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 24px;
   padding: 48px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
   position: relative;
   z-index: 10;
 }
