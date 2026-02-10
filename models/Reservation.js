@@ -407,4 +407,68 @@ reservationSchema.statics.expireOverdue = async function(PointStatusHistory = nu
 
   return expiredCount;
 };
+
+//  Handle reservation status updates based on Point status transitions.
+//  ADMIN LOGIC:
+//    - If user is Admin: Cancel ANY active reservation on this point immediately.
+//  CUSTOMER LOGIC:
+//    - reserved -> charging  : Mark OWN reservation as 'completed'
+//    - reserved -> available : Mark OWN reservation as 'cancelled'
+//    - Others                : Ignore
+reservationSchema.statics.handlePointStatusChange = async function (pointId, userId, oldPointStatus, newPointStatus) {
+  
+  // Check if the user triggering the change is an ADMIN
+  let isAdmin = false;
+  if (userId) {
+    const user = await User.findById(userId);
+    if (user && user.role === 'admin') {
+      isAdmin = true;
+    }
+  }
+
+  // ADMIN FLOW: Force cancel ANY active reservation on this point
+  if (isAdmin) {
+    await this.updateMany(
+      { 
+        pointid: Number(pointId), 
+        status: 'active' 
+      },
+      { 
+        $set: { status: 'cancelled' } 
+      }
+    );
+    return; // Stop here, admin overrides everything else
+  }
+
+  // CUSTOMER/NORMAL FLOW (Your original logic)
+  // We only act if the point was previously 'reserved'
+  if (oldPointStatus !== 'reserved') return;
+
+  let newReservationStatus = null;
+  const updateData = {};
+
+  if (newPointStatus === 'charging') {
+    newReservationStatus = 'completed';
+    updateData.end_time = new Date(); // Set actual completion time
+  } else if (newPointStatus === 'available') {
+    newReservationStatus = 'cancelled';
+  }
+
+  // If the transition matches our criteria, update the specific user's reservation
+  if (newReservationStatus) {
+    updateData.status = newReservationStatus;
+
+    await this.updateOne(
+      {
+        pointid: Number(pointId),
+        user_id: userId, // CRITICAL: Only update this specific user's reservation
+        status: 'active'
+      },
+      {
+        $set: updateData
+      }
+    );
+  }
+};
+
 module.exports = mongoose.model("Reservation", reservationSchema);
