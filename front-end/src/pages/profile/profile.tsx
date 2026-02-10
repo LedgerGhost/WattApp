@@ -14,6 +14,7 @@ function money(v: number) {
 
 export default function Profile() {
   const navigate = useNavigate()
+  const [sidebarOpen, setSidebarOpen] = useState(false) // Add this state
   const [user, setUser] = useState<User>({
     first_name: 'Loading...',
     last_name: '',
@@ -265,8 +266,14 @@ export default function Profile() {
 
   return (
     <div className="wa-shell">
+      {/* Backdrop */}
+      <div 
+        className={`wa-sidebar-backdrop ${sidebarOpen ? 'active' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
       {/* Sidebar */}
-      <aside className="wa-sidebar">
+      <aside className={`wa-sidebar ${sidebarOpen ? 'active' : ''}`}>
         <div className="wa-brand">
           <div className="wa-logo">⚡</div>
           <div className="wa-brand-text">
@@ -276,7 +283,7 @@ export default function Profile() {
         </div>
 
         <nav className="wa-nav" aria-label="Main navigation">
-          <button className="wa-nav-item" type="button" onClick={() => navigate('/map')}>
+          <button className="wa-nav-item" type="button" onClick={() => { navigate('/map'); setSidebarOpen(false); }}>
             <span className="wa-nav-ico">🗺️</span>
             <span>Find Chargers</span>
           </button>
@@ -299,6 +306,13 @@ export default function Profile() {
       <div className="wa-main">
         {/* Topbar */}
         <header className="wa-topbar">
+          <button 
+            className="hamburger-btn"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open menu"
+          >
+            ☰
+          </button>
           <div className="wa-page">
             <div className="wa-page-title">{isAdmin ? 'Admin Dashboard' : 'Profile'}</div>
             <div className="wa-page-sub">{isAdmin ? 'Manage charging stations and system' : 'Account, history, and charging statistics'}</div>

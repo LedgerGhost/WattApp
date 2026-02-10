@@ -53,6 +53,7 @@ body {
   padding: 18px 16px;
   background: linear-gradient(180deg, rgba(15, 52, 96, 0.95) 0%, rgba(22, 33, 62, 0.9) 100%);
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.18);
+  overflow-y: auto;
 }
 
 .wa-brand {
@@ -156,6 +157,11 @@ body {
   cursor: pointer;
 }
 
+/* ===== Sidebar Backdrop ===== */
+.wa-sidebar-backdrop {
+  display: none;
+}
+
 /* ===== Main ===== */
 .wa-main {
   min-width: 0;
@@ -163,7 +169,7 @@ body {
   grid-template-rows: 72px 1fr;
 }
 
-/* Topbar */
+/* ===== Topbar ===== */
 .wa-topbar {
   background: var(--wa-card);
   border-bottom: 1px solid var(--wa-border);
@@ -172,6 +178,17 @@ body {
   justify-content: space-between;
   padding: 0 18px;
   box-shadow: var(--wa-shadow-soft);
+}
+
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--wa-text);
+  cursor: pointer;
+  padding: 8px;
+  line-height: 1;
 }
 
 .wa-page-title {
@@ -600,39 +617,6 @@ body {
   font-weight: 800;
 }
 
-/* Responsive */
-@media (max-width: 980px) {
-  .wa-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .wa-sidebar {
-    display: none;
-  }
-
-  .span-5,
-  .span-7 {
-    grid-column: span 12;
-  }
-
-  .wa-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .wa-thead {
-    display: none;
-  }
-
-  .wa-row-main {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .wa-details {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* ===== Admin Styles ===== */
 .wa-admin-badge {
   display: inline-block;
@@ -805,7 +789,78 @@ body {
   color: var(--wa-muted);
 }
 
-@media (max-width: 768px) {
+/* ===== Responsive ===== */
+@media (max-width: 980px) {
+  .wa-shell {
+    grid-template-columns: 1fr;
+  }
+
+  /* Sidebar - slide out drawer on mobile */
+  .wa-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .wa-sidebar.active {
+    transform: translateX(0);
+  }
+
+  /* Backdrop */
+  .wa-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .wa-sidebar-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Hamburger button */
+  .hamburger-btn {
+    display: block;
+  }
+
+  /* Grid adjustments */
+  .span-5,
+  .span-7 {
+    grid-column: span 12;
+  }
+
+  .wa-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Table adjustments */
+  .wa-thead {
+    display: none;
+  }
+
+  .wa-row-main {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .wa-details {
+    grid-template-columns: 1fr;
+  }
+
+  /* Health check grid */
   .wa-health-grid {
     grid-template-columns: repeat(2, 1fr);
   }
