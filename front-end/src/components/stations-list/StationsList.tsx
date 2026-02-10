@@ -1,5 +1,4 @@
 import type { Station } from '../../types'
-import type { PointInfo } from '../../services/station'
 import './StationsList.css'
 
 interface StationsListProps {
@@ -8,8 +7,6 @@ interface StationsListProps {
   onSelectStation: (station: Station) => void
   stationChargerTypes?: Record<string, string[]>
   selectedChargerType?: string
-  allPointsInfo?: Record<number, PointInfo>
-  statusFilter?: string
 }
 
 export default function StationsList({
@@ -17,9 +14,7 @@ export default function StationsList({
   selectedStationName,
   onSelectStation,
   stationChargerTypes = {},
-  selectedChargerType = '',
-  allPointsInfo = {},
-  statusFilter = ''
+  selectedChargerType = ''
 }: StationsListProps) {
   return (
     <div className="stations-list">
@@ -29,11 +24,6 @@ export default function StationsList({
         stations.map(station => {
           const connectorTypes = stationChargerTypes[station.station_name] || []
           const hasSelectedType = selectedChargerType && connectorTypes.includes(selectedChargerType)
-
-          // Count chargers matching the status filter
-          const matchingStatusCount = statusFilter
-            ? station.points.filter(pointId => allPointsInfo[pointId]?.status === statusFilter).length
-            : 0
 
           return (
             <div
@@ -64,10 +54,7 @@ export default function StationsList({
                   </span>
                 )}
                 <span className="station-chargers">
-                  {statusFilter && matchingStatusCount > 0
-                    ? `${matchingStatusCount} ${statusFilter}`
-                    : `${station.points.length} charger${station.points.length !== 1 ? 's' : ''}`
-                  }
+                  {station.points.length} charger{station.points.length !== 1 ? 's' : ''}
                 </span>
               </div>
             </div>

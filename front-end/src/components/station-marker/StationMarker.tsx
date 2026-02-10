@@ -1,14 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { Marker, Popup } from 'react-leaflet'
-import type { Station, BackendStatus, Charger } from '../../types'
+import type { Station, BackendStatus } from '../../types'
 import type { PointInfo } from '../../services/station'
 import { getPointsByIds } from '../../services/station'
 import { reservePoint } from '../../services/chargers'
 import { isGuest } from '../../services/auth'
 import { mapStatus } from '../../utils/constants'
-import ReserveModal from '../modals/ReserveModal'
 import './StationMarker.css'
-
 
 // Use Leaflet from CDN
 declare const L: typeof import('leaflet')
@@ -42,25 +40,14 @@ const getIcon = (color: string) => {
   return iconCache[color] || iconCache.blue
 }
 
-export interface ReservationSuccessData {
-  pointId: number
-  endTime: string
-  stationName: string
-  connectorType: string
-  power: number
-  price: number
-  minutes: number
-}
-
 interface StationMarkerProps {
   station: Station
   isSelected: boolean
   onGuestWarning: () => void
-  onReservationSuccess: (data: ReservationSuccessData) => void
+  onReservationSuccess: (pointId: number, endTime: string) => void
   refreshTrigger?: number
   chargerTypeFilter?: string
-  statusFilter?: string
-  pointConnectorTypes?: Record<number, string>
+  showAvailableOnly?: boolean
 }
 
 export default function StationMarker({
@@ -70,20 +57,14 @@ export default function StationMarker({
   onReservationSuccess,
   refreshTrigger,
   chargerTypeFilter = '',
-  statusFilter = '',
-  pointConnectorTypes = {},
+  showAvailableOnly = false,
 }: StationMarkerProps) {
   const markerRef = useRef<L.Marker>(null)
   const [chargers, setChargers] = useState<PointInfo[] | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  // Reserve modal state
-  const [showReserveModal, setShowReserveModal] = useState(false)
-  const [selectedCharger, setSelectedCharger] = useState<PointInfo | null>(null)
-  const [reserveMinutes, setReserveMinutes] = useState(15)
-  const [reserveStatus, setReserveStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [reserveMessage, setReserveMessage] = useState('')
+  const [reservingId, setReservingId] = useState<number | null>(null)
+  const [reserveError, setReserveError] = useState<string | null>(null)
 
   // Open popup when selected from sidebar
   useEffect(() => {
@@ -98,19 +79,14 @@ export default function StationMarker({
       const refreshChargers = async () => {
         try {
           const points = await getPointsByIds(station.points)
-          // Merge connector types from the pre-fetched data
-          const pointsWithTypes = points.map(p => ({
-            ...p,
-            connector_type: p.connector_type || pointConnectorTypes[p.pointid]
-          }))
-          setChargers(pointsWithTypes)
+          setChargers(points)
         } catch (err) {
           console.error('Error refreshing chargers:', err)
         }
       }
       refreshChargers()
     }
-  }, [refreshTrigger, pointConnectorTypes])
+  }, [refreshTrigger])
 
   const handlePopupOpen = async () => {
     // Already loaded from a previous fetch
@@ -121,12 +97,7 @@ export default function StationMarker({
 
     try {
       const points = await getPointsByIds(station.points)
-      // Merge connector types from the pre-fetched data
-      const pointsWithTypes = points.map(p => ({
-        ...p,
-        connector_type: p.connector_type || pointConnectorTypes[p.pointid]
-      }))
-      setChargers(pointsWithTypes)
+      setChargers(points)
     } catch (err) {
       setError('Failed to load chargers')
       console.error('Error loading chargers:', err)
@@ -135,69 +106,38 @@ export default function StationMarker({
     }
   }
 
-  const handleReserveClick = (charger: PointInfo) => {
+  const handleReserve = async (pointId: number) => {
     if (isGuest()) {
       onGuestWarning()
       return
     }
 
-    setSelectedCharger(charger)
-    setReserveMinutes(15)
-    setReserveStatus('idle')
-    setReserveMessage('')
-    setShowReserveModal(true)
-  }
-
-  const handleReserveConfirm = async () => {
-    if (!selectedCharger) return
-
-    setReserveStatus('loading')
-    setReserveMessage('')
+    setReservingId(pointId)
+    setReserveError(null)
 
     try {
-      const data = await reservePoint(String(selectedCharger.pointid), reserveMinutes)
+      const data = await reservePoint(String(pointId), 30)
 
       if (data.reservationendtime === '1970-01-01 00:00') {
-        setReserveStatus('error')
-        setReserveMessage('Point is not available for reservation.')
+        setReserveError('Point is not available for reservation.')
         return
       }
 
-      setReserveStatus('success')
-      setReserveMessage(`Reserved for ${reserveMinutes} minutes!`)
-      onReservationSuccess({
-        pointId: selectedCharger.pointid,
-        endTime: data.reservationendtime,
-        stationName: station.station_name,
-        connectorType: selectedCharger.connector_type || 'Unknown',
-        power: selectedCharger.cap ?? 0,
-        price: selectedCharger.kwhprice ?? 0,
-        minutes: reserveMinutes,
-      })
+      onReservationSuccess(pointId, data.reservationendtime)
 
       // Refresh chargers to show updated status
       const points = await getPointsByIds(station.points)
-      const pointsWithTypes = points.map(p => ({
-        ...p,
-        connector_type: p.connector_type || pointConnectorTypes[p.pointid]
-      }))
-      setChargers(pointsWithTypes)
+      setChargers(points)
     } catch (e: any) {
-      setReserveStatus('error')
       const errorMsg = e?.message || 'Failed to reserve.'
       if (errorMsg.includes('409') || errorMsg.includes('active reservation')) {
-        setReserveMessage('You already have an active reservation.')
+        setReserveError('You already have an active reservation.')
       } else {
-        setReserveMessage(errorMsg)
+        setReserveError(errorMsg)
       }
+    } finally {
+      setReservingId(null)
     }
-  }
-
-  const handleCloseModal = () => {
-    setShowReserveModal(false)
-    setSelectedCharger(null)
-    setReserveStatus('idle')
-    setReserveMessage('')
   }
 
   const getStatusColor = (status: string): string => {
@@ -220,11 +160,12 @@ export default function StationMarker({
 
   // Memoize icon to prevent unnecessary re-renders
   const markerIcon = useMemo(() => {
-    if (isSelected) {
-      return getIcon('green')
+    if (chargers) {
+      const hasAvailable = chargers.some(c => c.status === 'available')
+      return getIcon(hasAvailable ? 'green' : 'red')
     }
     return getIcon('blue')
-  }, [isSelected])
+  }, [chargers])
 
   // Memoize position to prevent unnecessary re-renders
   const position = useMemo(
@@ -232,7 +173,7 @@ export default function StationMarker({
     [station.coordinates.lat, station.coordinates.lon]
   )
 
-  // Filter chargers based on type and status
+  // Filter chargers based on type and availability
   const filteredChargers = useMemo(() => {
     if (!chargers) return null
 
@@ -240,51 +181,24 @@ export default function StationMarker({
       // Filter by charger type (exact match)
       const matchesType = !chargerTypeFilter || charger.connector_type === chargerTypeFilter
 
-      // Filter by status
-      const matchesStatus = !statusFilter || charger.status === statusFilter
+      // Filter by availability
+      const matchesAvailability = !showAvailableOnly || charger.status === 'available'
 
-      return matchesType && matchesStatus
+      return matchesType && matchesAvailability
     })
-  }, [chargers, chargerTypeFilter, statusFilter])
-
-  // Create a charger object for the modal
-  const modalCharger: Charger | null = selectedCharger ? {
-    id: String(selectedCharger.pointid),
-    name: station.station_name,
-    address: '',
-    price: selectedCharger.kwhprice ?? 0,
-    available: selectedCharger.status === 'available' ? 1 : 0,
-    distance: station.dist_from_user ?? 0,
-    latitude: parseFloat(selectedCharger.lat),
-    longitude: parseFloat(selectedCharger.lon),
-    chargerType: selectedCharger.connector_type || 'Unknown',
-    status: 'Available',
-    power: selectedCharger.cap ?? 0,
-  } : null
+  }, [chargers, chargerTypeFilter, showAvailableOnly])
 
   return (
-    <>
-      {showReserveModal && modalCharger && (
-        <ReserveModal
-          charger={modalCharger}
-          reserveMinutes={reserveMinutes}
-          onMinutesChange={setReserveMinutes}
-          onConfirm={handleReserveConfirm}
-          onClose={handleCloseModal}
-          reserveStatus={reserveStatus}
-          reserveMessage={reserveMessage}
-        />
-      )}
-      <Marker
-        ref={markerRef}
-        position={position}
-        icon={markerIcon}
-        eventHandlers={{
-          popupopen: handlePopupOpen,
-        }}
-      >
-        <Popup className="station-popup" minWidth={300} maxWidth={350}>
-          <div className="station-popup-content">
+    <Marker
+      ref={markerRef}
+      position={position}
+      icon={markerIcon}
+      eventHandlers={{
+        popupopen: handlePopupOpen,
+      }}
+    >
+      <Popup className="station-popup" minWidth={300} maxWidth={350}>
+        <div className="station-popup-content">
           <h3 className="station-name">{station.station_name}</h3>
           {station.dist_from_user != null && (
             <p className="station-distance">
@@ -310,6 +224,10 @@ export default function StationMarker({
             )}
 
             {error && <div className="chargers-error">{error}</div>}
+
+            {reserveError && (
+              <div className="reserve-error">{reserveError}</div>
+            )}
 
             {filteredChargers && filteredChargers.length === 0 && (
               <div className="no-chargers-match">No chargers match your filters</div>
@@ -342,10 +260,14 @@ export default function StationMarker({
 
                     <button
                       className="charger-reserve-btn"
-                      onClick={() => handleReserveClick(charger)}
-                      disabled={charger.status !== 'available'}
+                      onClick={() => handleReserve(charger.pointid)}
+                      disabled={charger.status !== 'available' || reservingId === charger.pointid}
                     >
-                      {charger.status === 'available' ? 'Reserve' : 'Unavailable'}
+                      {reservingId === charger.pointid
+                        ? 'Reserving...'
+                        : charger.status === 'available'
+                          ? 'Reserve'
+                          : 'Unavailable'}
                     </button>
                   </div>
                 ))}
@@ -364,6 +286,5 @@ export default function StationMarker({
         </div>
       </Popup>
     </Marker>
-    </>
   )
 }

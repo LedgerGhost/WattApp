@@ -44,9 +44,9 @@ export const getPointsByIds = async (pointIds: number[]): Promise<PointInfo[]> =
   return results
 }
 
-// Get all points with extended info (station_name, connector_type)
-export const getAllPointsInfo = async (): Promise<PointInfo[]> => {
-  return apiCall('/pointsinfo', {
+// Get all points (for filtering data)
+export const getAllPoints = async (): Promise<PointInfo[]> => {
+  return apiCall('/points', {
     method: 'GET',
   })
 }

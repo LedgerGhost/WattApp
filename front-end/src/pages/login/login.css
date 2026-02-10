@@ -38,6 +38,10 @@
   z-index: 1;
 }
 
+:root.dark-mode .login-container::after {
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.9) 50%, rgba(15, 52, 96, 0.85) 100%);
+}
+
 /* Background decoration */
 .background-decoration {
   position: absolute;
@@ -98,6 +102,11 @@
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
   position: relative;
   z-index: 10;
+}
+
+:root.dark-mode .login-card {
+  background: rgba(26, 26, 46, 0.95);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 /* Header */
@@ -169,8 +178,14 @@
   border-radius: 12px;
   font-size: 15px;
   transition: all 0.3s ease;
-  background: var(--bg-tertiary);
+  background: var(--bg-input);
   color: var(--text-primary);
+}
+
+:root.dark-mode .form-group input[type='email'],
+:root.dark-mode .form-group input[type='password'],
+:root.dark-mode .form-group input[type='text'] {
+  background: var(--bg-tertiary);
 }
 
 .form-group input[type='email']::placeholder,
@@ -184,8 +199,14 @@
 .form-group input[type='text']:focus {
   outline: none;
   border-color: var(--color-primary);
-  background: var(--bg-secondary);
+  background: var(--bg-primary);
   box-shadow: 0 0 0 3px rgba(25, 233, 171, 0.15);
+}
+
+:root.dark-mode .form-group input[type='email']:focus,
+:root.dark-mode .form-group input[type='password']:focus,
+:root.dark-mode .form-group input[type='text']:focus {
+  background: var(--bg-secondary);
 }
 
 .form-group input:disabled {
@@ -249,10 +270,14 @@
 }
 
 .forgot-password {
-  color: var(--color-primary);
+  color: var(--color-primary-dark);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s ease;
+}
+
+:root.dark-mode .forgot-password {
+  color: var(--color-primary);
 }
 
 .forgot-password:hover {
@@ -303,10 +328,14 @@
 }
 
 .signup-link {
-  color: var(--color-primary);
+  color: var(--color-primary-dark);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s ease;
+}
+
+:root.dark-mode .signup-link {
+  color: var(--color-primary);
 }
 
 .signup-link:hover {
@@ -342,11 +371,15 @@
   border: 2px solid var(--border-input);
   border-radius: 12px;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-primary-dark);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+:root.dark-mode .guest-button {
+  color: var(--color-primary);
 }
 
 .guest-button:hover {

@@ -9,6 +9,27 @@
   --wa-green-2: #10b981;
   --wa-green-3: #059669;
 
+  --wa-shadow: 0 14px 40px rgba(16, 185, 129, 0.12);
+  --wa-shadow-soft: 0 10px 28px rgba(15, 23, 42, 0.08);
+
+  --wa-table-bg: #f6fffb;
+  --wa-row-bg: #fff;
+  --wa-row-hover: #fbfffd;
+  --wa-detail-bg: #fbfffd;
+  --wa-note-bg: #f6fffb;
+  --wa-note-border: #d7f3ea;
+  --wa-pill-bg: #f6fffb;
+  --wa-pill-border: #d7f3ea;
+  --wa-input-bg: #fff;
+}
+
+:root.dark-mode {
+  --wa-bg: #1a1a2e;
+  --wa-card: #16213e;
+  --wa-border: #2d3748;
+  --wa-text: #e2e8f0;
+  --wa-muted: #a0aec0;
+
   --wa-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
   --wa-shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.3);
 
@@ -54,6 +75,10 @@ body {
   background: linear-gradient(180deg, rgba(15, 52, 96, 0.95) 0%, rgba(22, 33, 62, 0.9) 100%);
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.18);
   overflow-y: auto;
+}
+
+:root.dark-mode .wa-sidebar {
+  background: linear-gradient(180deg, rgba(15, 52, 96, 0.95) 0%, rgba(22, 33, 62, 0.9) 100%);
 }
 
 .wa-brand {
@@ -705,6 +730,11 @@ body {
   border: 1px solid var(--wa-border);
 }
 
+:root.dark-mode .wa-health-results {
+  background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+  border-color: var(--wa-border);
+}
+
 .wa-health-header {
   display: flex;
   align-items: center;
@@ -714,6 +744,10 @@ body {
   border-bottom: 1px solid var(--wa-border);
 }
 
+:root.dark-mode .wa-health-header {
+  border-bottom-color: var(--wa-border);
+}
+
 .wa-health-icon {
   font-size: 24px;
 }
@@ -721,6 +755,10 @@ body {
 .wa-health-title {
   font-size: 18px;
   font-weight: 700;
+  color: var(--wa-green-1);
+}
+
+:root.dark-mode .wa-health-title {
   color: var(--wa-green-1);
 }
 
@@ -737,6 +775,10 @@ body {
   border-radius: 12px;
   border: 1px solid var(--wa-border);
   text-align: center;
+}
+
+:root.dark-mode .wa-health-item {
+  border-color: var(--wa-border);
 }
 
 .wa-health-label {
@@ -772,6 +814,10 @@ body {
   background: var(--wa-card);
   border-radius: 8px;
   border: 1px solid var(--wa-border);
+}
+
+:root.dark-mode .wa-health-db {
+  border-color: var(--wa-border);
 }
 
 .wa-health-db-label {

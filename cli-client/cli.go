@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls" // Needed for InsecureSkipVerify (hhtps without valid certs)
 	"encoding/json"
 	"fmt"
 	"os"
@@ -13,7 +14,7 @@ import (
 )
 
 // --- CONFIGURATION ---
-const BaseURL = "http://localhost:9876/api" // Matches your backend port
+const BaseURL = "https://localhost:9876/api" // Matches your backend port
 const TokenFileName = ".softeng_token"
 
 // Global variable for format flag
@@ -45,6 +46,8 @@ func interactiveLogin() error {
 	// Call the API
 	fmt.Println("\nAuthenticating...")
 	client := resty.New()
+	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+
 	resp, err := client.R().
 		SetBody(map[string]string{"email": email, "password": pass}).
 		Post(BaseURL + "/auth/login")
@@ -75,6 +78,7 @@ func interactiveLogin() error {
 // --- HTTP CLIENT ---
 func getClient() *resty.Client {
 	client := resty.New()
+	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 
 	// Read token from current directory
 	// If missing, force interactive login
@@ -175,6 +179,7 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			// client := getClient()
 			client := resty.New()
+			client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 			resp, err := client.R().Get(BaseURL + "/admin/healthcheck")
 			printOutput(resp, err)
 		},
@@ -237,6 +242,7 @@ func main() {
 			status, _ := cmd.Flags().GetString("status")
 			// client := getClient()
 			client := resty.New()
+			client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 			req := client.R().SetQueryParam("format", formatParam)
 			if status != "" {
 				req.SetQueryParam("status", status)
@@ -269,6 +275,7 @@ func main() {
 			}
 			// client := getClient()
 			client := resty.New()
+			client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 			resp, err := client.R().SetQueryParam("format", formatParam).Get(BaseURL + "/point/" + id)
 			printOutput(resp, err)
 		},
@@ -472,6 +479,7 @@ func main() {
 
 			// client := getClient()
 			client := resty.New()
+			client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 			resp, err := client.R().
 				SetQueryParam("format", formatParam).
 				Get(fmt.Sprintf("%s/sessions/%s/%s/%s", BaseURL, id, from, to))
@@ -508,6 +516,7 @@ func main() {
 
 			// client := getClient()
 			client := resty.New()
+			client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 			resp, err := client.R().
 				SetQueryParam("format", formatParam).
 				Get(fmt.Sprintf("%s/pointstatus/%s/%s/%s", BaseURL, id, from, to))
@@ -532,6 +541,7 @@ func main() {
 			pass, _ := cmd.Flags().GetString("passw")
 
 			client := resty.New()
+			client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 			resp, err := client.R().
 				SetBody(map[string]string{"email": email, "password": pass}).
 				Post(BaseURL + "/auth/login")
@@ -585,6 +595,7 @@ func main() {
 			token := string(tokenBytes)
 			// Notify Backend to invalidate session
 			client := resty.New()
+			client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 			resp, err := client.R().
 				SetHeader("x-observatory-auth", token). // Manually set header
 				Post(BaseURL + "/auth/logout")

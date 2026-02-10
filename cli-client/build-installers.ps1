@@ -9,10 +9,14 @@ Write-Host "Building installers for $APP_NAME v$VERSION..." -ForegroundColor Cya
 Write-Host ""
 
 # Clean and create directories
-if (Test-Path "release") {
-    Remove-Item -Recurse -Force "release"
+if (Test-Path "release") { 
+    # If the folder exists, clean it
+    # Get all items inside 'release', exclude 'README.md', and delete the rest
+    Get-ChildItem -Path "release" | Where-Object { $_.Name -ne "README.md" } | Remove-Item -Recurse -Force
+} else {
+    # If the folder doesn't exist, create it
+    New-Item -ItemType Directory -Path "release" -Force | Out-Null
 }
-New-Item -ItemType Directory -Path "release" -Force | Out-Null
 
 # Build binaries
 Write-Host "Building Windows binary..." -ForegroundColor Yellow

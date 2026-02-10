@@ -40,7 +40,9 @@ exports.getPointById = async (req, res) => {
       status: point.status,
       cap: point.cap,
       reservationendtime,
-      kwhprice: point.kwhprice
+      kwhprice: point.kwhprice,
+      station_name: point.station_name ?? null,
+      connector_type: point.connector_type ?? null
     });
 
   } catch (err) {

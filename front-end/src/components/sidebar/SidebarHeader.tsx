@@ -12,14 +12,27 @@ export default function SidebarHeader({
   onToggleMinimize,
   onProfileClick
 }: SidebarHeaderProps) {
-  // Track if we're on mobile for arrow direction
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768)
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Check localStorage or system preference
+    const saved = localStorage.getItem('darkMode')
+    if (saved !== null) {
+      return saved === 'true'
+    }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  })
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768)
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark-mode')
+    } else {
+      document.documentElement.classList.remove('dark-mode')
+    }
+    localStorage.setItem('darkMode', String(isDarkMode))
+  }, [isDarkMode])
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(prev => !prev)
+  }
 
   return (
     <div className="sidebar-header">
@@ -28,14 +41,19 @@ export default function SidebarHeader({
         <div className="header-actions">
           <button
             type="button"
+            className="theme-toggle-btn"
+            onClick={toggleDarkMode}
+            title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDarkMode ? '☀️' : '🌙'}
+          </button>
+          <button
+            type="button"
             className="minimize-btn"
             onClick={onToggleMinimize}
             title={isMinimized ? 'Expand filters' : 'Minimize filters'}
           >
-            {isMobile
-              ? (isMinimized ? '▼' : '▲')
-              : (isMinimized ? '▶' : '◀')
-            }
+            {isMinimized ? '▶' : '◀'}
           </button>
         </div>
       </div>

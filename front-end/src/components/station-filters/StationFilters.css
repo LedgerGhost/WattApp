@@ -94,8 +94,12 @@
 
 .distance-display {
   font-size: 14px;
-  color: var(--color-primary);
+  color: var(--color-primary-dark);
   font-weight: 600;
+}
+
+:root.dark-mode .distance-display {
+  color: var(--color-primary);
 }
 
 .toggle-filters-btn {
@@ -178,9 +182,13 @@
 .filter-section-header {
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-dark);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+:root.dark-mode .filter-section-header {
+  color: var(--color-primary);
 }
 
 .filter-section-hint {
@@ -188,26 +196,4 @@
   color: var(--text-muted);
   margin-top: -8px;
   font-style: italic;
-}
-
-/* Mobile responsive styles */
-@media (max-width: 768px) {
-  .station-filters {
-    padding: 16px;
-    gap: 12px;
-  }
-
-  .toggle-filters-btn {
-    margin: 0 12px 12px 12px;
-    padding: 10px 14px;
-  }
-
-  /* Ensure filters are hidden when sidebar is minimized on mobile */
-  .sidebar.minimized .station-filters {
-    display: none;
-  }
-
-  .sidebar.minimized .toggle-filters-btn {
-    display: none;
-  }
 }

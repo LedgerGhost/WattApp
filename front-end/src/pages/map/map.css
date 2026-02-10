@@ -212,25 +212,9 @@
     height: 50%;
     border-right: none;
     border-bottom: 2px solid rgba(0, 0, 0, 0.1);
-    transition: height 0.3s ease, background 0.3s ease;
-  }
-
-  /* On mobile, minimize collapses height instead of width */
-  .sidebar.sidebar-left.minimized {
-    width: 100%;
-    height: auto;
-    min-height: 0;
-    overflow: hidden;
   }
 
   .map-area {
     height: 50%;
-    flex: 1;
-  }
-
-  /* When sidebar is minimized on mobile, map takes more space */
-  .sidebar.sidebar-left.minimized + .map-area {
-    height: auto;
-    flex: 1;
   }
 }
