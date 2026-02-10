@@ -6,10 +6,9 @@
 2. Right-click install-windows.ps1 → Run with PowerShell or open PowerShell -> Run  ./PATHTOTHEINSTALLER/install-windows.ps1
 3. See this:
 
-=================================
-  se2537 Installer
-=================================
-
+---
+# se2537 Installer
+  
 This will install se2537 to:
   C:\Users\John\AppData\Local\Programs\se2537
 
@@ -19,9 +18,8 @@ Continue? (Y/N): y
 
 Installing...
 
-=================================
-  Installation Successful!
-=================================
+---
+# Installation Successful!
 
 You can now use se2537 from anywhere!
 
