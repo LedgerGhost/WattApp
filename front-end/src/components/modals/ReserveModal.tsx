@@ -93,7 +93,7 @@ export default function ReserveModal({
                 <input
                   type="range"
                   min={1}
-                  max={30}
+                  max={60}
                   value={reserveMinutes}
                   onChange={e => onMinutesChange(parseInt(e.target.value, 10))}
                 />
