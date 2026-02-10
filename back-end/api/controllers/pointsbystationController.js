@@ -15,61 +15,28 @@ exports.getPointsByRadius = async (req, res) => {
       );
     }
 
-    // Setup GeoNear Options
-    const geoNearOptions = {
-      near: { type: "Point", coordinates: [userLon, userLat] },
-      distanceField: "dist.calculated",
-      spherical: true,
-      key: "location" // Explicitly use the 'location' index
-    };
+    if (userLat < -90 || userLat > 90 || userLon < -180 || userLon > 180) {
+      return res.status(400).json(
+        buildErrorLog(req, 400, "Coordinates out of range", "Latitude must be between -90 and 90. Longitude must be between -180 and 180."
+        )
+      );
+    }
 
     let usedRadius = -1; // "Infinite" indicator for the response
     if (radius !== undefined && radius !== null) {
         const r = parseFloat(radius);
         if (!isNaN(r) && r > 0) {
-            geoNearOptions.maxDistance = r;
             usedRadius = r;
         }
     }
 
-    // Aggregation Pipeline
-    const groupedPoints = await Point.aggregate([
-      {
-        $geoNear: geoNearOptions
-      },
-      {
-        $group: {
-            _id: { 
-                name: { $ifNull: ["$station_name", "Unknown Station"] }, 
-                coords: "$location.coordinates" 
-            },
-
-            points: { $push: "$pointid" },
-            distance: { $min: "$dist.calculated" }
-        }
-      },
-      {
-        $sort: { distance: 1 } // Sort groups by nearest first
-      }
-    ]);
-
-    // Transform to List Format
-    const results = groupedPoints.map(group => {
-        return {
-            station_name: group._id.name,
-            coordinates: {
-                lat: group._id.coords[1], // Extract for clarity
-                lon: group._id.coords[0]
-            },
-            points: group.points,
-            // dist_from_user: Math.round(group.distance) // Optional: nice to have
-        };
-    });
-
+    // Fetch Points
+    const result = await Point.findNearbyStation(userLon, userLat, usedRadius);
+    
     return res.status(200).json({
-      cnt: groupedPoints.length, // Count of unique locations found
-      radius: usedRadius, // Returns -1 if unlimited
-      results: results
+      cnt: result.count,
+      radius: result.radius,
+      results: result.data
     });
 
   } catch (err) {

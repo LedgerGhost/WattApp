@@ -395,6 +395,59 @@ pointSchema.statics.findNearby = function (longitude, latitude, maxDistance = 50
   });
 };
 
+pointSchema.statics.findNearbyStation = async function(lon, lat, radius) {
+    // Setup GeoNear Options
+    const geoNearOptions = {
+        near: { type: "Point", coordinates: [lon, lat] },
+        distanceField: "dist.calculated",
+        spherical: true,
+        key: "location"
+    };
+
+    // Handle Radius
+    let usedRadius = null;
+    if (radius < 0) {
+        // No radius limit
+        usedRadius = -1;
+    } else {
+        geoNearOptions.maxDistance = radius;
+        usedRadius = radius;
+    }
+
+    // Run Aggregation
+    const groupedPoints = await this.aggregate([
+        { $geoNear: geoNearOptions },
+        {
+            $group: {
+                _id: { 
+                    name: { $ifNull: ["$station_name", "Unknown Station"] }, 
+                    coords: "$location.coordinates" 
+                },
+                points: { $push: "$pointid" },
+                distance: { $min: "$dist.calculated" }
+            }
+        },
+        { $sort: { distance: 1 } }
+    ]);
+
+    // Transform Logic (Keep data transformation close to the DB logic)
+    const results = groupedPoints.map(group => ({
+        station_name: group._id.name,
+        coordinates: {
+            lat: group._id.coords[1],
+            lon: group._id.coords[0]
+        },
+        points: group.points,
+        dist_from_user: Math.round(group.distance)
+    }));
+
+    return {
+        count: groupedPoints.length,
+        radius: usedRadius,
+        data: results
+    };
+};
+
 pointSchema.statics.isValidStatus = function (status) {
   return VALID_STATUSES.includes(status);
 };
