@@ -44,6 +44,7 @@ app.use("/api/pointstatus", require("./routes/pointstatus")); //g
 
 app.use("/api/USERreserve", require("./routes/USERreserve")); // extra 
 app.use("/api/pointsbystation", require("./routes/pointsbystation")); // extra
+app.use("/api/dummyCompleteReservation", require("./routes/dummyCompleteReservation")); // extra
 app.use("/api", require("./routes/navigate")); // extra
 app.use("/api", require ("./routes/pointsinfo")); // extra
 app.use("/api", require("./routes/myreservations")); // extra
