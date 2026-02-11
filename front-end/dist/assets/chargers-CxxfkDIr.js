@@ -1,0 +1,1 @@
+import{b as s}from"./auth-CZauucy9.js";const a=async()=>s("/pointsinfo"),t=async()=>s("/myreservations"),e=async(a,t=30)=>s(`/USERreserve/${a}/${t}`,{method:"POST"}),o=async a=>s(`/updpoint/${a}`,{method:"POST",body:JSON.stringify({status:"available"})}),n=async a=>s(`/dummyCompleteReservation/${a}`,{});export{n as C,a,o as c,t as g,e as r};

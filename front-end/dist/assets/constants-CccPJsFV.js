@@ -1,0 +1,1 @@
+const a=[37.9838,23.7275],e=12,r=15,n=a=>{switch(a){case"available":return"Available";case"charging":return"Charging";case"reserved":return"Reserved";case"malfunction":return"Malfunction";default:return"Offline"}},s="+30";export{s as D,r as L,e as a,a as b,n as m};
