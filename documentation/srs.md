@@ -402,7 +402,7 @@ All of the output data are for logging purposes. The access management and user 
 
 #### 3.1.2 Use case 2: Filter Charging Stations
 
-The user accesses the web app to search for charging stations and applies filters to narrow results based on specific criteria. The system allows filtering by availability status, charger type (connector type), location/proximity, and price. Users can combine multiple filters to find chargers matching their vehicle specifications and preferences. The system dynamically updates the displayed results as filters are applied. 
+The user opens an interactive map interface to discover charging stations and applies filters to narrow results. The system allows real-time filtering by station name, charger type (connector type), and availability status, with results restricted to a maximum distance radius (0-10km). The user can allow location access to search from their current location or search from the displayed map center. Results update dynamically as the user applies filters, pans/zooms the map, or modifies filter selections. 
 ##### 3.1.2.1 Roles involved
  -  User : Searches for chargers and applies filters
 
@@ -414,17 +414,19 @@ The user accesses the web app to search for charging stations and applies filter
 - The system is successfully connected to station provider APIs (OCPI sources).  
 - Charger data (availability, type, and location) is cached or retrievable from the backend.  
 ##### 3.1.2.3 Execution enviroment
-- **User interfaces:** Web frontend and mobile application — map and list-based station discovery screens.  
-- **Backend REST API:** Handles filter queries, interacts with the provider APIs, and returns filtered lists.  
-- **Database system:** Maintains cached metadata for charger types and current availability snapshots.  
+- **User interfaces:** Responsive map-based interface accessible on web and mobile applications.  
+- **Backend REST API:** Handles geospatial queries, filter requests, interacts with provider APIs (OCPI), and returns filtered charger data within the specified radius.  
+- **Database system:** Maintains cached charger metadata, location data for geospatial queries, charger types, and real-time availability snapshots.  
 ##### 3.1.2.4 Input data
 | Parameter | Type | Description |
 |------------|------|-------------|
-| `user_id` | UUID | Unique identifier of the logged-in user |
-| `location_area` | GEOJSON / LAT-LON | Geographic bounds or map viewport |
+| `location_permission` | BOOLEAN | User grants or denies browser location access |
+| `user_location` | LAT-LON | Current user location (if permission granted) or map center coordinates |
+| `max_distance_radius` | INTEGER | Maximum distance in km (0-10km range) from reference point |
+| `station_name_query` | STRING | Optional search query for charger/station name |
 | `availability_filter` | ENUM | {"Available", "InUse", "Offline", "All"} |
 | `charger_type_filter` | ENUM or LIST | {"AC_Type2", "DC_Fast", "CHAdeMO", "CCS"} |
-| `sort_order` | ENUM | {"distance", "price", "power"} (optional) |
+| `map_viewport` | GEOJSON | Current map center and visible area (for pan/zoom interactions) |
 ##### 3.1.2.5 Expected behaviour
 ###### Main flow
 ```plantuml
@@ -485,9 +487,10 @@ stop
   
 ##### 3.1.2.6 Output data and postconditions
 **Output data**
-- `filtered_chargers[]`: Array of charger objects, each containing  
-  - charger_id, location, price_per_kWh, power_kW, availability_status, charger_type.  
-- `filter_summary`: Object containing applied filters and result count.
+- `filtered_chargers[]`: Array of charger objects within the specified radius, each containing:  
+  - charger_id, station_name, location (lat/lon), availability_status, charger_type, power_kW.  
+- `num_results`: Integer count of chargers matching all active filters.  
+- `map_markers`: Visual markers displayed on the map for each filtered charger.
 **Postconditions**
 - The filtered list/map view reflects the user’s last selected filters.  
 - Filter state is stored (temporarily in session) so that navigation between pages retains results.  
@@ -1282,3 +1285,4 @@ The system shall implement comprehensive security measures to protect user data,
 | **SEC-12** | The system shall implement **two-factor authentication (2FA)** as an optional security enhancement for user accounts. | 2FA significantly improves account security, especially for accounts with stored payment methods. Optional implementation respects user preference while encouraging security best practices. |
 
 The security requirements address the sensitive nature of financial transactions, personal data, and the need to maintain user trust. With payment processing integrated into every charging session and approximately 10,000 daily transactions, robust security measures are essential to protect both users and the charging provider from financial loss, data breaches, and regulatory penalties.
+
