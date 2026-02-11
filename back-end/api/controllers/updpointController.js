@@ -20,15 +20,9 @@ exports.updatePoint = async (req, res) => {
 
     const invalidKeys = bodyKeys.filter(k => !allowedKeys.includes(k));
     if (invalidKeys.length > 0) {
-    return res.status(400).json(
-    buildErrorLog(
-      req,
-      400,
-      "Invalid fields in body",
-      `Allowed fields: ${allowedKeys.join(", ")}`
-    )
-  );
-  }
+      return res.status(400).json(
+        buildErrorLog(req, 400, "Invalid fields in body", `Allowed fields: ${allowedKeys.join(", ")}`));
+      }
     const rawId = req.params.id;
     const idStr = String(rawId).trim();
     const idNum = Number(idStr);
@@ -89,24 +83,19 @@ exports.updatePoint = async (req, res) => {
       
       $set.status = status;
 
-      // Update reservation fields if status is changed from 'reserved' to something else
-      if (status !== "reserved") {
-        $set.reservationendtime = null;
-        $set.reservedBy = null;
-        // Cancel the reservation record of the user who reserved this point
-        await Reservation.updateOne(
-          { 
-            user_id: point.reservedBy, // Find reservation by this user...
-            pointid: point.pointid,    // ... on this point...
-            status: 'active'           // ... that is currently active.
-          },
-          { 
-            $set: { status: 'cancelled' } // Just mark it cancelled.
-          }
-        );
+      // Handle Reservation Logic 
+      // Check if a reservation exists and update it based on the new status
+      if (point.reservedBy) {
+          await Reservation.handlePointStatusChange(
+              point.pointid, 
+              point.reservedBy, 
+              point.status, // Old Status
+              status        // New Status
+          );
       }
 
       $set.lastStatusChange = new Date();
+
     }
     if (kwhprice !== undefined) {
       $set.kwhprice = kwhprice;
