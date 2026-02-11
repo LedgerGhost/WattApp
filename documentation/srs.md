@@ -99,130 +99,97 @@ WattApp integrates with external services for navigation, payments, charging inf
 **UML Component Diagram:**
 
 ```plantuml
-@startuml
-skinparam componentStyle uml2
-top to bottom direction
+@startuml WattApp Component Diagram
 
-' --- LAYER 1: SERVER ---
-package "WattApp Server" {
-    component "Database" as db
-    component "Service Layer" as svc
-    component "Backend API" as backend
-    component "Reverse Proxy" as rv_proxy
-    
-    rv_proxy -left- backend
-    backend -- svc
-    svc -right- db
+skinparam componentStyle rectangle
+skinparam BackgroundColor #87CEEB
+skinparam component {
+    BackgroundColor #87CEEB
+    BorderColor #000000
+}
+skinparam package {
+    BackgroundColor #87CEEB
+    BorderColor #000000
+}
+skinparam note {
+    BackgroundColor #FFFFFF
 }
 
-' --- LAYER 2: CLIENTS ---
-component "Web Frontend" as frontend
-component "CLI Tool" as cli
+' ==========================================
+' DATA MANAGEMENT LAYER
+' ==========================================
+package "WattApp Data Management" {
+    component "<<component>>\n<<database>>\nNosql Database MongoDB\n--\n+request data from database()\n+add data in database()\n+update charger status()" as MongoDB
+    
+    component "<<component>>\nModels" as Models
+}
 
-frontend -[hidden]right- cli
+' ==========================================
+' BUSINESS LOGIC LAYER
+' ==========================================
+package "WattApp Business Logic" {
+    component "<<component>>\nAdmin\nControllers" as AdminControllers
+    
+    component "<<component>>\nLogic Controllers\n--\n+follow routes to corresponding controller()\n+return requested data()\n+follow route to corresponding model()" as LogicControllers
+    
+    component "<<component>>\nAuth\nControllers" as AuthControllers
+    
+    component "<<component>>\nMiddlewares" as Middlewares
+    
+    component "<<component>>\nAPI Routes\n--\n+get points and pointsinfo()\n+check charger state()\n+record new reservation()" as APIRoutes
+}
 
-' --- LAYER 3: EXTERNAL SYSTEMS ---
+' Business Logic internal relationships
+APIRoutes ..> Middlewares
+APIRoutes ..> LogicControllers
+LogicControllers ..> AdminControllers
+LogicControllers ..> AuthControllers
+Middlewares ..> AdminControllers
+Middlewares ..> AuthControllers
+
+' Connection between Data Management and Business Logic
+LogicControllers ..> Models
+
+' ==========================================
+' PRESENTATION LAYER
+' ==========================================
+package "WattApp Presentation" {
+    component "<<component>>\nStatic Assets" as StaticAssets
+    
+    component "<<component>>\n/API/" as APIComponent
+    
+    component "<<component>>\nFrontend Web App\n--\n+select available charger()\n+reserve selected charger()\n+enter reservation duration()\n+display reservation confirmation()\n+navigate to charger()\n+generate google maps link()\n+add active reservation in user profile()" as FrontendWebApp
+    
+    component "<<component>>\nCLI Tool" as CLITool
+}
+
+note "Reverse Proxy" as ReverseProxyNote
+StaticAssets .. ReverseProxyNote
+ReverseProxyNote .. APIComponent
+
+' ==========================================
+' EXTERNAL SYSTEMS
+' ==========================================
 package "External Systems" {
-    ' Payment & Navigation
-    component "Payment Gateway" as payment
-    component "Google Maps API" as maps
-    
-    ' Charging Infrastructure
-    component "Station Provider APIs\n(OCPI)" as ocpi
-    component "Physical Chargers\n(OCPP)" as chargers
-    
-    ' Identity & Messaging
-    component "Auth Service" as auth_service
-    component "SMS/Email Service" as sms_service
-    
-    ' Layout: force left-to-right alignment
-    payment -[hidden]right- maps
-    maps -[hidden]right- ocpi
-    ocpi -[hidden]right- chargers
-    chargers -[hidden]right- sms_service
-    sms_service -[hidden]right- auth_service
+    component "<<component>>\nGoogle Maps\n--\n+redirect to google maps()" as GoogleMaps
 }
 
-' --- VERTICAL ALIGNMENT HELPERS ---
-' Center server package above clients
-backend -[hidden]down- frontend
-backend -[hidden]down- cli
+' ==========================================
+' INTERFACES
+' ==========================================
+interface "REST API" as RestAPI
 
-' Align clients with external systems
-frontend -[hidden]down- payment
-frontend -[hidden]down- maps
+' Connections between layers
+"WattApp Business Logic" -down- RestAPI
+RestAPI -down- APIComponent
 
-' Additional vertical spacing
-db -[hidden]down- frontend
+interface "Google Maps API" as GoogleMapsAPI
 
-' --- INTERFACES & CONNECTIONS ---
-
-' 1. REST API (V-Shape: Server provides, Clients consume)
-interface "REST API" as rest_api
-rv_proxy -down- rest_api
-rest_api )-down-- frontend
-rest_api )-- cli
-
-' 2. Frontend to External APIs
-interface "Payment API" as pay_api
-interface "Navigation API" as nav_api
-
-frontend -down- pay_api
-pay_api )-- payment
-
-frontend -down- nav_api
-nav_api )-- maps
-
-' 3. Backend to Charging Infrastructure
-interface "OCPP WebSocket\n(Charger Control)" as ocpp
-
-rest_api )-- ocpi
-
-rv_proxy -- ocpp
-ocpp )-- chargers
-
-' 4. Authentication
-rest_api )-- auth_service
-
-' 5. Notifications
-rest_api )-- sms_service
-
-' 6. Payment Webhook (Async callback)
-payment .right.> rv_proxy : webhook
-
-' --- ADDITIONAL ALIGNMENT LINES ---
-' Horizontal alignment between server components
-backend -[hidden]down- rest_api
-
-' Vertical alignment for interfaces
-ocpp -[hidden]down- cli
-' Balance external systems layout
-
-
-' --- NOTES ---
-note left of frontend
-  Responsive web design:
-  Desktop, Tablet, Mobile
-  (Auto-adapts to screen size)
-end note
-
-note bottom of ocpi
-  Station metadata,
-  pricing, availability
-end note
-
-note bottom of chargers
-  Real-time control:
-  start/stop sessions,
-  meter values
-end note
-
-note bottom of payment
-  Async webhooks for
-  payment confirmations
-end note
+FrontendWebApp -down- GoogleMapsAPI
+GoogleMapsAPI -down- GoogleMaps
 
 @enduml
+
 ```
 
 ---
