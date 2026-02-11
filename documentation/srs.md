@@ -30,49 +30,25 @@
  **System block diagram**
 ```plantuml
 @startuml
-title System Block Diagram - EV Charging Provider
-
-skinparam rectangleStyle rounded
-skinparam shadowing false
-skinparam title {
-  BackgroundColor #fdf6e3
-  BorderColor #b58900
+skinparam rectangle {
+  BackgroundColor #8fd0f0
+  BorderColor black
 }
 
+rectangle "EV DRIVER\n<<interfaceBlock>>" as EV
+rectangle "ADMIN\n<<interfaceBlock>>" as ADMIN
+rectangle "Frontend (Web/Mobile)\n<<block>> <<system>>" as FE
+rectangle "REST API\n<<block>> <<system>>" as API
+rectangle "Database\n<<block>>" as DB
+rectangle "CLI tool\n<<block>>" as CLI
+rectangle "Google Maps\n<<block>> <<external>>" as GM
 
-
-
-!define INTERNAL_COLOR #fef9e7
-!define EXTERNAL_COLOR #ddeaf1
-!define FRONTEND_COLOR #d6efc7
-!define BACKEND_COLOR #fce1e4
-
-
-rectangle "EV Driver\n(Mobile/Web Interface)" as Driver EXTERNAL_COLOR
-rectangle "Payment Gateway" as Payment EXTERNAL_COLOR
-rectangle "Map / Location Service" as Maps EXTERNAL_COLOR
-rectangle "Energy Market Service" as Market EXTERNAL_COLOR
-rectangle "Charging Station Operator" as Operator EXTERNAL_COLOR
-
-
-
-rectangle "EV Charging Provider System" as System INTERNAL_COLOR {
-  
-  rectangle "Front-End\n(Web/Mobile)" as FE FRONTEND_COLOR
-  rectangle "REST API & Backend" as BE BACKEND_COLOR
-  
-}
-
-
-
-
-Driver --> FE : user requests / data
-FE --> BE : REST / API calls
-BE --> Payment : transactions
-BE --> Maps : map data
-BE --> Market : energy prices
-BE --> Operator : station data exchange
-
+EV -- FE
+ADMIN -- FE
+FE -- API
+API -- DB
+API -- CLI
+API -- GM
 @enduml
 ```
 
