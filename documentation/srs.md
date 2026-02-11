@@ -226,64 +226,33 @@ The top level use-case model for WattApp is structured around four main actors a
 
 ```plantuml
 @startuml
-left to right direction
-skinparam actorStyle stickman
-
-' ---- COLORS ----
-skinparam rectangle {
-  BackgroundColor #fdf6e3
-  BorderColor #b58900
+rectangle "WattApp System" {
+	usecase (Search & Filter Chargers) as Search___Filter_Chargers
+	usecase (VIEW HISTORY) as VIEW_HISTORY
+	usecase (VIEW PROFILE) as VIEW_PROFILE
+	usecase (MANAGE CHARGER POINTS) as MANAGE_CHARGER_POINTS
+  usecase (Access Management and User Differentiation LOGIN) as Access_Management_and_User_Differentiation__LOGIN_
+	usecase (LOGOUT)
+	usecase (SIGNUP)
+	usecase (Reserve or Navigate to Charger) as Reserve_or_Navigate_to_Charger
 }
-skinparam actor {
-  BackgroundColor #eee8d5
-  BorderColor #6c71c4
-}
-skinparam usecase {
-  BackgroundColor #e0f7fa
-  BorderColor #00838f
-}
-
-actor "EV Driver" as Driver
-actor "Charging Station Operator" as Operator
-actor "System Administrator" as Admin
-actor "External Services" as Ext
-
-rectangle "WattApp" {
-  usecase "Search Charging Stations" as UC_Search
-  usecase "Filter / Compare Chargers" as UC_Compare
-  usecase "View Station Details" as UC_Details
-  usecase "Reserve Charger" as UC_Reserve
-  usecase "Navigate to Charger" as UC_Navigate
-  usecase "View History & Statistics" as UC_Stats
-  usecase "Manage Account" as UC_Account
-
-  usecase "Provide Station Data" as UC_StationData
-  usecase "Update Charger Status" as UC_Update
-
-  usecase "Manage Users" as UC_AdminUsers
-  usecase "Monitor System" as UC_AdminMonitor
-
-  usecase "Process Payment" as UC_Payment
-  usecase "Provide Navigation Route" as UC_Map
-}
-
-Driver --> UC_Search
-Driver --> UC_Compare
-Driver --> UC_Details
-Driver --> UC_Reserve
-Driver --> UC_Navigate
-Driver --> UC_Stats
-Driver --> UC_Account
-
-Operator --> UC_StationData
-Operator --> UC_Update
-
-Admin --> UC_AdminUsers
-Admin --> UC_AdminMonitor
-
-Ext --> UC_Payment
-Ext --> UC_Map
-
+actor  :EXTERNAL SYSTEM: as EXTERNAL_SYSTEM
+actor  :SYSTEM ADMINISTRATOR: as SYSTEM_ADMINISTRATOR
+actor  :EV DRIVER: as EV_DRIVER
+SYSTEM_ADMINISTRATOR -- MANAGE_CHARGER_POINTS
+EV_DRIVER -- VIEW_PROFILE
+EV_DRIVER -- Search___Filter_Chargers
+EV_DRIVER -- VIEW_HISTORY
+EV_DRIVER -- Reserve_or_Navigate_to_Charger
+Reserve_or_Navigate_to_Charger -- EXTERNAL_SYSTEM
+VIEW_PROFILE <.. VIEW_HISTORY : <<Extend>>  
+EV_DRIVER <|-- SYSTEM_ADMINISTRATOR
+EV_DRIVER -- Access_Management_and_User_Differentiation__LOGIN_
+EV_DRIVER -- LOGOUT
+EV_DRIVER -- SIGNUP
+Reserve_or_Navigate_to_Charger ..> Access_Management_and_User_Differentiation__LOGIN_ : <<Include>>  
+VIEW_PROFILE ..> Access_Management_and_User_Differentiation__LOGIN_ : <<Include>>  
+MANAGE_CHARGER_POINTS ..> Access_Management_and_User_Differentiation__LOGIN_ : <<Include>>  
 @enduml
  ```
     
