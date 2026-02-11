@@ -519,177 +519,59 @@ The user accesses the web app to search for charging stations and applies filter
 ###### Main flow
 ```plantuml
 @startuml
-|User|
+title EV Charger Map - Activity Diagram
+
 start
-:Open app or website;
-:View charger search page;
+:Open map;
+:Allow browser to access\nlocation ?;
 
-|System|
-:Load available charging stations;
-:Display initial map/list view;
-
-|User|
-:Select filter criteria
-(availability, connector type,
-location, price);
-:Confirm filter selection;
-
-|System|
-:Validate and apply filters;
-:Query database;
-:Return filtered results;
-
-if (Results found?) then (yes)
-  |User|
-  :View filtered chargers;
-  
-  if (Modify filters?) then (yes)
-    :Adjust filter criteria;
-    |System|
-    :Re-query with updated filters;
-    |User|
-    :View updated results;
-  else (no)
-  endif
-  
-  :Select a charger or continue browsing;
-  
-else (no)
-  :Display "No chargers found";
-  :Show suggestions to relax filters;
-  |User|
-  if (Show alternatives?) then (yes)
-    |System|
-    :Return nearest stations;
-    |User|
-    :View alternatives;
-  else (no)
-  endif
+if () then (Yes)
+  :Choose Max Distance from your\ncurrent location (0-10km radius);
+else (No)
+  :Choose Max Distance from the\nDisplayed Circle;
 endif
-
-stop
-@enduml
-```
-
-###### Alternate flows
-### Invalid filter parameters
-
-```plantuml
-@startuml
-|User|
-start
-:Open app or website;
-:View charger search page;
-
-|System|
-:Load available charging stations;
-:Display initial map/list view;
-
-|User|
-:Select filter criteria
-(availability, connector type,
-location, price);
-:Enter invalid parameters
-(e.g., min price > max price,
-radius > 100km);
-:Confirm filter selection;
-
-|System|
-:Validate filter parameters;
-
-if (Valid parameters?) then (no)
-  :Display error message
-  with specific validation issue;
-  |User|
-  :Read error message;
-  
-  if (Correct filters?) then (yes)
-    :Adjust invalid parameters;
-    |System|
-    :Re-validate parameters;
-    :Query database with valid filters;
-    :Return filtered results;
-    |User|
-    :View filtered chargers;
-  else (no)
-    :Clear all filters;
-    |System|
-    :Display all available stations;
-    |User|
-    :View unfiltered results;
-  endif
-else (yes)
-  :Query database;
-  :Return filtered results;
-  |User|
-  :View filtered chargers;
-endif
-
-stop
-@enduml
-```
-
-- **Offline Data Mode**  
-
-```plantuml
-@startuml
-|User|
-start
-:Open app or website;
-:View charger search page;
-
-|System|
-:Load available charging stations;
-:Display initial map/list view;
-
-|User|
-:Select availability filter
-(only "available" chargers);
-:Confirm filter selection;
-
-|System|
-:Query database;
-:Return 15 available chargers;
-
-|User|
-:View filtered results;
-:Review charger details;
-
-|System|
-:Monitor real-time status updates;
 
 note right
-  Time passes while
-  user browses results
+When location permission is
+denied, the Max Distance filter is
+applied relative to the current map
+center instead of the user's
+geolocation. The reference circle
+dynamically updates and remains
+centered on the map viewport
+during pan and zoom interactions.
 end note
 
-:Receive status update
-Charger #42 now "occupied";
-:Update database status;
-:Push notification to user interface;
+' --- parallel filter selection (fork/join bars) ---
+fork
+  :Search station by name;
+fork again
+  :Select charger type;
+fork again
+  :select availability status;
+end fork
 
-|User|
-:Receive real-time update notification;
-:See Charger #42 removed from list
-(now shows 14 available chargers);
+' --- main interaction loop ---
+repeat
+  :Apply\nfilters;
+  :Display stations within radius;
 
-if (Refresh results?) then (yes)
-  |System|
-  :Re-query with same filters;
-  :Return updated available chargers;
-  |User|
-  :View refreshed list
-  with current availability;
-else (no)
-  :Continue browsing
-  remaining chargers;
-endif
+  if (Select station) then (Select station)
+    :Select station;
+    :Display station details;
+    break
+  else (Pan/Zoom)
+    :Pan /Zoom on the\nmap;
+    :Update map center;
+  endif
 
-:Select a charger from updated list;
+repeat while ( ) is ( )
 
 stop
 @enduml
 ```
+
+
   
 ##### 3.1.2.6 Output data and postconditions
 **Output data**
