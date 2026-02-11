@@ -22,7 +22,7 @@ REM ===========================================
 
 REM Determine dump folder path
 if "%~1"=="" (
-    set DUMP_FOLDER=.\dump
+    set DUMP_FOLDER=.\wattapp_database_dump
 ) else (
     set DUMP_FOLDER=%~1
 )
