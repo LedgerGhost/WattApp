@@ -20,7 +20,7 @@ if [ -n "$1" ]; then
     DUMP_FOLDER="$1"
 else
     # Default: look for 'dump' folder in current directory
-    DUMP_FOLDER="./dump"
+    DUMP_FOLDER="./wattapp_database_dump"
 fi
 
 # Check if dump folder exists
