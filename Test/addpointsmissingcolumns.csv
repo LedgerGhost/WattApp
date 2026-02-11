@@ -1,5 +1,0 @@
-pointid,lat,status,connector_type,kwhprice,address,station_name,external_station_id
-20011,37.941513,"available","Type2",0.35,"Omonoia Square 10","UpElectricity",
-20021,37.971513,"available","CCS",0.45,"Dionysiou Areopagitou 5","Attica Blue",
-20031,37.971513,"available","CHAdeMO",0.50,"Pangrati Park 2","EcoMotion",
-20041,38.003669,"available",,0.30,"Kifisias Avenue 100","Urban Volt",
