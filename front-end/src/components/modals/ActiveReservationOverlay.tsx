@@ -11,9 +11,12 @@ interface ActiveReservation {
 interface ActiveReservationOverlayProps {
   reservation: ActiveReservation
   onCancel: () => void
+  onComplete: () => void
   onExpire?: () => void
   cancelStatus: 'idle' | 'loading' | 'success' | 'error'
   cancelMessage?: string
+  completeStatus: 'idle' | 'loading' | 'success' | 'error'
+  completeMessage?: string
 }
 
 function parseEndTime(endTime: string): Date {
@@ -32,9 +35,12 @@ function formatTimeRemaining(seconds: number): string {
 export default function ActiveReservationOverlay({
   reservation,
   onCancel,
+  onComplete,
   onExpire,
   cancelStatus,
   cancelMessage,
+  completeStatus,
+  completeMessage,
 }: ActiveReservationOverlayProps) {
   const [secondsRemaining, setSecondsRemaining] = useState<number>(() => {
     const endDate = parseEndTime(reservation.endTime)
@@ -94,13 +100,25 @@ export default function ActiveReservationOverlay({
       {cancelStatus === 'error' && cancelMessage && (
         <div className="reservation-error">{cancelMessage}</div>
       )}
-      <button
-        className="cancel-reservation-btn"
-        onClick={onCancel}
-        disabled={cancelStatus === 'loading'}
-      >
-        {cancelStatus === 'loading' ? 'Cancelling...' : 'Cancel Reservation'}
-      </button>
+      {completeStatus === 'error' && completeMessage && (
+        <div className="reservation-error">{completeMessage}</div>
+      )}
+      <div className="reservation-buttons">
+        <button
+          className="complete-reservation-btn"
+          onClick={onComplete}
+          disabled={completeStatus === 'loading' || isExpired}
+        >
+          {completeStatus === 'loading' ? 'Completing...' : 'Complete Reservation'}
+        </button>
+        <button
+          className="cancel-reservation-btn"
+          onClick={onCancel}
+          disabled={cancelStatus === 'loading'}
+        >
+          {cancelStatus === 'loading' ? 'Cancelling...' : 'Cancel Reservation'}
+        </button>
+      </div>
     </div>
   )
 }
