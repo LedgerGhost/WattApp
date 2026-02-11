@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { dummyCompleteReservationController } = require("../controllers/dummyCompleteReservationController");
+const dummyCompleteReservationController = require("../controllers/dummyCompleteReservationController");
 const checkAuth = require("../middlewares/auth");
 
 // GET /api/myreservations
