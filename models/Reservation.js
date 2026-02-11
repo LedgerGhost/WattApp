@@ -1,7 +1,7 @@
 // models/Reservation.js
 const mongoose = require("mongoose");
 const crypto = require('crypto');
-
+const User = require("./User"); 
 
 const reservationSchema = new mongoose.Schema(
   {
