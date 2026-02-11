@@ -1,0 +1,5 @@
+pointid,lon,lat,providerName,status,connector_type,cap,kwhprice,address,station_name,external_station_id
+20011,23.727539,37.941513,"PowerCharge GR","available","Type2",2,0.35,"Omonoia Square 10","UpElectricity",
+20021,23.729359,37.971513,"Attica Blue","available","CCS",4,0.45,"Dionysiou Areopagitou 5",,
+20031,23.757041,237.971513,"EcoMotion","available","CHAdeMO",1,0.50,"Pangrati Park 2",,
+20041,23.791552,38.003669,"Urban Volt","available",,2,0.30,"Kifisias Avenue 100",,
