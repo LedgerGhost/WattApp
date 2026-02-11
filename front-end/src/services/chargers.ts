@@ -35,6 +35,11 @@ export const cancelReservation = async (pointId: string) => {
   })
 }
 
+export const CompletedReservation = async (pointId: string) => {
+    return apiCall(`/dummyCompleteReservation/${pointId}`, {
+  })
+}
+
 // Sessions
 export const getSessions = async () => {
   return apiCall('/sessions')
