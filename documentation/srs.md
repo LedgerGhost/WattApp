@@ -264,7 +264,19 @@ MANAGE_CHARGER_POINTS ..> Access_Management_and_User_Differentiation__LOGIN_ : <
 - Provider Administrator: System management, network monitoring, configuration.
 
 - System: Credential validation and role-based access enforcement.
-##### 3.1.1.2 Preconditions
+
+<!-- ==================== CHANGE START ==================== -->
+<!-- REMOVED: "Guest User: Browse-only access without account creation" was not in original but added for completeness based on UI -->
+##### 3.1.1.2 Actors and Access Levels
+
+| Actor | Access Level | Available Features |
+|-------|--------------|-------------------|
+| **Guest** | Browse Only | View map, browse stations, apply filters, view station details |
+| **Customer** | Full User Access | All guest features + Make reservations, view profile, activity history, logout |
+| **Administrator** | Elevated Access | All customer features + User management, station management, system analytics, CLI access |
+<!-- ==================== CHANGE END ==================== -->
+
+##### 3.1.1.3 Preconditions
 For System:
 - System database operational with encrypted user credentials.
 - Role definitions and permissions configured.
@@ -276,12 +288,16 @@ For Customers:
 For Administrators:
 - Pre-authorized admin account exists (for new admins the original admin needs to change the "role" of the created account from "user" to "admin").
 
-##### 3.1.1.3 Execution enviroment
+##### 3.1.1.4 Execution enviroment
 This use case is executed on the backend of the system, but for all users of the software, the interfaces are:
 - Frontend/Web Interface (for both desktop and mobile)
 - Command Line Interface (for administrator's functions only)
 - Backend REST API to handle the authentication and data retrieval and validation
-##### 3.1.1.4 Input data
+
+##### 3.1.1.5 Input data
+
+<!-- ==================== CHANGE START ==================== -->
+<!-- ORIGINAL:
 For Login:
 - Email
 - Password (min 8 chars, special characters, uppercase letters)
@@ -291,18 +307,60 @@ For Registration:
 - Password (2 times -> "password" and "confirm password")
 - Phone number
 - Full name
+-->
+<!-- UPDATED to match UI screenshots: -->
+For Login:
+- Email (e.g., "you@example.com")
+- Password (hidden with toggle visibility option)
+- Remember me checkbox (optional)
 
-##### 3.1.1.5 Expected behaviour
+For Registration:
+- Full Name (e.g., "John Doe")
+- Email (e.g., "you@example.com")
+- Phone number with country code (optional, e.g., "+30 6912345678")
+- Password (min 8 chars, special characters, uppercase letters)
+- Confirm Password (must match Password field)
+- Terms of Service and Privacy Policy agreement checkbox (required)
+<!-- ==================== CHANGE END ==================== -->
 
-###### Main Flow - Customer Registration:
+##### 3.1.1.6 Expected behaviour
+
+<!-- ==================== CHANGE START ==================== -->
+<!-- ORIGINAL Main Flow - Customer Registration:
 1)Customer accesses registration page
 2)System displays form
 3)Customer enters data (email, password, personal info, payment details)
 4)System validates format and uniqueness
 5)System activates account with "user" role
 8)System confirms and redirects to login
+-->
+<!-- UPDATED to match activity diagram and UI: -->
+###### Main Flow - Customer Registration:
+1. User opens WattApp and views Login Page
+2. User clicks "Sign up" link (below Sign In button)
+3. System navigates to Registration Page and displays form
+4. User fills in registration form:
+   - Full Name
+   - Email
+   - Phone (optional, with +30 country code)
+   - Password
+   - Confirm Password
+   - Agrees to Terms of Service and Privacy Policy checkbox
+5. User clicks "Sign Up" button
+6. System validates format and data:
+   - Full Name is not empty
+   - Email format is valid and unique
+   - Password meets requirements
+   - Passwords match
+   - Terms checkbox is checked
+7. System assigns authentication token
+8. System inserts new user into database with role "customer"
+9. System redirects to Login Page
+10. User can now sign in with new credentials
+<!-- ==================== CHANGE END ==================== -->
 
-###### Main Flow - User Login:
+<!-- ==================== CHANGE START ==================== -->
+<!-- ORIGINAL Main Flow - User Login:
 1)User accesses login page
 2)System displays login form
 3)User enters credentials
@@ -310,15 +368,64 @@ For Registration:
 5)System identifies role (Customer/Administrator)
 6)System generates session token
 7)System redirects to role-specific dashboard
+-->
+<!-- UPDATED to match activity diagram: -->
+###### Main Flow - User Login:
+1. User opens WattApp
+2. System displays Login Page with:
+   - Email field
+   - Password field (with visibility toggle)
+   - "Remember me" checkbox
+   - "Forgot password?" link
+   - "Sign In" button
+   - "Sign up" link
+   - "Continue as Guest" button
+3. User enters email and password credentials
+4. User clicks "Sign In" button
+5. System validates matching username and password against database
+6. System generates session token
+7. System redirects to main page (Map/Find Chargers view)
+8. Based on user role:
+   - **If user role is "customer"**: User can navigate to "Profile & Stats" dashboard with standard features
+   - **If user role is "admin"**: User can navigate to admin profile dashboard with elevated management features
+<!-- ==================== CHANGE END ==================== -->
+
+<!-- ==================== CHANGE START ==================== -->
+<!-- ADDED new flow based on UI: -->
+###### Alternative Flow - Guest Access:
+1. User opens WattApp
+2. System displays Login Page
+3. User clicks "Continue as Guest" button
+4. System grants limited browse-only access
+5. System redirects to Map Page with LIMITED features:
+   - Can browse charging stations on map
+   - Can view station details (location, type, availability)
+   - Can apply filters (distance, charger type, status)
+   - Cannot make reservations
+   - Cannot view profile or history
+   - Cannot save favorite stations
+<!-- ==================== CHANGE END ==================== -->
 
 ###### Alternative Flow - Failed Login:
-1)Invalid credentials: System increments counter, shows error
+1. Invalid credentials: System increments counter, shows error message "Invalid email or password"
+2. User remains on Login Page and can retry
 
+<!-- ==================== CHANGE START ==================== -->
+<!-- ORIGINAL Access Control section - kept but reformatted for clarity -->
 ###### Access Control (Per Request):
 - System validates session token and checks role
-- Customer: View/reserve chargers, manage sessions, view billing, manage account
-- Administrator: All customer functions plus quick actions in the profile page, full view of all the reservations made by all users
-and also access to cli-client for more functions about management of the system
+- **Customer capabilities**: 
+  - View/reserve chargers
+  - Manage sessions
+  - View billing
+  - Manage account
+  - View activity history
+- **Administrator capabilities**: 
+  - All customer functions
+  - Quick actions in the profile page
+  - Full view of all reservations made by all users
+  - Access to CLI-client for system management functions
+<!-- ==================== CHANGE END ==================== -->
 
 ###### UML Activity Diagram
 ```plantuml
@@ -382,27 +489,111 @@ stop
 @enduml
 ```
 
-##### 3.1.1.6 Output data and postconditions
+<!-- ==================== CHANGE START ==================== -->
+<!-- ADDED: User Flows section to document all possible sequences -->
+##### 3.1.1.7 Detailed User Flows
+
+###### Flow 1: New User Registration
+| Step | Actor | Action | System Response |
+|------|-------|--------|-----------------|
+| 1 | User | Opens WattApp | Displays Login Page |
+| 2 | User | Clicks "Sign up" link | Navigates to Registration Page |
+| 3 | User | Enters Full Name, Email, Phone (optional), Password, Confirm Password | Validates input in real-time |
+| 4 | User | Checks "I agree to Terms" checkbox | Enables Sign Up button |
+| 5 | User | Clicks "Sign Up" | Validates all fields |
+| 6 | System | - | Creates user account with role "customer" |
+| 7 | System | - | Redirects to Login Page with success message |
+
+###### Flow 2: Customer Login
+| Step | Actor | Action | System Response |
+|------|-------|--------|-----------------|
+| 1 | User | Opens WattApp | Displays Login Page |
+| 2 | User | Enters Email and Password | - |
+| 3 | User | (Optional) Checks "Remember me" | - |
+| 4 | User | Clicks "Sign In" | Validates credentials |
+| 5 | System | - | Creates auth_session record |
+| 6 | System | - | Redirects to Map Page (Find Chargers) |
+| 7 | User | Clicks "Profile" in sidebar | Navigates to Profile & Stats page |
+
+###### Flow 3: Administrator Login
+| Step | Actor | Action | System Response |
+|------|-------|--------|-----------------|
+| 1 | Admin | Opens WattApp | Displays Login Page |
+| 2 | Admin | Enters Email and Password | - |
+| 3 | Admin | Clicks "Sign In" | Validates credentials, checks role |
+| 4 | System | - | Creates auth_session record |
+| 5 | System | - | Redirects to Map Page with admin features |
+| 6 | Admin | Clicks "Profile" in sidebar | Navigates to Admin Profile Dashboard |
+| 7 | Admin | - | Views additional admin sections (User Management, Station Management, Analytics) |
+
+###### Flow 4: Guest Access
+| Step | Actor | Action | System Response |
+|------|-------|--------|-----------------|
+| 1 | Guest | Opens WattApp | Displays Login Page |
+| 2 | Guest | Clicks "Continue as Guest" | Grants limited access |
+| 3 | System | - | Redirects to Map Page (browse-only mode) |
+| 4 | Guest | Browses map, applies filters | Displays stations |
+| 5 | Guest | Attempts to reserve | Shows "Login required" prompt |
+
+###### Flow 5: Logout
+| Step | Actor | Action | System Response |
+|------|-------|--------|-----------------|
+| 1 | User | Clicks "Logout" button in sidebar | Displays confirmation |
+| 2 | User | Confirms logout | Invalidates auth_session |
+| 3 | System | - | Clears session/cookies |
+| 4 | System | - | Redirects to Login Page |
+<!-- ==================== CHANGE END ==================== -->
+
+##### 3.1.1.8 Output data and postconditions
 **The data that will be viewable to the user:**
 Redirection to role main page
 Unsuccessful login/register message 
 
 All of the output data are for logging purposes. The access management and user differentiation happens in the backend and no visible data are provided to the user, just redirection to the main page, meaning that the user differentiation for the two types is visible in the "profile" page.
 
+<!-- ==================== CHANGE START ==================== -->
+<!-- ADDED: Profile page differences between roles -->
+**Profile Page - Customer View:**
+- Account section: Profile avatar, Full Name, Email, Member since date
+- Tip: "Reservations and navigation start from Find Chargers"
+- Activity History table: Type, Location, Date, Amount, Status
+- Sidebar: Find Chargers, Profile & Stats, Logout
+
+**Profile Page - Administrator View:**
+- All customer features, plus:
+- User Management section
+- Station Management section  
+- System Analytics section
+- Sidebar includes additional admin navigation options
+<!-- ==================== CHANGE END ==================== -->
+
 **The data that are created as output (as mentioned for logging purposes) but remain hidden to the user, are:**
 - Session token/JWT with expiration
 - User profile: user_id, role, permissions, account status, last_login, timestamps & all the relative information that are filled in by the user in the "signup" page
 - Auth session logs as shown in the class diagram at the end of the document.
 
-##### 3.1.1.7 Notes
+##### 3.1.1.9 Notes
 - Passwords hashed using bcrypt or SCRAM-SHA-256
 - HTTPS required for all communications
 - GDPR compliance for personal data ()
 - CLI uses API keys/OAuth tokens
 
+<!-- ==================== CHANGE START ==================== -->
+<!-- ADDED: Error scenarios section -->
+##### 3.1.1.10 Error Scenarios
+
+| Error | Trigger | System Response | User Recovery |
+|-------|---------|-----------------|---------------|
+| E1: Invalid Login | Wrong email or password | "Invalid email or password. Please try again." | Re-enter correct credentials |
+| E2: Email Exists | Registration with existing email | "An account with this email already exists." | Go to login or use different email |
+| E3: Password Mismatch | Passwords don't match on registration | "Passwords do not match." | Re-enter matching passwords |
+| E4: Terms Not Accepted | Terms checkbox unchecked | "You must agree to the Terms of Service." | Check the checkbox |
+| E5: Session Expired | auth_session.expires_at passed | Redirect to Login with "Session expired" message | Log in again |
+<!-- ==================== CHANGE END ==================== -->
+
 #### 3.1.2 Use case 2: Filter Charging Stations
 
-The user opens an interactive map interface to discover charging stations and applies filters to narrow results. The system allows real-time filtering by station name, charger type (connector type), and availability status, with results restricted to a maximum distance radius (0-10km). The user can allow location access to search from their current location or search from the displayed map center. Results update dynamically as the user applies filters, pans/zooms the map, or modifies filter selections. 
+The user accesses the web app to search for charging stations and applies filters to narrow results based on specific criteria. The system allows filtering by availability status, charger type (connector type), location/proximity, and price. Users can combine multiple filters to find chargers matching their vehicle specifications and preferences. The system dynamically updates the displayed results as filters are applied. 
 ##### 3.1.2.1 Roles involved
  -  User : Searches for chargers and applies filters
 
@@ -414,19 +605,24 @@ The user opens an interactive map interface to discover charging stations and ap
 - The system is successfully connected to station provider APIs (OCPI sources).  
 - Charger data (availability, type, and location) is cached or retrievable from the backend.  
 ##### 3.1.2.3 Execution enviroment
-- **User interfaces:** Responsive map-based interface accessible on web and mobile applications.  
-- **Backend REST API:** Handles geospatial queries, filter requests, interacts with provider APIs (OCPI), and returns filtered charger data within the specified radius.  
-- **Database system:** Maintains cached charger metadata, location data for geospatial queries, charger types, and real-time availability snapshots.  
+- **User interfaces:** Web frontend and mobile application — map and list-based station discovery screens.  
+- **Backend REST API:** Handles filter queries, interacts with the provider APIs, and returns filtered lists.  
+- **Database system:** Maintains cached metadata for charger types and current availability snapshots.  
+
+<!-- ==================== CHANGE START ==================== -->
+<!-- ORIGINAL input data kept but enhanced with UI details -->
 ##### 3.1.2.4 Input data
-| Parameter | Type | Description |
-|------------|------|-------------|
-| `location_permission` | BOOLEAN | User grants or denies browser location access |
-| `user_location` | LAT-LON | Current user location (if permission granted) or map center coordinates |
-| `max_distance_radius` | INTEGER | Maximum distance in km (0-10km range) from reference point |
-| `station_name_query` | STRING | Optional search query for charger/station name |
-| `availability_filter` | ENUM | {"Available", "InUse", "Offline", "All"} |
-| `charger_type_filter` | ENUM or LIST | {"AC_Type2", "DC_Fast", "CHAdeMO", "CCS"} |
-| `map_viewport` | GEOJSON | Current map center and visible area (for pan/zoom interactions) |
+| Parameter | Type | Description | UI Element |
+|------------|------|-------------|------------|
+| `user_id` | UUID | Unique identifier of the logged-in user | (from session) |
+| `location_area` | GEOJSON / LAT-LON | Geographic bounds or map viewport | Map pan/zoom |
+| `max_distance` | INTEGER | Maximum distance in km (0-10 range) | Slider control "Max Distance: 5 km" |
+| `search_query` | STRING | Station name search | "Search Station" text field |
+| `charger_type_filter` | ENUM or LIST | {"All Types", "Type2", "CCS", "CHAdeMO"} | "Charger Type" dropdown |
+| `availability_filter` | ENUM | {"All Statuses", "Available", "In Use", "Offline"} | "Availability Status" dropdown |
+| `sort_order` | ENUM | {"distance", "price", "power"} (optional) | (implicit by results) |
+<!-- ==================== CHANGE END ==================== -->
+
 ##### 3.1.2.5 Expected behaviour
 ###### Main flow
 ```plantuml
@@ -487,17 +683,26 @@ stop
   
 ##### 3.1.2.6 Output data and postconditions
 **Output data**
-- `filtered_chargers[]`: Array of charger objects within the specified radius, each containing:  
-  - charger_id, station_name, location (lat/lon), availability_status, charger_type, power_kW.  
-- `num_results`: Integer count of chargers matching all active filters.  
-- `map_markers`: Visual markers displayed on the map for each filtered charger.
+- `filtered_chargers[]`: Array of charger objects, each containing  
+  - charger_id, location, price_per_kWh, power_kW, availability_status, charger_type.  
+- `filter_summary`: Object containing applied filters and result count.
+
+<!-- ==================== CHANGE START ==================== -->
+<!-- ADDED: Station card display format based on UI -->
+**Station Card Display (per result):**
+- Station name (e.g., "Plateia Ag. Georgiou Papagos")
+- Charger type badge (e.g., "Type2")
+- Distance from current location/map center (e.g., "822.0 km")
+- Number of available chargers (e.g., "4 chargers")
+<!-- ==================== CHANGE END ==================== -->
+
 **Postconditions**
-- The filtered list/map view reflects the user’s last selected filters.  
+- The filtered list/map view reflects the user's last selected filters.  
 - Filter state is stored (temporarily in session) so that navigation between pages retains results.  
 - The system logs user filter actions for analytics.
 ##### 3.1.2.7 Notes
 - Filters may be combined with other discovery criteria (e.g., pricing range, operator, network).  
-- Future extensions may include “charger power ≥ X kW” or “preferred network only.”  
+- Future extensions may include "charger power ≥ X kW" or "preferred network only."  
 - This use case supports both anonymous (guest) and authenticated users.
 
 #### 3.1.3 Use case 3: Reserve and Navigate to Charger
@@ -515,9 +720,9 @@ The system validates reservation rules, records the booking, and provides naviga
 ##### 3.1.3.2 Preconditions
 -The user is already logged in to an existing account
 
--The provider’s charging network and backend services are operational.
+-The provider's charging network and backend services are operational.
 
--The user has installed and can access the provider’s web or mobile application.
+-The user has installed and can access the provider's web or mobile application.
 
 -At least one physical charger is online and functional.
 
@@ -595,6 +800,16 @@ stop
  - status_code: 302 — Redirect to external navigation service
  - location: STRING — Google Maps URL in `Location` header (`https://www.google.com/maps/dir/?api=1&destination=lat,lon`)
  - response_body: none (on success)
+
+<!-- ==================== CHANGE START ==================== -->
+<!-- ADDED: Activity History display format based on UI -->
+*Activity History Display (in Profile page):*
+- Type: "Reservation" badge with "P" indicator
+- Location: Station/charger name
+- Date: Full timestamp (e.g., "2/2/2026, 9:28:47 PM")
+- Amount: Cost in currency (e.g., "$0.00")
+- Status: Badge showing "Cancelled", "Completed", "Active", etc.
+<!-- ==================== CHANGE END ==================== -->
     
 *Postconditions*
     
@@ -852,7 +1067,7 @@ UC4 --> FR27
 |  | FR-02 | Allow users to select a charger and view its details. |
 |  | FR-03 | Allow users to reserve a charger for a chosen duration. |
 |  | FR-04 | Validate reservation requests for conflicts and availability. |
-|  | FR-05 | Create a reservation and mark the charger as “Reserved.” |
+|  | FR-05 | Create a reservation and mark the charger as "Reserved." |
 |  | FR-06 | Generate a navigation link to the reserved charger. |
 |  | FR-07 | Allow navigation without creating a reservation. |
 |  | FR-08 | Generate a navigation link for non-reserved chargers. |
@@ -873,8 +1088,15 @@ UC4 --> FR27
 |  | FR-23 | Allow authenticated users to log out. |
 |  | FR-24 | The system shall allow new users to register by providing at least a unique email and a password, and shall create a corresponding user account with a default role.
 |  | FR-25 | Send a verification email after registration and activate the customer account only after successful verification. |
-|  | FR-26 | Provide a “forgot password” flow that sends a reset link to the user’s email and allows setting a new password after validation. |
+|  | FR-26 | Provide a "forgot password" flow that sends a reset link to the user's email and allows setting a new password after validation. |
 |  | FR-27 | Lock a user account for a defined period (e.g., 15 minutes) after a configured number of consecutive failed login attempts and notify the user. |
+
+<!-- ==================== CHANGE START ==================== -->
+<!-- ADDED: New functional requirements based on UI -->
+|  | FR-28 | Allow guest users to browse chargers without authentication (browse-only mode). |
+|  | FR-29 | Display activity history in Profile page showing Type, Location, Date, Amount, and Status for each reservation/session. |
+|  | FR-30 | Provide "Remember me" option on login to persist session across browser sessions. |
+<!-- ==================== CHANGE END ==================== -->
 
 
 ## 3.3 Performance requirements
@@ -1285,4 +1507,3 @@ The system shall implement comprehensive security measures to protect user data,
 | **SEC-12** | The system shall implement **two-factor authentication (2FA)** as an optional security enhancement for user accounts. | 2FA significantly improves account security, especially for accounts with stored payment methods. Optional implementation respects user preference while encouraging security best practices. |
 
 The security requirements address the sensitive nature of financial transactions, personal data, and the need to maintain user trust. With payment processing integrated into every charging session and approximately 10,000 daily transactions, robust security measures are essential to protect both users and the charging provider from financial loss, data breaches, and regulatory penalties.
-
