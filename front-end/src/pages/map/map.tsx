@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-leaflet'
 import { useNavigate, useLocation } from 'react-router-dom'
 import './map.css'
-import { getMyReservations, cancelReservation } from '../../services/chargers'
+import { getMyReservations, cancelReservation, CompletedReservation } from '../../services/chargers'
 import { getStationsByLocation, getAllPointsInfo } from '../../services/station'
 import type { PointInfo } from '../../services/station'
 import { isGuest } from '../../services/auth'
@@ -221,6 +221,10 @@ export default function Map() {
   const [cancelStatus, setCancelStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [cancelMessage, setCancelMessage] = useState('')
 
+
+// Add complete reservation state
+const [completeStatus, setCompleteStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+const [completeMessage, setCompleteMessage] = useState('')
   // Trigger to refresh charger statuses
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
@@ -414,7 +418,32 @@ export default function Map() {
     }
   }
 
-  const handleReservationSuccess = (data: {
+const handleCompletedReservation = async () => {
+  if (!activeReservation) return
+
+  try {
+    setCompleteStatus('loading')  // Changed from setCancelStatus
+    setCompleteMessage('')         // Changed from setCancelMessage
+
+    await CompletedReservation(activeReservation.charger.id)
+
+    setCompleteStatus('idle')     // Changed from setCancelStatus
+    setCompleteMessage('')         // Changed from setCancelMessage
+    setActiveReservation(null)
+    setRefreshTrigger(prev => prev + 1)
+  } catch (e: any) {
+    setCompleteStatus('error')    // Changed from setCancelStatus
+    const errorMsg = e?.message || 'Failed to complete reservation.'
+    if (errorMsg.includes('404') || errorMsg.toLowerCase().includes('not found')) {
+      setCompleteMessage('Completion of the reservation could not be done.')  // Changed
+      setActiveReservation(null)
+    } else {
+      setCompleteMessage(errorMsg)  // Changed from setCancelMessage
+    }
+  }
+}
+
+const handleReservationSuccess = (data: {
     pointId: number
     endTime: string
     stationName: string
@@ -604,12 +633,15 @@ export default function Map() {
           <ActiveReservationOverlay
             reservation={activeReservation}
             onCancel={handleCancelReservation}
+            onComplete={handleCompletedReservation}
             onExpire={() => {
               setActiveReservation(null)
               setRefreshTrigger(prev => prev + 1)
             }}
             cancelStatus={cancelStatus}
             cancelMessage={cancelMessage}
+              completeStatus={completeStatus}      // Add this
+            completeMessage={completeMessage}  
           />
         )}
       </div>
