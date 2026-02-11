@@ -62,11 +62,6 @@ WattApp integrates with external services for navigation, payments, charging inf
 | System | Purpose | Protocol/Standard |
 |--------|---------|-------------------|
 | **Google Maps API** | Navigation and routing to charging stations | HTTPS/REST |
-| **Payment Gateway** | Process charging session payments | HTTPS/REST, PCI DSS |
-| **Station Provider APIs (OCPI)** | Retrieve station metadata and availability | HTTPS/REST, OCPI |
-| **Physical Chargers (OCPP)** | Direct control and monitoring of chargers | WebSocket, OCPP 2.1 |
-| **Authentication Service** | User authentication and authorization | HTTPS, OAuth 2.0 |
-| **SMS/Email Service** | Send notifications and alerts | HTTPS/REST, SMTP |
 
 ---
 
@@ -201,7 +196,6 @@ GoogleMapsAPI -down- GoogleMaps
 | **Reservation** | A temporary booking of a charger or outlet by a user for a specific time window. |
 | **Navigation Link / Deep Link** | A generated URL that opens a routing view in an external navigation service (e.g., Google Maps). |
 | **Google Maps API** | External service used to generate routes and navigation information. |
-| **Payment Gateway** | Third-party service that processes secure online payments for charging sessions. |
 | **OCPI (Open Charge Point Interface)** | Standard protocol for exchanging data between charging service providers (pricing, availability, location). |
 | **OCPP (Open Charge Point Protocol)** | Standard protocol for communication between physical chargers and backend systems (status, meter values). |
 | **Authentication Service** | External identity provider used to authenticate users (e.g., OAuth 2.0). |
