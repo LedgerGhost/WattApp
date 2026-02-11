@@ -42,11 +42,15 @@ Ensure your test folder looks like this before running:
 
 ## 🚀 Run the Tests
 
-⚠️ Critical: You must run this command from **INSIDE** the ```/test``` directory so that Newman can find the local CSV files.
+⚠️ Critical: You must run this command from **INSIDE** the ```/Test``` directory so that Newman can find the local CSV files.
 
-
+**For API_TESTv1.json:**
 ```bash
-npx newman run API-TEST.json --bail --insecure --env-var baseUrl=https://yourlocalhost:xxxx/api --env-var admintoken=YOUR_TOKEN_HERE
+npx newman run API-TESTv1.json --bail --insecure --env-var baseUrl=https://yourlocalhost:xxxx/api --env-var admintoken=YOUR_TOKEN_HERE
+```
+**For API_TESTv2.json:**
+```bash
+npx newman run API-TESTv2.json --bail --insecure --env-var baseUrl=https://yourlocalhost:xxxx/api --env-var admintoken=YOUR_TOKEN_HERE
 ```
 **Breakdown of Flags:**
 
