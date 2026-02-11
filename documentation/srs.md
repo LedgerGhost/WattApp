@@ -349,7 +349,7 @@ Ext --> UC_Map
 
 #### 3.1.1 Use case 1: Access Management and User Differentiation
 ##### 3.1.1.1 Roles involved
-- Customer (EV Driver): Account creation, login, access to charging services.
+- Customer/User (EV Driver): Account creation, login, access to charging services.
 
 - Provider Administrator: System management, network monitoring, configuration.
 
@@ -364,9 +364,10 @@ For Customers:
 - Valid credentials.
 
 For Administrators:
-- Pre-authorized admin account exists (dependable on implementation, meaning the actual system that will handle the admin access, e.g., 2FA, company credentials, or admin-added accounts).
+- Pre-authorized admin account exists (for new admins the original admin needs to change the "role" of the created account from "user" to "admin").
+
 ##### 3.1.1.3 Execution enviroment
-This use case is executed on the backend of the system, but for the users of the software, the interfaces are:
+This use case is executed on the backend of the system, but for all users of the software, the interfaces are:
 - Frontend/Web Interface (for both desktop and mobile)
 - Command Line Interface (for administrator's functions only)
 - Backend REST API to handle the authentication and data retrieval and validation
@@ -377,19 +378,18 @@ For Login:
 
 For Registration:
 - Email
-- Password (2 times) (min 8 chars, special characters, uppercase letters)
-- Phone (country number to be valid and registered)
-- First name
-- Last name
+- Password (2 times -> "password" and "confirm password")
+- Phone number
+- Full name
+
 ##### 3.1.1.5 Expected behaviour
+
 ###### Main Flow - Customer Registration:
 1)Customer accesses registration page
 2)System displays form
 3)Customer enters data (email, password, personal info, payment details)
 4)System validates format and uniqueness
-5)System sends verification email
-6)Customer clicks verification link
-7)System activates account with "Customer" role
+5)System activates account with "user" role
 8)System confirms and redirects to login
 
 ###### Main Flow - User Login:
@@ -403,117 +403,70 @@ For Registration:
 
 ###### Alternative Flow - Failed Login:
 1)Invalid credentials: System increments counter, shows error
-2)Failed attempts ≥ 3: Lock account 15 minutes, send email notification
-3)Alternative Flow - Password Reset:
-4)User clicks "Forgot Password"
-5)User enters email
-6)System sends reset link
-7)User enters new password
-8)System validates and updates password
 
 ###### Access Control (Per Request):
 - System validates session token and checks role
 - Customer: View/reserve chargers, manage sessions, view billing, manage account
-- Administrator: All customer functions plus system configuration, network management, reports, CLI access, pricing configuration, EV-charger manipulation
-- System denies unauthorized actions and logs all attempts
+- Administrator: All customer functions plus quick actions in the profile page, full view of all the reservations made by all users
+and also access to cli-client for more functions about management of the system
 
 ###### UML Activity Diagram
 ```plantuml
-@startuml
-title User Registration and Login - Activity Diagram
+@startuml Login_Activity_Diagram
 
-|User|
+title Access Management and User Differentiation (LOGIN) Activity Diagram
+
+|#87CEEB|USER|
+|#D3D3D3|SYSTEM|
+|#90EE90|ADMIN|
+
+|USER|
 start
+
 :Access system;
 
-if (Has account?) then (no)
+if (has account?) then (yes)
+else (no)
+  :Click register;
+  :Insert registration info;
   
-  if (Register as?) then (Customer)
-    |Customer|
-    :Click "Register";
-    :Fill registration form:
-    - Email, Password
-    - Name, Phone
-    - Payment method;
-    
-    |System|
-    :Validate input;
-    :Create account\n(role = CUSTOMER);
-    :Send verification email;
-    
-    |Customer|
-    :Click verification link;
-    
-    |System|
-    :Activate account;
-    
-  else (Administrator)
-    |First Admin|
-    :Execute CLI command:
-    $ ./cli admin create
-      --email new@provider.com;
-    
-    |System|
-    :Create account\n(role = ADMINISTRATOR);
-    :Send welcome email\nwith temp password;
-    
-    |New Administrator|
-    :Receive email;
+  |SYSTEM|
+  :Validate format
+  and parse data;
+  :Assign token;
+  :Insert into db;
+  
+  if (new user type) then (admin)
+    |ADMIN|
+    :Update "role"
+    field in db;
+    |SYSTEM|
+  else (user)
   endif
   
-else (yes)
+  :Redirect to login page;
+  
+  |USER|
 endif
 
-|User|
-:Navigate to login;
-:Enter email & password;
+:Insert login credentials;
 
-|System|
-:Validate credentials;
-:Retrieve user role;
+|SYSTEM|
+:Validate matching
+username and password;
 
-if (Role?) then (CUSTOMER)
-  
-  if (2FA enabled?) then (yes)
-    |Customer|
-    :Enter 2FA code;
-    |System|
-    :Verify 2FA;
-  else (no)
-  endif
-  
-  |System|
-  :Generate session token\n(24h expiry);
-  :Redirect to Customer\nMain Page;
-  
-  |Customer|
-  :View Customer\nDashboard;
-  
-else (ADMINISTRATOR)
-  
-  if (First login?) then (yes)
-    |Administrator|
-    :Change password;
-    :Setup 2FA\n(scan QR code);
-    |System|
-    :Enable 2FA;
-  else (no)
-  endif
-  
-  |Administrator|
-  :Enter 2FA code\n(mandatory);
-  
-  |System|
-  :Verify 2FA;
-  :Generate session token\n(8h expiry);
-  :Redirect to Admin\nMain Page;
-  
-  |Administrator|
-  :View Admin\nDashboard;
-  
+:Redirect to main page;
+
+if (user type/role) then (user)
+  |USER|
+  :Navigate to user "profile"
+  dashboard;
+else (admin)
+  |ADMIN|
+  :Navigate to admin
+  profile dashboard;
 endif
 
-|System|
 stop
 
 @enduml
@@ -521,21 +474,21 @@ stop
 
 ##### 3.1.1.6 Output data and postconditions
 **The data that will be viewable to the user:**
-Successful login/register message and redirection to role-appropriate main page
+Redirection to role main page
 Unsuccessful login/register message 
 
-All of the output data are for logging purposes. The access management and user differentiation happens in the backend and no visible data are provided to the user, just redirection to the correct pages for the type of user who uses the software.
+All of the output data are for logging purposes. The access management and user differentiation happens in the backend and no visible data are provided to the user, just redirection to the main page, meaning that the user differentiation for the two types is visible in the "profile" page.
 
 **The data that are created as output (as mentioned for logging purposes) but remain hidden to the user, are:**
-- Session token/JWT with expiration (lets say -> 24h customers, 8h admins)
-- User profile: user_id, role, permissions, account status, last_login
-- Audit logs: authentication events, failed attempts, administrative actions
+- Session token/JWT with expiration
+- User profile: user_id, role, permissions, account status, last_login, timestamps & all the relative information that are filled in by the user in the "signup" page
+- Auth session logs as shown in the class diagram at the end of the document.
 
 ##### 3.1.1.7 Notes
 - Passwords hashed using bcrypt or SCRAM-SHA-256
 - HTTPS required for all communications
 - GDPR compliance for personal data ()
-- CLI may use API keys/OAuth tokens
+- CLI uses API keys/OAuth tokens
 
 #### 3.1.2 Use case 2: Filter Charging Stations
 
@@ -1231,198 +1184,269 @@ To avoid duplicate entries, the system employs:
 ### 3.4.2 Semantic data model
 ###### Database ER-Diagram
 
-Exactly below follows the ER-diagram of our database. It is a simplified form of what we have designed and provides the semantics of the data as well as the types for some clarification. The two comments are for a brief explanation, since we do not mention where or how those data are gained from.
-The table regarding the **energy prices** is added for scalability reasons as well as for future development (it is not certain, at this point of the development, if it will be utilised or implemented in the end product)
+Exactly below follows the ER-diagram of our database. It is the final form of what we have designed and provides the semantics of the data as well as the types for some clarification. Since our database is a NoSQL database all the checking to the types are done via an ODM layer we added with mongoose. The arrays and objects are fully expanded here to show reference but the diagram is in a simplified form in Visual Paradigm for ease of understanding. It is important to have in mind that with the mongoose schem and with the endpoints of the APIs some of the data are null and that we are not checking the added Arrays and Objects since they lack functionality. They are added as data to the database only for scalability purpsoses providing a better picture of a real life scenario application such as this one.
 
 ```plantuml
-@startuml WattApp_ER_Simple__final
-!define PRIMARY_KEY(x) <b><u>x</u></b>
-!define FOREIGN_KEY(x) <i>x</i>
-
-title WattApp - Entity Relationship Diagram (Simplified)
-
-skinparam linetype ortho
-skinparam roundcorner 10
-skinparam shadowing false
-
-skinparam entity {
-    BackgroundColor #E8F4FD
-    BorderColor #2196F3
-    ArrowColor #1565C0
+@startuml WattApp_Semantic_Data_Model
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam class {
+    BackgroundColor #f0fdf4
+    BorderColor #16a34a
+    ArrowColor #64748b
 }
 
-entity "**users**" as users {
-    PRIMARY_KEY(_id) : ObjectId
-    --
-    email : String
-    password_hash : String
-    role : Enum
-    first_name : String
-    last_name : String
-    phone : String
-    status : Enum
-    email_verified : Boolean
-    two_factor_enabled : Boolean
-    --
-    //embedded: payment_methods[]//
-    //embedded: preferences//
-    //embedded: vehicle_info//
-    --
-    created_at : Date
-    last_login : Date
+title WattApp - Semantic Data Model (UML Class Diagram)
+
+' ==================== CORE ENTITIES ====================
+
+class User {
+    +_id : ObjectId
+    +email : String
+    +password_hash : String
+    +role : String
+    +first_name : String
+    +last_name : String
+    +phone : String
+    +status : String
+    +email_verified : Boolean
+    +two_factor_enabled : Boolean
+    +failed_login_attempts : Number
+    +payment_methods : PaymentMethod[]
+    +preferences : UserPreferences
+    +vehicle_info : VehicleInfo
+    +created_at : DateTime
+    +updated_at : DateTime
+    +last_login : DateTime
 }
 
-entity "**stations**" as stations #E8F5E9 {
-    PRIMARY_KEY(_id) : ObjectId
-    --
-    external_id : String (OCPI)
-    name : String
-    status : Enum
-    --
-    //embedded: location (GeoJSON)//
-    //embedded: address//
-    //embedded: operator//
-    //embedded: opening_hours//
-    //embedded: **outlets[]**//
-    //embedded: pricing//
-    //embedded: reservation_settings//
-    --
-    amenities[] : Enum
-    ratings : Object
-    created_at : Date
+class PaymentMethod {
+    +payment_token : String
+    +type : String
+    +last_four : String
+    +expiry_month : Number
+    +expiry_year : Number
+    +is_default : Boolean
+    +added_at : DateTime
 }
 
-entity "**reservations**" as reservations #FFF3E0 {
-    PRIMARY_KEY(_id) : ObjectId
-    --
-    FOREIGN_KEY(user_id) : ObjectId
-    FOREIGN_KEY(station_id) : ObjectId
-    outlet_id : String
-    --
-    start_time : Date
-    end_time : Date
-    duration_minutes : Integer
-    status : Enum
-    --
-    //embedded: station_snapshot//
-    --
-    reservation_fee : Double
-    FOREIGN_KEY(charging_session_id) : ObjectId
-    created_at : Date
+class UserPreferences {
+    +preferred_connector_types : String[]
+    +notifications_enabled : Boolean
+    +notification_email : Boolean
+    +notification_sms : Boolean
+    +language : String
+    +currency : String
 }
 
-entity "**charging_sessions**" as sessions #FCE4EC {
-    PRIMARY_KEY(_id) : ObjectId
-    --
-    FOREIGN_KEY(user_id) : ObjectId
-    FOREIGN_KEY(station_id) : ObjectId
-    outlet_id : String
-    FOREIGN_KEY(reservation_id) : ObjectId
-    --
-    status : Enum
-    start_time : Date
-    end_time : Date
-    --
-    //embedded: station_snapshot//
-    //embedded: energy (meter values)//
-    //embedded: cost//
-    //embedded: payment//
-    //embedded: vehicle_info//
-    --
-    stop_reason : Enum
-    ocpp_transaction_id : String
-    created_at : Date
+class VehicleInfo {
+    +make : String
+    +model : String
+    +year : Number
+    +battery_capacity_kwh : Number
+    +connector_type : String
 }
 
-entity "**auth_sessions**" as auth #F3E5F5 {
-    PRIMARY_KEY(_id) : ObjectId
-    --
-    FOREIGN_KEY(user_id) : ObjectId
-    token_id : String
-    --
-    //embedded: device_info//
-    --
-    created_at : Date
-    expires_at : Date (TTL)
-    is_valid : Boolean
+' ==================== AUTHENTICATION ====================
+
+class AuthSession {
+    +_id : ObjectId
+    +user_id : ObjectId
+    +token_id : String
+    +device_info : DeviceInfo
+    +created_at : DateTime
+    +expires_at : DateTime
+    +last_used_at : DateTime
+    +is_valid : Boolean
 }
 
-entity "**audit_logs**" as audit #EFEBE9 {
-    PRIMARY_KEY(_id) : ObjectId
-    --
-    event_type : Enum
-    FOREIGN_KEY(user_id) : ObjectId
-    ip_address : String
-    timestamp : Date (TTL 90d)
-    outcome : Enum
-    --
-    resource_type : String
-    resource_id : String
-    details : Object
+class DeviceInfo {
+    +user_agent : String
+    +ip_address : String
+    +device_type : String
+    +device_name : String
 }
 
-entity "**energy_prices**" as prices #FFFDE7 {
-    PRIMARY_KEY(_id) : ObjectId
-    --
-    date : Date
-    hour : Integer
-    price_per_kwh : Double
-    currency : String
-    region : String
-    source : String
+' ==================== STATION & CHARGING INFRASTRUCTURE ====================
+
+class Station {
+    +_id : ObjectId
+    +id : Number
+    +access : Number
+    +address : String
+    +available_station_count : Number
+    +coming_soon : Boolean
+    +connector_types : String[]
+    +icon : String
+    +icon_type : String
+    +in_use_station_count : Number
+    +is_fast_charger : Boolean
+    +latitude : Number
+    +longitude : Number
+    +map_card_logo_url : String
+    +name : String
+    +station_count : Number
+    +stations : StationUnit[]
+    +under_repair : Boolean
+    +url : String
 }
 
-entity "**notifications**" as notif #E0F7FA {
-    PRIMARY_KEY(_id) : ObjectId
-    --
-    FOREIGN_KEY(user_id) : ObjectId
-    type : Enum
-    title : String
-    message : String
-    channels[] : Enum
-    status : Enum
-    --
-    sent_at : Date
-    read_at : Date
+class StationUnit {
+    +id : Number
+    +network_id : Number
+    +outlets : Outlet[]
 }
 
-entity "**provider_config**" as config #F5F5F5 {
-    PRIMARY_KEY(_id) : ObjectId
-    --
-    key : String
-    value : Mixed
-    category : Enum
-    FOREIGN_KEY(updated_by) : ObjectId
-    updated_at : Date
+class Outlet {
+    +connector : Number
+    +id : Number
+    +kilowatts : Number
+    +power : Number
+    +status : String
 }
 
-' ===== RELATIONSHIPS =====
+class ChargePoint {
+    +_id : ObjectId
+    +pointid : Number
+    +providerName : String
+    +lon : String
+    +lat : String
+    +location : GeoLocation
+    +status : String
+    +cap : Number
+    +kwhprice : Number
+    +reservationendtime : DateTime
+    +reservedBy : ObjectId
+    +lastStatusChange : DateTime
+    +address : String
+    +station_name : String
+    +external_station_id : String
+    +connector_type : String
+    +createdAt : DateTime
+    +updatedAt : DateTime
+}
 
-users "1" ||--o{ "0..*" reservations : "creates >"
-users "1" ||--o{ "0..*" sessions : "initiates >"
-users "1" ||--o{ "0..*" auth : "has >"
-users "1" ||--o{ "0..*" notif : "receives >"
-users "1" ||--o{ "0..*" audit : "generates >"
+class GeoLocation {
+    +type : String
+    +coordinates : Number[]
+}
 
-stations "1" ||--o{ "0..*" reservations : "< for"
-stations "1" ||--o{ "0..*" sessions : "< at"
+' ==================== RESERVATIONS & SESSIONS ====================
 
-reservations "0..1" |o--o| "0..1" sessions : "converts to >"
+class Reservation {
+    +_id : ObjectId
+    +user_id : ObjectId
+    +pointid : Number
+    +start_time : DateTime
+    +end_time : DateTime
+    +duration_minutes : Number
+    +status : String
+    +reservation_fee : Number
+    +fee_charged : Boolean
+    +payment_token : String
+    +created_at : DateTime
+    +updated_at : DateTime
+}
 
-users "1" ||--o{ "0..*" config : "updates >"
+class ChargingSession {
+    +_id : ObjectId
+    +user_id : ObjectId
+    +station_id : String
+    +pointid : Number
+    +outlet_id : String
+    +reservation_id : ObjectId
+    +status : String
+    +start_time : DateTime
+    +end_time : DateTime
+    +duration_minutes : Number
+    +energy_delivered_kwh : Number
+    +meter_readings : MeterReadings
+    +charging_data : ChargingDataPoint[]
+    +cost : SessionCost
+    +payment : PaymentInfo
+    +stop_reason : String
+    +vehicle_info : SessionVehicleInfo
+    +ocpp_transaction_id : String
+    +created_at : DateTime
+    +updated_at : DateTime
+}
 
-note bottom of stations
-  **Outlets are embedded** within stations.
-  Each outlet has: connector_type, power_kw,
-  status, and optional references to
-  current_session_id / current_reservation_id
-end note
+class MeterReadings {
+    +start_meter : Number
+    +end_meter : Number
+}
 
-note bottom of prices
-  Standalone collection for
-  wholesale energy market prices.
-  Used for dynamic pricing calculations.
-end note
+class ChargingDataPoint {
+    +timestamp : DateTime
+    +state_of_charge : Number
+    +power_kw : Number
+}
+
+class SessionCost {
+    +energy_cost : Number
+    +idle_fee : Number
+    +connection_fee : Number
+    +tax : Number
+    +total : Number
+    +currency : String
+}
+
+class PaymentInfo {
+    +preauthorization_amount : Number
+    +preauthorization_id : String
+    +preauthorization_time : DateTime
+    +final_charge_amount : Number
+    +payment_id : String
+    +payment_time : DateTime
+    +payment_method_token : String
+    +payment_status : String
+}
+
+class SessionVehicleInfo {
+    +battery_level_start : Number
+    +battery_level_end : Number
+}
+
+' ==================== HISTORY ====================
+
+class PointStatusHistory {
+    +_id : ObjectId
+    +pointid : Number
+    +timeref : DateTime
+    +old_state : String
+    +new_state : String
+}
+
+' ==================== RELATIONSHIPS ====================
+
+User "1" *-- "0..*" PaymentMethod : contains
+User "1" *-- "1" UserPreferences : has
+User "1" *-- "0..1" VehicleInfo : owns
+
+User "1" o-- "0..*" AuthSession : authenticates
+AuthSession "1" *-- "1" DeviceInfo : from
+
+Station "1" *-- "1..*" StationUnit : contains
+StationUnit "1" *-- "1..*" Outlet : has
+
+ChargePoint "1" *-- "1" GeoLocation : located_at
+ChargePoint "0..*" o-- "1" Station : belongs_to
+
+User "1" o-- "0..*" Reservation : makes
+ChargePoint "1" o-- "0..*" Reservation : reserved_for
+
+User "1" o-- "0..*" ChargingSession : initiates
+ChargePoint "1" o-- "0..*" ChargingSession : serves
+Reservation "1" o-- "0..1" ChargingSession : activates
+
+ChargingSession "1" *-- "1" MeterReadings : records
+ChargingSession "1" *-- "0..*" ChargingDataPoint : tracks
+ChargingSession "1" *-- "1" SessionCost : calculates
+ChargingSession "1" *-- "1" PaymentInfo : processes
+ChargingSession "1" *-- "0..1" SessionVehicleInfo : monitors
+
+ChargePoint "1" o-- "0..*" PointStatusHistory : logs
 
 @enduml
 
