@@ -1,5 +1,3 @@
-
-
 # WattApp
 # Software Requirements Specification Document
 ## 1. Introduction 
