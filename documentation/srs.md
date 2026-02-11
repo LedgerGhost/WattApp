@@ -753,7 +753,7 @@ stop
 - This use case supports both anonymous (guest) and authenticated users.
 
 #### 3.1.3 Use case 3: Reserve and Navigate to Charger
-The user logs into the web app, selects an available charger, and optionally reserves it for a specific duration.
+The user selects an available charger, and optionally reserves it for a specific duration.
 After reserving, the user can choose to open navigation to that charger via an external service (e.g., Google Maps).
 The system validates reservation rules, records the booking, and provides navigation options.
 ##### 3.1.3.1 Roles involved
@@ -765,6 +765,8 @@ The system validates reservation rules, records the booking, and provides naviga
 -Navigation Service : external service used for route guidance
 
 ##### 3.1.3.2 Preconditions
+-The user is already logged in to an existing account
+
 -The provider’s charging network and backend services are operational.
 
 -The user has installed and can access the provider’s web or mobile application.
@@ -785,108 +787,66 @@ The system validates reservation rules, records the booking, and provides naviga
 -External service: Google Maps for routing
 
 ##### 3.1.3.4 Input data
-- user_id: UUID — Unique identifier of the logged-in user 
-- charger_id: UUID — Identifier of the selected charger
-- outlet_id: UUID — Specific connector selected by the user
-- reservation_duration: INTEGER  — Duration of reservation in minutes 
-- reservation_start_time: DATETIME 
-- navigation_choice: BOOLEAN — Whether the user wants to open navigation
+- HTTP Header `X-OBSERVATORY-AUTH`: STRING (required) — Authentication token; identifies the logged-in user.
+- Path parameter `id`: INTEGER (required) — Charging point ID (`pointid`) to reserve.
+- Path parameter `minutes`: INTEGER (optional, range 1-60, default 30) — Reservation duration in minutes.
+- Request body: none (reservation inputs are passed via header + path parameters).
 
 ##### 3.1.3.5 Expected behaviour
 
 ###### Main flow
 ```plantuml
 @startuml
-|User|
+|EV DRIVER|
 start
-:Open app or website;
-:Log in to account;
-:View available chargers on map;
 :Select an available charger;
 
-|System|
+|SYSTEM|
 :Validate charger availability;
-:Display charger details and reservation option;
 
-|User|
-if (Reserve charger?) then (yes)
-  :Enter reservation duration (≤ 60 min);
+|EV DRIVER|
+if (reserve?) then ([yes])
+  :Enter reservation duration (<= 60 min);
   :Confirm reservation request;
 
-  |System|
-  :Record reservation in database;
+  |SYSTEM|
+  :Record reservation in data base;
   :Update charger status to "Reserved";
-  :Generate reservation ID;
-  :Display reservation confirmation;
-else (no)
-  :Skip reservation;
+  :Display reservation confirmation and endtime;
+  :Add active reservation in user profile;
+
+  |EV DRIVER|
+else ([no])
 endif
 
-if (Open navigation?) then (yes)
-  |System|
-  :Generate Google Maps deep link;
-  :Redirect user to Google Maps for navigation;
-else (no)
-  :Stay within provider app;
-endif
-
-|User|
-:View confirmation and reservation details;
-stop
-@enduml
-```
-
-
-###### Alternate flows
-*Skip reservation* 
-
-In this alternate flow, the user chooses not to reserve the charger and proceeds directly to navigation. After selecting an available charger from the map, the user skips the reservation step and is immediately presented with the option to open external navigation guidance. The system then generates a Google Maps deep link using the charger’s coordinates and redirects the user to the navigation application without creating a reservation record.
-
-```plantuml
-@startuml
-|User|
-start
-:Open app or website;
-:Log in to account;
-:View chargers on map;
-:Select available charger;
-:Skip reservation;
-
-|System|
-:Display "Navigate to charger" option;
-
-if (User opens navigation?) then (yes)
+|EV DRIVER|
+if (navigate to charger?) then ([yes])
+  |SYSTEM|
   :Generate Google Maps link;
-  :Redirect to navigation app;
-else (no)
-  :Stay on charger info screen;
+  :Redirect to Google Maps for navigation;
+else ([no])
 endif
 
 stop
 @enduml
 ```
-
 
 
 ##### 3.1.3.6 Output data and postconditions
 
 *Output data*
     
--reservation_record: Object
+-reservation_response: Object (from `POST /api/USERreserve/{id}` or `POST /api/USERreserve/{id}/{minutes}`)
     
- - reservation_id: UUID — Unique identifier of reservation
- - user_id: UUID — User who reserved
- - charger_id: UUID — Reserved charger
- - start_time: DATETIME — Reservation start time
- - end_time: DATETIME — Expiration time
- - status: ENUM {"Active", "Expired", "Cancelled"}
+ - pointid: INTEGER — Reserved charging point ID
+ - status: ENUM {"reserved", "charging", "malfunction", "offline", "available"} — Current point status after reservation attempt
+ - reservationendtime: STRING (format `YYYY-MM-DD HH:mm`) — Reservation end time; returns `"1970-01-01 00:00"` when point is not reservable
     
--navigation_action: Object
+-navigation_response: HTTP redirect (from `GET /api/navigate/{pointId}`)
     
- - user_id: UUID — User initiating navigation
- - charger_id: UUID — Destination charger
- - maps_link: STRING — Generated Google Maps deep link
- - timestamp: DATETIME — Time navigation link was opened
+ - status_code: 302 — Redirect to external navigation service
+ - location: STRING — Google Maps URL in `Location` header (`https://www.google.com/maps/dir/?api=1&destination=lat,lon`)
+ - response_body: none (on success)
     
 *Postconditions*
     
@@ -1506,4 +1466,3 @@ The system shall implement comprehensive security measures to protect user data,
 | **SEC-12** | The system shall implement **two-factor authentication (2FA)** as an optional security enhancement for user accounts. | 2FA significantly improves account security, especially for accounts with stored payment methods. Optional implementation respects user preference while encouraging security best practices. |
 
 The security requirements address the sensitive nature of financial transactions, personal data, and the need to maintain user trust. With payment processing integrated into every charging session and approximately 10,000 daily transactions, robust security measures are essential to protect both users and the charging provider from financial loss, data breaches, and regulatory penalties.
-
