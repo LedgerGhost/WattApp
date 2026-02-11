@@ -46,12 +46,9 @@ Ensure your test folder looks like this before running:
 
 **For API_TESTv1.json:**
 ```bash
-npx newman run API-TESTv1.json --bail --insecure --env-var baseUrl=https://yourlocalhost:xxxx/api --env-var admintoken=YOUR_TOKEN_HERE
+npx newman run API-TEST.json --bail --insecure --env-var baseUrl=https://yourlocalhost:xxxx/api --env-var admintoken=YOUR_TOKEN_HERE
 ```
-**For API_TESTv2.json:**
-```bash
-npx newman run API-TESTv2.json --bail --insecure --env-var baseUrl=https://yourlocalhost:xxxx/api --env-var admintoken=YOUR_TOKEN_HERE
-```
+
 **Breakdown of Flags:**
 
 - --bail: Stops the execution when a test fails (for debugging)
