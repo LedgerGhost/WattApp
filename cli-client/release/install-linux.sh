@@ -52,8 +52,8 @@ fi
 mkdir -p "$INSTALL_DIR"
 
 # Copy binary
-cp "$BINARY_NAME" "$INSTALL_DIR/$APP_NAME/$CLI_NAME"
-chmod +x "$INSTALL_DIR/$APP_NAME/$CLI_NAME"
+cp "$BINARY_NAME" "$INSTALL_DIR/$CLI_NAME"
+chmod +x "$INSTALL_DIR/$CLI_NAME"
 
 # Add to PATH if needed
 SHELL_CONFIG=""

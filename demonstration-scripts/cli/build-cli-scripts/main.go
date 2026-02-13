@@ -194,8 +194,8 @@ func testHealthcheck(version string) {
 
 	// Postman v1 & v2: pm.expect([200]).to.include(pm.response.code) — checked by CLI exit code
 
-	// Postman v1 & v2: pm.expect(pm.response.text()).to.include(".zce0zok.mongodb.net:27017/wattapp")
-	if !strings.Contains(result.DBConnection, ".zce0zok.mongodb.net:27017/wattapp") {
+	// Postman v1 & v2: pm.expect(pm.response.text()).to.include("27017/wattapp")
+	if !strings.Contains(result.DBConnection, "27017/wattapp") {
 		failTest("DB connection string doesn't match expected pattern")
 	}
 

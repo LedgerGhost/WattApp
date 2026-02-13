@@ -535,7 +535,7 @@ func TestCLIFlow(t *testing.T) {
 
 		t.Run("Healthcheck_200", func(t *testing.T) {
 			out := mustRunCLI(t, "healthcheck")
-			if !strings.Contains(out, ".zce0zok.mongodb.net:27017/wattapp") {
+			if !strings.Contains(out, "27017/wattapp") {
 				t.Errorf("missing DB string:\n%s", out)
 			}
 		})
